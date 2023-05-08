@@ -8,6 +8,21 @@ module.exports = {
   webpackFinal: async (config, { configType }) => {
     // add your own webpack tweaks if needed
 
+    // disable whatever is already set to load SVGs
+    config.module.rules
+      .filter((rule) => rule.test.test('.svg'))
+      .forEach((rule) => (rule.exclude = /\.svg$/i));
+
+    // add SVGR instead
+    config.module.rules.push({
+      test: /\.svg$/,
+      use: [
+        {
+          loader: 'file-loader',
+        },
+      ],
+    });
+
     return config;
   },
 };
