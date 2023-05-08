@@ -18,7 +18,8 @@
     "paths": {
       "@zakkdev/markdown": ["libs/markdown/src/index.ts"],
       "@zakkdev/shared/mdx-elements": ["libs/shared/mdx-elements/src/index.ts"],
-      "@zakkdev/shared/mdx-elements/*": ["libs/shared/mdx-elements/src/lib/*"]
+      "@zakkdev/shared/mdx-elements/*": ["libs/shared/mdx-elements/src/lib/*"],
+      "@zakkdev/shared/ui": ["libs/shared/ui/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
