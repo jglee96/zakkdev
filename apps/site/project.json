@@ -3,7 +3,7 @@
   "$schema": "../../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "apps/site",
   "projectType": "application",
-  "implicitDependencies": ["_articles"],
+  "implicitDependencies": ["site-articles"],
   "targets": {
     "build": {
       "executor": "@nrwl/next:build",
