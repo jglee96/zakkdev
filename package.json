@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "license": "MIT",
   "scripts": {
-    "storybook": "export NODE_OPTIONS=--openssl-legacy-provider && npx nx run shared-ui:storybook"
+    "storybook": "export NODE_OPTIONS=--openssl-legacy-provider && npx nx run shared-ui:storybook",
+    "cypress": "npx nx run site-e2e:e2e --openssl-legacy-provider",
+    "cypress:watch": "npx nx run site-e2e:e2e --openssl-legacy-provider --watch"
   },
   "private": true,
   "dependencies": {
