@@ -1,16 +1,18 @@
 import { GetStaticProps } from 'next/types';
 import { Container, Grid } from '@nextui-org/react';
-import { Post } from '@zakkdev/types';
+import { readdirSync } from 'fs';
+import PostCard from '../../components/PostCard/PostCard';
+
 interface Props {
-  posts: Post[];
+  posts: string[];
 }
 
 export default function Blog({ posts }: Props) {
   return (
     <Container sm>
       <Grid.Container gap={2} alignContent="center">
-        {posts.map((item, index) => (
-          <PostCard key={index} item={item} index={index} />
+        {posts.map((title, index) => (
+          <PostCard key={index} fileName={title} />
         ))}
       </Grid.Container>
     </Container>
@@ -18,13 +20,11 @@ export default function Blog({ posts }: Props) {
 }
 
 export const getStaticProps: GetStaticProps<Props> = async () => {
-  const posts = await prisma.post.findMany({
-    take: 5,
-  });
+  const list = readdirSync(process.env.NEXT_PUBLIC_ARTICLE_MARKDOWN_PATH);
 
   return {
     props: {
-      posts: JSON.parse(JSON.stringify(posts)),
+      posts: list,
     },
   };
 };

@@ -12,6 +12,7 @@
     "@mui/material": "^5.13.2",
     "@nextui-org/react": "^1.0.0-beta.13",
     "@nx/next": "16.2.2",
+    "dayjs": "^1.11.7",
     "gray-matter": "^4.0.3",
     "next": "13.4.1",
     "next-themes": "^0.2.1",

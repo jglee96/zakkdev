@@ -1,24 +1,20 @@
-import { unified } from 'unified';
-import remarkParse from 'remark-parse';
-import remarkRehype from 'remark-rehype';
+import * as matter from 'gray-matter';
 import rehypePrism from 'rehype-prism-plus';
 import rehypeStringify from 'rehype-stringify';
+import remarkParse from 'remark-parse';
+import remarkRehype from 'remark-rehype';
 import { join } from 'path';
 import { readFileSync } from 'fs';
-import matter = require('gray-matter');
-import { readdir } from 'fs';
+import { unified } from 'unified';
 
-export function getParsedFileContentBySlug(
-  fileName: string,
-  postsPath: string
-) {
+export function parseFile(fileName: string, postsPath: string) {
   const postFilePath = join(postsPath, `${fileName}.mdx`);
   const fileContent = readFileSync(postFilePath);
 
   const { data, content } = matter(fileContent);
 
   return {
-    frontMatter: data,
+    data,
     content,
   };
 }

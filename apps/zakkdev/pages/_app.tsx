@@ -1,4 +1,5 @@
-import './styles.css';
+import '../styles/globals.css';
+import '../styles/themes/prism-laserwave.css';
 import Footer from '../components/Footer/Footer';
 import Head from 'next/head';
 import Nav from '../components/Nav/Nav';
