@@ -19,7 +19,7 @@ function CustomApp({ Component, pageProps }: AppProps) {
   return (
     <>
       <Head>
-        <title>Welcome to zakkdev!</title>
+        <title>zakklee.dev</title>
       </Head>
       <main className="app">
         <ThemeProvider

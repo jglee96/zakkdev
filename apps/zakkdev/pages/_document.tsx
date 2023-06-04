@@ -28,7 +28,7 @@ class MyDocument extends Document {
           <meta property="og:title" content="Zakklee's  Blog" />
           <meta
             property="og:description"
-            content="Zakklee's Blog made with Next.js, Vercel, Prisma, Supabase"
+            content="Zakklee's Blog made with Nx, Next.js, Vercel"
           />
           <meta property="og:image" content={'/android-chrome-384x384.png'} />
           <link rel="icon" href="/favicon.ico" />
@@ -53,6 +53,10 @@ class MyDocument extends Document {
           <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#5bbad5" />
           <meta name="msapplication-TileColor" content="#da532c" />
           <meta name="theme-color" content="#ffffff" />
+          <meta
+            name="description"
+            content="Zakklee's Blog made with Nx, Next.js, Vercel"
+          ></meta>
           <link
             rel="stylesheet"
             as="style"
