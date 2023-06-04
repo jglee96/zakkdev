@@ -1,4 +1,5 @@
 import { Card, Grid, Text } from '@nextui-org/react';
+import { Post } from '@zakkdev/types';
 import dayjs from 'dayjs';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
@@ -10,13 +11,12 @@ const PostCard = ({ fileName }: Props) => {
   const router = useRouter();
   const [hover, setHover] = useState<boolean>(false);
   const file = fileName.split('.')[0];
-  const [frontMatter, setFrontMatter] = useState<any>({
-    title: file,
-  });
+  const [frontMatter, setFrontMatter] = useState<Post>();
 
   useEffect(() => {
     const params = {
       fileName: file,
+      path: process.env.NEXT_PUBLIC_ARTICLE_MARKDOWN_PATH,
     };
     const fetchFrontmatter = async () => {
       const queryString = new URLSearchParams(params).toString();
@@ -32,7 +32,7 @@ const PostCard = ({ fileName }: Props) => {
 
   return (
     <Grid
-      key={frontMatter.title}
+      key={file}
       css={{ w: '$7xl', display: 'flex', justifyContent: 'center' }}
     >
       <Card
@@ -73,9 +73,11 @@ const PostCard = ({ fileName }: Props) => {
           }}
         >
           <Text b size="$md">
-            {frontMatter.title}
+            {frontMatter?.title}
           </Text>
-          <Text size="$sm">{dayjs(frontMatter.date).format('YYYY.MM.DD')}</Text>
+          <Text size="$sm">
+            {dayjs(frontMatter?.date).format('YYYY.MM.DD')}
+          </Text>
         </Card.Footer>
       </Card>
     </Grid>

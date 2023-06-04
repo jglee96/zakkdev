@@ -1,0 +1,53 @@
+---
+title: 'MultiPolygon Move'
+excerpt: 'MultiPolygon 이동 시 첫번째 path에 해당하는 polygon만 이동되는 오류'
+gist: 'jglee96/17e1549ae11435bc53712fbf1e4c606a'
+status: 'Closed'
+---
+
+```ts
+const map = new naver.maps.Map('map', {
+  center: new naver.maps.LatLng(37.3674001, 127.1181196),
+  zoom: 14,
+});
+
+let prevLatlng: naver.maps.LatLng;
+let prevOffset: naver.maps.Point;
+let prevPoint: naver.maps.Point;
+
+naver.maps.Event.addListener(map, 'click', (e) => {
+  const {
+    latlng,
+    offset,
+    point,
+  }: {
+    latlng: naver.maps.LatLng;
+    offset: naver.maps.Point;
+    point: naver.maps.Point;
+  } = e;
+
+  const tempLatlng = latlng.clone();
+  const tempOffset = offset.clone();
+  const tempPoint = point.clone();
+  if (prevLatlng != null) {
+    console.log('latlng: ', latlng, 'prevLatlng: ', prevLatlng);
+    console.log('latlng.add(prevLatlng): ', latlng.add(prevLatlng));
+  }
+  if (prevOffset != null) {
+    console.log('offset: ', offset, 'prevOffset: ', prevOffset);
+    console.log('offset.add(prevOffset): ', offset.add(prevOffset));
+  }
+  if (prevPoint != null) {
+    console.log('point: ', point, 'prevPoint: ', prevPoint);
+    console.log('point.add(prevPoint): ', point.add(prevPoint));
+  }
+  prevLatlng = tempLatlng;
+  prevOffset = tempOffset;
+  prevPoint = tempPoint;
+
+  new naver.maps.Marker({
+    map: map,
+    position: latlng,
+  });
+});
+```
