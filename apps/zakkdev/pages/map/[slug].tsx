@@ -69,10 +69,13 @@ export const getStaticProps: GetStaticProps<Props> = async ({ params }) => {
       },
     };
   }
-  const data = parseFile(slug, process.env.NEXT_PUBLIC_MAP_MARKDOWN_PATH);
+  const { content } = parseFile(
+    slug,
+    process.env.NEXT_PUBLIC_MAP_MARKDOWN_PATH
+  );
 
-  const code = transpile(data.content.split('\n').slice(2, -2).join('\n'));
-  const block = await markdownToHtml(data.content);
+  const code = transpile(content.split('\n').slice(2, -2).join('\n'));
+  const block = await markdownToHtml(content);
 
   return {
     props: {
