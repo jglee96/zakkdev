@@ -7,8 +7,8 @@ export interface Post {
 
 export interface MapCode {
   title: string;
-  excerpt?: string;
-  gist: string;
+  excerpt: string;
+  gist?: string;
   status: IssueType;
 }
 

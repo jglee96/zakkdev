@@ -16,7 +16,7 @@ export default function MapIssue({ code, block }: Props) {
       <Script
         type="text/javascript"
         src={`https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID}&submodules=drawing`}
-        onLoad={() => new Function(code)()}
+        onReady={() => new Function(code)()}
       />
       <div
         style={{
