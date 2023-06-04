@@ -11,7 +11,7 @@ export function parseFile(fileName: string, postsPath: string) {
   const postFilePath = join(postsPath, `${fileName}.mdx`);
   const fileContent = readFileSync(postFilePath);
 
-  const { data, content } = matter(fileContent);
+  const { data, content } = matter.default(fileContent);
 
   return {
     data,
