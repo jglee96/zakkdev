@@ -5,7 +5,7 @@
     "build": {
       "executor": "nx:run-commands",
       "options": {
-        "command": "rsync -av _articles dist/ --exclude project.json"
+        "command": "cp -r _articles dist/"
       }
     }
   }
