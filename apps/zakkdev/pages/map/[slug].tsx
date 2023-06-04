@@ -7,9 +7,10 @@ import Script from 'next/script';
 
 interface Props {
   code: string;
+  block: string;
 }
 
-export default function MapIssue({ code }: Props) {
+export default function MapIssue({ code, block }: Props) {
   return (
     <>
       <Script
@@ -41,7 +42,9 @@ export default function MapIssue({ code }: Props) {
           style={{
             width: '100%',
           }}
-        ></Collapse>
+        >
+          <div dangerouslySetInnerHTML={{ __html: block }} />
+        </Collapse>
       </div>
       <Comment />
     </>
@@ -62,16 +65,19 @@ export const getStaticProps: GetStaticProps<Props> = async ({ params }) => {
     return {
       props: {
         code: '',
+        block: '',
       },
     };
   }
   const data = parseFile(slug, process.env.NEXT_PUBLIC_MAP_MARKDOWN_PATH);
 
   const code = transpile(data.content.split('\n').slice(2, -2).join('\n'));
+  const block = await markdownToHtml(data.content);
 
   return {
     props: {
       code,
+      block,
     },
   };
 };

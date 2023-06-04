@@ -27,7 +27,7 @@ const MapCard = ({ fileName }: Props) => {
     };
 
     fetchFrontmatter();
-  }, []);
+  }, [file]);
 
   return (
     <Grid key={file}>

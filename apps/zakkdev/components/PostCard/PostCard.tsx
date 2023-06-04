@@ -28,7 +28,7 @@ const PostCard = ({ fileName }: Props) => {
     };
 
     fetchFrontmatter();
-  }, []);
+  }, [file]);
 
   return (
     <Grid
