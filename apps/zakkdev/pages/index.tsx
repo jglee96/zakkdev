@@ -1,5 +1,6 @@
-import { parseFile, markdownToHtml } from '@zakkdev/markdown';
+import { markdownToHtml } from '@zakkdev/markdown';
 import { GetServerSideProps } from 'next/types';
+import { parseFile } from '../lib/parseFile';
 
 interface Props {
   html: string;
@@ -12,10 +13,8 @@ export function Index({ html }: Props) {
 export default Index;
 
 export const getServerSideProps: GetServerSideProps<Props> = async () => {
-  // 1. parse the content of our markdown and separate it into frontmatter and content
-  const { content } = parseFile('profile', '_articles/');
+  const { content } = await parseFile('profile');
 
-  // 2. copnver markdown content => HTML
   const renderHTML = await markdownToHtml(content);
 
   return {

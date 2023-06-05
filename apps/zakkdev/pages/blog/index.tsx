@@ -1,7 +1,7 @@
 import { GetStaticProps } from 'next/types';
 import { Container, Grid } from '@nextui-org/react';
-import { readdirSync } from 'fs';
 import PostCard from '../../components/PostCard/PostCard';
+import { supabase } from '../../lib/supabase';
 
 interface Props {
   posts: string[];
@@ -20,11 +20,20 @@ export default function Blog({ posts }: Props) {
 }
 
 export const getStaticProps: GetStaticProps<Props> = async () => {
-  const list = readdirSync(process.env.NEXT_PUBLIC_ARTICLE_MARKDOWN_PATH);
+  const { data, error } = await supabase.storage.from('articles').list('posts');
+
+  if (error != null) {
+    console.log(error);
+    return {
+      props: {
+        posts: [],
+      },
+    };
+  }
 
   return {
     props: {
-      posts: list,
+      posts: data.map((file) => file.name),
     },
   };
 };

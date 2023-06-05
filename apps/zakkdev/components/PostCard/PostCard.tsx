@@ -15,8 +15,7 @@ const PostCard = ({ fileName }: Props) => {
 
   useEffect(() => {
     const params = {
-      fileName: file,
-      path: process.env.NEXT_PUBLIC_ARTICLE_MARKDOWN_PATH,
+      fileName: `posts/${file}`,
     };
     const fetchFrontmatter = async () => {
       const queryString = new URLSearchParams(params).toString();

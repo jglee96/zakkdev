@@ -1,6 +1,7 @@
-import { parseFile, markdownToHtml } from '@zakkdev/markdown';
+import { markdownToHtml } from '@zakkdev/markdown';
 import { GetStaticPaths, GetStaticProps } from 'next/types';
 import { Comment } from '@zakkdev/ui';
+import { parseFile } from '../../lib/parseFile';
 
 interface Props {
   posts: string;
@@ -32,10 +33,7 @@ export const getStaticProps: GetStaticProps<Props> = async ({ params }) => {
       },
     };
   }
-  const { content } = parseFile(
-    id,
-    process.env.NEXT_PUBLIC_ARTICLE_MARKDOWN_PATH
-  );
+  const { content } = await parseFile(`posts/${id}`);
 
   const posts = await markdownToHtml(content);
 

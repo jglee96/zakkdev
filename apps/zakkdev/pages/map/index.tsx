@@ -1,7 +1,7 @@
 import { Grid } from '@nextui-org/react';
-import { readdirSync } from 'fs';
 import { GetStaticProps } from 'next/types';
 import MapCard from '../../components/MapCard/MapCard';
+import { supabase } from '../../lib/supabase';
 
 interface Props {
   map: string[];
@@ -18,11 +18,20 @@ export default function Map({ map }: Props) {
 }
 
 export const getStaticProps: GetStaticProps<Props> = async () => {
-  const list = readdirSync(process.env.NEXT_PUBLIC_MAP_MARKDOWN_PATH);
+  const { data, error } = await supabase.storage.from('articles').list('map');
+
+  if (error != null) {
+    console.log(error);
+    return {
+      props: {
+        map: [],
+      },
+    };
+  }
 
   return {
     props: {
-      map: list,
+      map: data.map((file) => file.name),
     },
   };
 };

@@ -14,8 +14,7 @@ const MapCard = ({ fileName }: Props) => {
 
   useEffect(() => {
     const params = {
-      fileName: file,
-      path: process.env.NEXT_PUBLIC_MAP_MARKDOWN_PATH,
+      fileName: `map/${file}`,
     };
     const fetchFrontmatter = async () => {
       const queryString = new URLSearchParams(params).toString();

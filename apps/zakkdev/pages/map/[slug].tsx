@@ -1,9 +1,10 @@
-import { parseFile, markdownToHtml } from '@zakkdev/markdown';
+import { markdownToHtml } from '@zakkdev/markdown';
 import { GetStaticPaths, GetStaticProps } from 'next/types';
 import { Comment } from '@zakkdev/ui';
 import { transpile } from 'typescript';
 import { Collapse } from '@nextui-org/react';
 import Script from 'next/script';
+import { parseFile } from '../../lib/parseFile';
 
 interface Props {
   code: string;
@@ -69,10 +70,7 @@ export const getStaticProps: GetStaticProps<Props> = async ({ params }) => {
       },
     };
   }
-  const { content } = parseFile(
-    slug,
-    process.env.NEXT_PUBLIC_MAP_MARKDOWN_PATH
-  );
+  const { content } = await parseFile(`map/${slug}`);
 
   const code = transpile(content.split('\n').slice(2, -2).join('\n'));
   const block = await markdownToHtml(content);
