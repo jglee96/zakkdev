@@ -1,9 +1,4 @@
-#__next {
-  height: 100%;
-}
-
-#__next > div {
-  height: 100%;
-  display: flex;
-  flex-direction: column;
+:root {
+  --nextui-fonts-sans: var(--font-gowun-dodum)
+  font-family: var(--nextui-fonts-sans);
 }
