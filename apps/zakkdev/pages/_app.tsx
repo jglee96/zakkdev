@@ -7,12 +7,17 @@ import { AppProps } from 'next/app';
 import { Divider } from '@mui/material';
 import { NextUIProvider, createTheme, Container } from '@nextui-org/react';
 import { ThemeProvider } from 'next-themes';
+import { Gowun_Dodum } from 'next/font/google';
 
 const lightNextTheme = createTheme({
   type: 'light',
 });
 const darkNextTheme = createTheme({
   type: 'dark',
+});
+const font = Gowun_Dodum({
+  weight: '400',
+  subsets: ['latin'],
 });
 
 function CustomApp({ Component, pageProps }: AppProps) {
@@ -21,7 +26,7 @@ function CustomApp({ Component, pageProps }: AppProps) {
       <Head>
         <title>zakklee.dev</title>
       </Head>
-      <main className="app">
+      <main className={`app ${font.className}`}>
         <ThemeProvider
           defaultTheme="system"
           attribute="class"

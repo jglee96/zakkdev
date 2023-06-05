@@ -57,11 +57,6 @@ class MyDocument extends Document {
             name="description"
             content="Zakklee's Blog made with Nx, Next.js, Vercel"
           ></meta>
-          <link
-            rel="stylesheet"
-            as="style"
-            href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.6/dist/web/variable/pretendardvariable-dynamic-subset.css"
-          />
           {/* <!-- Google Tag Manager --> */}
           <Script
             id="GTM"
