@@ -2,16 +2,25 @@ import { Grid } from '@nextui-org/react';
 import { GetStaticProps } from 'next/types';
 import MapCard from '../../components/MapCard/MapCard';
 import { supabase } from '../../lib/supabase';
+import { parseFile } from '../../lib/parseFile';
+import { MapCode } from '@zakkdev/types';
 
 interface Props {
-  map: string[];
+  maps: {
+    fileName: string;
+    frontMatter: MapCode;
+  }[];
 }
 
-export default function Map({ map }: Props) {
+export default function Map({ maps }: Props) {
   return (
     <Grid.Container gap={2} justify="flex-start" direction="column">
-      {map.map((item) => (
-        <MapCard fileName={item} key={item} />
+      {maps.map((item) => (
+        <MapCard
+          fileName={item.fileName}
+          frontMatter={item.frontMatter}
+          key={item.fileName}
+        />
       ))}
     </Grid.Container>
   );
@@ -24,14 +33,22 @@ export const getStaticProps: GetStaticProps<Props> = async () => {
     console.log(error);
     return {
       props: {
-        map: [],
+        maps: [],
       },
     };
   }
+  const promises = data.map(async (file) => {
+    const fileName = file.name.split('.')[0];
+    const { data } = await parseFile(`map/${fileName}`);
+
+    return { fileName, frontMatter: data as MapCode };
+  });
+
+  const list = await Promise.all(promises);
 
   return {
     props: {
-      map: data.map((file) => file.name),
+      maps: list,
     },
   };
 };

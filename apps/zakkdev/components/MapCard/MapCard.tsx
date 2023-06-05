@@ -2,38 +2,20 @@ import { Card, Grid, Text } from '@nextui-org/react';
 import { MapCode } from '@zakkdev/types';
 import { IssueBadge } from '@zakkdev/ui';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
 
 interface Props {
   fileName: string;
+  frontMatter: MapCode;
 }
-const MapCard = ({ fileName }: Props) => {
+const MapCard = ({ fileName, frontMatter }: Props) => {
   const router = useRouter();
-  const file = fileName.split('.')[0];
-  const [frontMatter, setFrontMatter] = useState<MapCode>();
-
-  useEffect(() => {
-    const params = {
-      fileName: `map/${file}`,
-    };
-    const fetchFrontmatter = async () => {
-      const queryString = new URLSearchParams(params).toString();
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_HOST}/api/frontmatter?${queryString}`
-      );
-      const data = await response.json();
-      setFrontMatter(data);
-    };
-
-    fetchFrontmatter();
-  }, [file]);
 
   return (
-    <Grid key={file}>
+    <Grid key={fileName}>
       <Card
         isPressable
         onClick={() => {
-          router.push(`map/${file}`);
+          router.push(`map/${fileName}`);
         }}
       >
         <Card.Header>

@@ -2,36 +2,19 @@ import { Card, Grid, Text } from '@nextui-org/react';
 import { Post } from '@zakkdev/types';
 import dayjs from 'dayjs';
 import { useRouter } from 'next/router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
 interface Props {
   fileName: string;
+  frontMatter: Post;
 }
-const PostCard = ({ fileName }: Props) => {
+const PostCard = ({ fileName, frontMatter }: Props) => {
   const router = useRouter();
   const [hover, setHover] = useState<boolean>(false);
-  const file = fileName.split('.')[0];
-  const [frontMatter, setFrontMatter] = useState<Post>();
-
-  useEffect(() => {
-    const params = {
-      fileName: `posts/${file}`,
-    };
-    const fetchFrontmatter = async () => {
-      const queryString = new URLSearchParams(params).toString();
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_HOST}/api/frontmatter?${queryString}`
-      );
-      const data = await response.json();
-      setFrontMatter(data);
-    };
-
-    fetchFrontmatter();
-  }, [file]);
 
   return (
     <Grid
-      key={file}
+      key={fileName}
       css={{ w: '$7xl', display: 'flex', justifyContent: 'center' }}
     >
       <Card
@@ -41,7 +24,7 @@ const PostCard = ({ fileName }: Props) => {
         borderWeight="bold"
         css={{ w: '80%', h: '300px' }}
         onClick={() => {
-          router.push(`blog/${file}`);
+          router.push(`blog/${fileName}`);
         }}
         onMouseEnter={() => setHover(true)}
         onMouseLeave={() => setHover(false)}
@@ -56,11 +39,11 @@ const PostCard = ({ fileName }: Props) => {
         >
           <Card css={{ w: '100%', h: '90%' }} variant="bordered">
             <Card.Image
-              src={`https://picsum.photos/seed/${file}/250/180`}
+              src={`https://picsum.photos/seed/${fileName}/250/180`}
               objectFit="cover"
               width="100%"
               height="100%"
-              alt={file}
+              alt={fileName}
             />
           </Card>
         </Card.Body>
