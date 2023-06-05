@@ -51,6 +51,5 @@
       }
     }
   },
-  "tags": [],
-  "implicitDependencies": ["articles"]
+  "tags": []
 }
