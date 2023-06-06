@@ -11,13 +11,21 @@ const Nav = () => {
         <Text b>Zakklee</Text>
       </Navbar.Brand>
       <Navbar.Content variant="highlight" activeColor="secondary">
-        <Navbar.Link isActive={router.asPath === '/'} href="/">
+        <Navbar.Link id="home_page" isActive={router.asPath === '/'} href="/">
           Home
         </Navbar.Link>
-        <Navbar.Link isActive={router.asPath.includes('/blog')} href="/blog">
+        <Navbar.Link
+          id="blog_page"
+          isActive={router.asPath.includes('/blog')}
+          href="/blog"
+        >
           Blog
         </Navbar.Link>
-        <Navbar.Link isActive={router.asPath.includes('/map')} href="/map">
+        <Navbar.Link
+          id="map_page"
+          isActive={router.asPath.includes('/map')}
+          href="/map"
+        >
           Map
         </Navbar.Link>
       </Navbar.Content>

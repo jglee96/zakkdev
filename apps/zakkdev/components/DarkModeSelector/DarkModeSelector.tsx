@@ -12,13 +12,16 @@ export function DarkModeSelector() {
   const { setTheme, theme } = useTheme();
 
   useEffect(() => setSelectedKey(new Set([theme ?? 'system'])), [theme]);
-  console.log(selectedKey);
 
   return (
     <Dropdown>
-      <Dropdown.Button color="gradient" icon={<Brightness4Icon />} />
+      <Dropdown.Button
+        color="gradient"
+        icon={<Brightness4Icon />}
+        aria-label="button for hange the color one of scheme system, light, dark"
+      />
       <Dropdown.Menu
-        aria-label="Change color one of scheme system, light, dark"
+        aria-label="menu for hange the color one of scheme system, light, dark"
         css={{ $$dropdownMenuMinWidth: '160px' }}
         // variant="light"
         variant="flat"
