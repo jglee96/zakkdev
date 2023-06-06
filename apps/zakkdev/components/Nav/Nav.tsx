@@ -11,18 +11,18 @@ const Nav = () => {
         <Text b>Zakklee</Text>
       </Navbar.Brand>
       <Navbar.Content variant="highlight" activeColor="secondary">
-        <Navbar.Link id="home" isActive={router.asPath === '/'} href="/">
+        <Navbar.Link id="home_page" isActive={router.asPath === '/'} href="/">
           Home
         </Navbar.Link>
         <Navbar.Link
-          id="blog"
+          id="blog_page"
           isActive={router.asPath.includes('/blog')}
           href="/blog"
         >
           Blog
         </Navbar.Link>
         <Navbar.Link
-          id="map"
+          id="map_page"
           isActive={router.asPath.includes('/map')}
           href="/map"
         >
