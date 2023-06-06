@@ -14,6 +14,8 @@ const MapCard = ({ fileName, frontMatter }: Props) => {
     <Grid key={fileName}>
       <Card
         isPressable
+        isHoverable
+        variant={'flat'}
         onClick={() => {
           router.push(`map/${fileName}`);
         }}

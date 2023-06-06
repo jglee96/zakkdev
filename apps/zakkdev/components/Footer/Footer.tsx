@@ -9,14 +9,14 @@ const Footer = () => {
       <Grid xs></Grid>
       <Grid xs={6}></Grid>
       <Grid xs>
-        <Grid.Container gap={1}>
+        <Grid.Container gap={1} css={{ justifyContent: 'flex-end' }}>
           <Grid>
             <Link target="_blank" href="https://github.com/jglee96">
               <Button
                 aria-label="github link"
                 icon={<GitHubIcon />}
-                ghost
-                css={{ width: 'fit-content', display: 'contents' }}
+                color="gradient"
+                auto
               />
             </Link>
           </Grid>
@@ -27,8 +27,8 @@ const Footer = () => {
                 target="_blank"
                 href="https://jglee96.tistory.com/"
                 icon={<ArticleIcon />}
-                ghost
-                css={{ width: 'fit-content', display: 'contents' }}
+                color="gradient"
+                auto
               />
             </Link>
           </Grid>

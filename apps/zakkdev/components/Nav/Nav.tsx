@@ -1,20 +1,16 @@
 import { useRouter } from 'next/router';
-import { Navbar, Text, Switch, useTheme } from '@nextui-org/react';
-import { useTheme as useNextTheme } from 'next-themes';
-import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
-import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
+import { Navbar, Text } from '@nextui-org/react';
+import DarkModeSelector from '../DarkModeSelector/DarkModeSelector';
 
 const Nav = () => {
   const router = useRouter();
-  const { setTheme } = useNextTheme();
-  const { isDark } = useTheme();
 
   return (
     <Navbar isBordered variant="floating">
       <Navbar.Brand>
         <Text b>Zakklee</Text>
       </Navbar.Brand>
-      <Navbar.Content variant="highlight">
+      <Navbar.Content variant="highlight" activeColor="secondary">
         <Navbar.Link isActive={router.asPath === '/'} href="/">
           Home
         </Navbar.Link>
@@ -25,12 +21,7 @@ const Nav = () => {
           Map
         </Navbar.Link>
       </Navbar.Content>
-      <Switch
-        checked={isDark}
-        iconOn={<DarkModeOutlinedIcon />}
-        iconOff={<LightModeOutlinedIcon />}
-        onChange={(e) => setTheme(e.target.checked ? 'dark' : 'light')}
-      />
+      <DarkModeSelector />
     </Navbar>
   );
 };

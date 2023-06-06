@@ -2,7 +2,6 @@ import { Card, Grid, Text } from '@nextui-org/react';
 import { Post } from '@zakkdev/types';
 import dayjs from 'dayjs';
 import { useRouter } from 'next/router';
-import { useState } from 'react';
 
 interface Props {
   fileName: string;
@@ -10,7 +9,6 @@ interface Props {
 }
 const PostCard = ({ fileName, frontMatter }: Props) => {
   const router = useRouter();
-  const [hover, setHover] = useState<boolean>(false);
 
   return (
     <Grid
@@ -20,14 +18,12 @@ const PostCard = ({ fileName, frontMatter }: Props) => {
       <Card
         isPressable
         isHoverable
-        variant={hover ? 'bordered' : 'flat'}
+        variant={'flat'}
         borderWeight="bold"
         css={{ w: '80%', h: '300px' }}
         onClick={() => {
           router.push(`blog/${fileName}`);
         }}
-        onMouseEnter={() => setHover(true)}
-        onMouseLeave={() => setHover(false)}
       >
         <Card.Body
           css={{
