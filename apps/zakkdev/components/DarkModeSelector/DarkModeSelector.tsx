@@ -12,7 +12,6 @@ export function DarkModeSelector() {
   const { setTheme, theme } = useTheme();
 
   useEffect(() => setSelectedKey(new Set([theme ?? 'system'])), [theme]);
-  console.log(selectedKey);
 
   return (
     <Dropdown>
