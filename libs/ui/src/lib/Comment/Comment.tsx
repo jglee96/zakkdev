@@ -5,15 +5,15 @@ export function Comment() {
   const { isDark } = useTheme();
   return (
     <Giscus
-      repo="jglee96/markdown-blog-posts"
-      repoId="R_kgDOJV79Fg"
+      repo="jglee96/zakkdev"
+      repoId="R_kgDOJd6uuQ"
       category="General"
-      categoryId="DIC_kwDOJV79Fs4CV3dQ"
+      categoryId="DIC_kwDOJd6uuc4CXA8k"
       mapping="pathname"
       strict="0"
       reactionsEnabled="1"
       emitMetadata="0"
-      inputPosition="bottom"
+      inputPosition="top"
       theme={isDark ? 'dark_dimmed' : 'light'}
       lang="ko"
       loading="lazy"
