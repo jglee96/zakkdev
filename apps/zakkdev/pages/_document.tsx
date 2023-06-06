@@ -7,7 +7,6 @@ import Document, {
 } from 'next/document';
 import { CssBaseline } from '@nextui-org/react';
 import { Children } from 'react';
-import Script from 'next/script';
 
 class MyDocument extends Document {
   static async getInitialProps(ctx: DocumentContext) {
@@ -23,7 +22,7 @@ class MyDocument extends Document {
       <Html lang="en">
         <Head>
           {CssBaseline.flush()}
-          <meta property="og:url" content="zakklee.com" />
+          <meta property="og:url" content="zakklee.dev" />
           <meta property="og:type" content="website" />
           <meta property="og:title" content="Zakklee's  Blog" />
           <meta
@@ -57,15 +56,6 @@ class MyDocument extends Document {
             name="description"
             content="Zakklee's Blog made with Nx, Next.js, Vercel"
           ></meta>
-          {/* <!-- Google Tag Manager --> */}
-          <Script
-            id="GTM"
-            strategy="afterInteractive"
-            dangerouslySetInnerHTML={{
-              __html: `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-W8LPMM5');`,
-            }}
-          ></Script>
-          {/* <!-- End Google Tag Manager --> */}
         </Head>
         <body>
           <Main />
