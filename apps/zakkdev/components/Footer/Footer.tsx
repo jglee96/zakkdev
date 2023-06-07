@@ -1,6 +1,7 @@
 import { Button, Grid } from '@nextui-org/react';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import ArticleIcon from '@mui/icons-material/Article';
+import ViewInArIcon from '@mui/icons-material/ViewInAr';
 import Link from 'next/link';
 
 const Footer = () => {
@@ -12,7 +13,7 @@ const Footer = () => {
           <Grid>
             <Link target="_blank" href="https://github.com/jglee96">
               <Button
-                aria-label="github link"
+                aria-label="github"
                 icon={<GitHubIcon />}
                 color="gradient"
                 auto
@@ -26,6 +27,16 @@ const Footer = () => {
                 target="_blank"
                 href="https://jglee96.tistory.com/"
                 icon={<ArticleIcon />}
+                color="gradient"
+                auto
+              />
+            </Link>
+          </Grid>
+          <Grid>
+            <Link target="_blank" href="https://codepen.io/jglee96">
+              <Button
+                aria-label="codepen"
+                icon={<ViewInArIcon />}
                 color="gradient"
                 auto
               />
