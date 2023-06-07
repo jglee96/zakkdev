@@ -6,9 +6,8 @@ import Link from 'next/link';
 const Footer = () => {
   return (
     <Grid.Container css={{ padding: '$xs 0' }}>
-      <Grid xs></Grid>
       <Grid xs={6}></Grid>
-      <Grid xs>
+      <Grid xs={6}>
         <Grid.Container gap={1} css={{ justifyContent: 'flex-end' }}>
           <Grid>
             <Link target="_blank" href="https://github.com/jglee96">
