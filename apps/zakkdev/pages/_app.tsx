@@ -9,6 +9,7 @@ import { NextUIProvider, createTheme, Container } from '@nextui-org/react';
 import { ThemeProvider } from 'next-themes';
 import Script from 'next/script';
 import { code, dodum } from '../lib/fonts';
+import { useRouter } from 'next/router';
 
 const lightNextTheme = createTheme({
   type: 'light',
@@ -18,6 +19,8 @@ const darkNextTheme = createTheme({
 });
 
 function CustomApp({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+
   return (
     <>
       <Head>
@@ -57,14 +60,16 @@ function CustomApp({ Component, pageProps }: AppProps) {
             <Nav />
             <Container
               lg
-              css={{ flex: 1, padding: '0 $2xl', paddingBottom: '$3xl' }}
+              css={{ flex: 1, padding: '0 $xl', paddingBottom: '$3xl' }}
             >
               <Component {...pageProps} />
             </Container>
-            <Container lg>
-              <Divider variant="middle" />
-              <Footer />
-            </Container>
+            {router.route !== '/' && (
+              <Container lg>
+                <Divider variant="middle" />
+                <Footer />
+              </Container>
+            )}
           </NextUIProvider>
         </ThemeProvider>
       </main>

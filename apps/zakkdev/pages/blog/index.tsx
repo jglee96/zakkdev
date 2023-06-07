@@ -14,17 +14,15 @@ interface Props {
 
 export default function Blog({ posts }: Props) {
   return (
-    <Container sm>
-      <Grid.Container gap={2} alignContent="center">
-        {posts.map((post, index) => (
-          <PostCard
-            fileName={post.fileName}
-            frontMatter={post.frontMatter}
-            key={post.fileName}
-          />
-        ))}
-      </Grid.Container>
-    </Container>
+    <Grid.Container gap={2} alignContent="center" justify="center">
+      {posts.map((post, index) => (
+        <PostCard
+          fileName={post.fileName}
+          frontMatter={post.frontMatter}
+          key={post.fileName}
+        />
+      ))}
+    </Grid.Container>
   );
 }
 
