@@ -30,7 +30,7 @@ export function Index({ html }: Props) {
             <Card.Image
               src="/canada.webp"
               width="100%"
-              height="100%"
+              height="498px"
               objectFit="cover"
             />
           </Card.Body>
