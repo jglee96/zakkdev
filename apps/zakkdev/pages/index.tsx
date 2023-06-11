@@ -19,7 +19,7 @@ interface Props {
 export function Index({ html }: Props) {
   return (
     <Grid.Container>
-      <Grid xs={12} sm={6}>
+      <Grid xs={12} sm={6} justify="center">
         <Card css={{ margin: '$10', maxW: '450px' }}>
           <Card.Header css={{ position: 'absolute', zIndex: 1, top: 5 }}>
             <Text h3 color="black">
@@ -87,7 +87,7 @@ export function Index({ html }: Props) {
           </Card.Footer>
         </Card>
       </Grid>
-      <Grid xs={12} sm={6}>
+      <Grid xs={12} sm={6} justify="center">
         <div>
           <Text h2>💫 About Me:</Text>
           <Text>
