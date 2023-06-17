@@ -1,6 +1,8 @@
 import { useRouter } from 'next/router';
-import { Navbar, Text } from '@nextui-org/react';
+import { Button, Navbar, Text } from '@nextui-org/react';
 import DarkModeSelector from '../DarkModeSelector/DarkModeSelector';
+import { supabase } from '../../lib/supabase';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
 const Nav = () => {
   const router = useRouter();
@@ -29,7 +31,18 @@ const Nav = () => {
           Map
         </Navbar.Link>
       </Navbar.Content>
-      <DarkModeSelector />
+      <Button.Group color="secondary">
+        <Button
+          icon={<AdminPanelSettingsIcon />}
+          onClick={async () => {
+            const { data, error } = await supabase.auth.signInWithOAuth({
+              provider: 'github',
+            });
+            console.log(data, error);
+          }}
+        />
+        <DarkModeSelector />
+      </Button.Group>
     </Navbar>
   );
 };
