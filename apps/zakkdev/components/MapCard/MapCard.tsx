@@ -1,38 +1,26 @@
-import { Card, Grid, Text } from '@nextui-org/react';
+import { Card, CardContent, CardFooter, CardHeader } from '@zakkdev/ui';
 import { MapCode } from '@zakkdev/types';
 import { IssueBadge } from '@zakkdev/ui';
-import { useRouter } from 'next/router';
 
 interface Props {
   fileName: string;
   frontMatter: MapCode;
 }
 const MapCard = ({ fileName, frontMatter }: Props) => {
-  const router = useRouter();
-
   return (
-    <Grid key={fileName}>
-      <Card
-        isPressable
-        isHoverable
-        variant={'flat'}
-        onClick={() => {
-          router.push(`map/${fileName}`);
-        }}
-      >
-        <Card.Header>
-          <Text b>{frontMatter?.title}</Text>
-        </Card.Header>
-        <Card.Divider />
-        <Card.Body>
-          <Text>{frontMatter?.excerpt}</Text>
-        </Card.Body>
-        <Card.Divider />
-        <Card.Footer>
+    <div key={fileName}>
+      <Card>
+        <CardHeader>
+          <title>{frontMatter?.title}</title>
+        </CardHeader>
+        <CardContent>
+          <p>{frontMatter?.excerpt}</p>
+        </CardContent>
+        <CardFooter>
           <IssueBadge status={frontMatter?.status} />
-        </Card.Footer>
+        </CardFooter>
       </Card>
-    </Grid>
+    </div>
   );
 };
 
