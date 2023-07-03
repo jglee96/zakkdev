@@ -8,14 +8,16 @@ import {
   navigationMenuTriggerStyle,
   Button,
 } from '@zakkdev/ui';
+import { LockClosedIcon } from '@radix-ui/react-icons';
 import DarkModeSelector from '../DarkModeSelector/DarkModeSelector';
 import { supabase } from '../../lib/supabase';
 import Link from 'next/link';
 
 const Nav = () => {
   return (
-    <NavigationMenu>
-      <NavigationMenuList>
+    <NavigationMenu className="max-w-none align-middle justify-between">
+      <div>Zakklee</div>
+      <NavigationMenuList className="center">
         <NavigationMenuItem>
           <Link id="home_page" href="/">
             <NavigationMenuLink className={navigationMenuTriggerStyle()}>
@@ -38,15 +40,21 @@ const Nav = () => {
           </Link>
         </NavigationMenuItem>
       </NavigationMenuList>
-      <Button
-        onClick={async () => {
-          const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'github',
-          });
-          console.log(data, error);
-        }}
-      />
-      <DarkModeSelector />
+      <div>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={async () => {
+            const { data, error } = await supabase.auth.signInWithOAuth({
+              provider: 'github',
+            });
+            console.log(data, error);
+          }}
+        >
+          <LockClosedIcon />
+        </Button>
+        <DarkModeSelector />
+      </div>
     </NavigationMenu>
   );
 };

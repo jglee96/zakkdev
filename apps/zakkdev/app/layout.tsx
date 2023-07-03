@@ -1,7 +1,7 @@
 import { Metadata } from 'next';
 import Script from 'next/script';
 import Nav from '../components/Nav/Nav';
-import '../styles/globals.css';
+import 'globals.css';
 
 export const metadata: Metadata = {
   title: 'zakklee.dev',
