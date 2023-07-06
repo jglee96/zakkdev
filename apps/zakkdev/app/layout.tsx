@@ -1,6 +1,7 @@
 import { Metadata } from 'next';
 import Script from 'next/script';
 import Nav from '../components/Nav/Nav';
+import { Inter } from 'next/font/google';
 import 'globals.css';
 
 export const metadata: Metadata = {
@@ -33,6 +34,11 @@ export const metadata: Metadata = {
   manifest: '/site.webmanifest',
 };
 
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap',
+});
+
 export default function RootLayout({
   // Layouts must accept a children prop.
   // This will be populated with nested layouts or pages
@@ -41,7 +47,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.className}>
       <body>
         {/* <!-- Google Tag Manager --> */}
         <Script

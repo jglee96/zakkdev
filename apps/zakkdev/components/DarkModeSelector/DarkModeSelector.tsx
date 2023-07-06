@@ -17,7 +17,7 @@ export function DarkModeSelector() {
     <DropdownMenu>
       <DropdownMenuTrigger>
         <Button
-          variant="secondary"
+          variant="ghost"
           size="icon"
           aria-label="button for hange the color one of scheme system, light, dark"
         >
