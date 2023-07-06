@@ -15,8 +15,8 @@ import Link from 'next/link';
 
 const Nav = () => {
   return (
-    <NavigationMenu className="sticky top-2 max-w-none h-16 align-middle justify-between bg-slate-50 shadow-lg mx-4 my-2 rounded-sm p-2">
-      <div>Zakklee</div>
+    <NavigationMenu className="sticky top-2 max-w-none h-16 align-middle justify-between bg-white shadow-lg mx-4 my-2 rounded-xl p-2">
+      <div className="font-bold">Zakklee</div>
       <NavigationMenuList className="center">
         <NavigationMenuItem>
           <Link id="home_page" href="/">
