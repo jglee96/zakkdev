@@ -1,5 +1,3 @@
-'use client';
-
 import PostCard from '../../components/PostCard/PostCard';
 import { supabase } from '../../lib/supabase';
 import { parseFile } from '../../lib/parseFile';
@@ -29,7 +27,7 @@ export default async function Blog() {
   const posts = await getPosts();
 
   return (
-    <div>
+    <div className="flex flex-wrap justify-center gap-x-24 gap-y-10">
       {posts.map((post, index) => (
         <PostCard
           fileName={post.fileName}
