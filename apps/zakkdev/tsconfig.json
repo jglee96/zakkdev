@@ -24,7 +24,8 @@
     "**/*.jsx",
     "next-env.d.ts",
     "env.d.ts",
-    "../../apps/zakkdev/.next/types/**/*.ts"
+    "../../apps/zakkdev/.next/types/**/*.ts",
+    "../../apps/zakkdev/postcss.config.js/.next/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

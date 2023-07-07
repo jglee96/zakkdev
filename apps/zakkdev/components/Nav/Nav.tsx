@@ -15,7 +15,7 @@ import Link from 'next/link';
 
 const Nav = () => {
   return (
-    <NavigationMenu className="sticky top-2 max-w-none h-16 align-middle justify-between bg-white shadow-lg mx-4 my-2 rounded-xl p-2">
+    <NavigationMenu className="sticky top-2 max-w-none h-16 align-middle justify-between bg-white shadow-lg mx-4 mt-2 mb-6 rounded-xl p-2">
       <div className="font-bold">Zakklee</div>
       <NavigationMenuList className="center">
         <NavigationMenuItem>

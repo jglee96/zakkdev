@@ -9,8 +9,8 @@
       "outputs": ["{options.outputPath}"],
       "defaultConfiguration": "production",
       "options": {
-        "root": "apps/zakkdev",
-        "outputPath": "dist/apps/zakkdev"
+        "outputPath": "dist/apps/zakkdev",
+        "postcssConfig": "apps/zakkdev/postcss.config.js"
       },
       "configurations": {
         "development": {

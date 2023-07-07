@@ -9,39 +9,46 @@ import {
   CardTitle,
   Button,
 } from '@zakkdev/ui';
+import { GitHubLogoIcon, CubeIcon, RocketIcon } from '@radix-ui/react-icons';
 import Image from 'next/image';
 import Link from 'next/link';
 
 export function Index() {
   return (
-    <>
-      <div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Zakklee</CardTitle>
-            <CardDescription>jglee96</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Image
-              width={500}
-              height={400}
-              src="/canada.webp"
-              alt="profile image"
-            />
-          </CardContent>
-          <CardFooter>
-            <Button>
-              <Link href="https://github.com/jglee96" />
-            </Button>
-            <Button>
-              <Link href="https://jglee96.tistory.com/" />
-            </Button>
-            <Button>
-              <Link href="https://codepen.io/jglee96" />
-            </Button>
-          </CardFooter>
-        </Card>
-      </div>
+    <div className="flex flex-wrap justify-center gap-6 align-middle">
+      <Card className="w-full max-w-xl">
+        <CardHeader>
+          <CardTitle>Zakklee</CardTitle>
+          <CardDescription>jglee96</CardDescription>
+        </CardHeader>
+        <CardContent className="flex justify-center">
+          <Image
+            width={500}
+            height={400}
+            className="rounded-xl"
+            src="/canada.webp"
+            alt="profile image"
+          />
+        </CardContent>
+        <CardFooter className="float-right">
+          <Button variant="ghost" size="icon">
+            <Link href="https://github.com/jglee96">
+              <GitHubLogoIcon />
+            </Link>
+          </Button>
+          <Button variant="ghost" size="icon">
+            <Link href="https://jglee96.tistory.com/">
+              <RocketIcon />
+            </Link>
+          </Button>
+          <Button variant="ghost" size="icon">
+            <Link href="https://codepen.io/jglee96">
+              <CubeIcon />
+            </Link>
+          </Button>
+        </CardFooter>
+      </Card>
+
       <div>
         <div>
           <h2>💫 About Me:</h2>
@@ -66,7 +73,7 @@ export function Index() {
           />
         </div>
       </div>
-    </>
+    </div>
   );
 }
 

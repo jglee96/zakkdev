@@ -3,8 +3,8 @@
   "style": "new-york",
   "rsc": true,
   "tailwind": {
-    "config": "tailwind.config.js",
-    "css": "globals.css",
+    "config": "apps/zakkdev/tailwind.config.js",
+    "css": "apps/zakkdev/styles/styles.css",
     "baseColor": "slate",
     "cssVariables": true
   }
