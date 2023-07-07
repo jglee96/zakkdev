@@ -9,7 +9,7 @@ interface Props {
 const MapCard = ({ fileName, frontMatter }: Props) => {
   return (
     <div key={fileName}>
-      <Card>
+      <Card className="w-96 h-44">
         <CardHeader>
           <title>{frontMatter?.title}</title>
         </CardHeader>

@@ -1,5 +1,3 @@
-'use client';
-
 import MapCard from '../../components/MapCard/MapCard';
 import { supabase } from '../../lib/supabase';
 import { parseFile } from '../../lib/parseFile';
@@ -28,7 +26,7 @@ export default async function Map() {
   const maps = await getMaps();
 
   return (
-    <div>
+    <div className="flex flex-wrap justify-center gap-x-24 gap-y-10">
       {maps.map((item) => (
         <MapCard
           fileName={item.fileName}
