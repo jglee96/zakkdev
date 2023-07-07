@@ -66,7 +66,7 @@ export default function RootLayout({
         ></noscript>
         {/* <!-- End Google Tag Manager (noscript) --> */}
         <Nav />
-        <section className="mx-4">{children}</section>
+        <section className="mx-4 pb-8">{children}</section>
       </body>
     </html>
   );
