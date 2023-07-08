@@ -1,6 +1,7 @@
 import { markdownToHtml } from '@zakkdev/markdown';
 import { Comment } from '@zakkdev/ui';
 import { parseFile } from '@/lib/parseFile';
+import '@/styles/themes/prism-laserwave.css';
 
 interface Params {
   id: string;
