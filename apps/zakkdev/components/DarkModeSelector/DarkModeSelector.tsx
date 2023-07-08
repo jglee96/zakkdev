@@ -22,7 +22,9 @@ export function DarkModeSelector() {
           aria-label="button for hange the color one of scheme system, light, dark"
           asChild
         >
-          <Half2Icon />
+          <div>
+            <Half2Icon className="h-4 w-4" />
+          </div>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent aria-label="menu for hange the color one of scheme system, light, dark">
