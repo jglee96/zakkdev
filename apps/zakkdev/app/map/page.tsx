@@ -1,6 +1,6 @@
-import MapCard from '../../components/MapCard/MapCard';
-import { supabase } from '../../lib/supabase';
-import { parseFile } from '../../lib/parseFile';
+import MapCard from '@/components/MapCard/MapCard';
+import { supabase } from '@/lib/supabase';
+import { parseFile } from '@/lib/parseFile';
 import { MapCode } from '@zakkdev/types';
 
 async function getMaps() {

@@ -1,6 +1,6 @@
-import PostCard from '../../components/PostCard/PostCard';
-import { supabase } from '../../lib/supabase';
-import { parseFile } from '../../lib/parseFile';
+import PostCard from '@/components/PostCard/PostCard';
+import { supabase } from '@/lib/supabase';
+import { parseFile } from '@/lib/parseFile';
 import { Post } from '@zakkdev/types';
 
 async function getPosts() {

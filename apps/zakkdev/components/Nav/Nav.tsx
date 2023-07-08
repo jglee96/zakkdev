@@ -7,7 +7,7 @@ import {
   NavigationMenuList,
   navigationMenuTriggerStyle,
 } from '@zakkdev/ui';
-import DarkModeSelector from '../DarkModeSelector/DarkModeSelector';
+import DarkModeSelector from '@/components/DarkModeSelector/DarkModeSelector';
 import Link from 'next/link';
 
 const Nav = () => {

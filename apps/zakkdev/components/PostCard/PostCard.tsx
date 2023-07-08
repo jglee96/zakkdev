@@ -1,4 +1,4 @@
-import { Card, CardContent, CardFooter, CardHeader } from '@zakkdev/ui';
+import { Card, CardContent, CardFooter } from '@zakkdev/ui';
 import Image from 'next/image';
 import { Post } from '@zakkdev/types';
 import dayjs from 'dayjs';

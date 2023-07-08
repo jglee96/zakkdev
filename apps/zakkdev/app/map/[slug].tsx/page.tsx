@@ -7,7 +7,7 @@ import { markdownToHtml } from '@zakkdev/markdown';
 import { Comment } from '@zakkdev/ui';
 import { transpile } from 'typescript';
 import Script from 'next/script';
-import { parseFile } from '../../../lib/parseFile';
+import { parseFile } from '@/lib/parseFile';
 
 interface Params {
   slug: string;

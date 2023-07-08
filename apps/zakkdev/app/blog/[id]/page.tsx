@@ -1,6 +1,6 @@
 import { markdownToHtml } from '@zakkdev/markdown';
 import { Comment } from '@zakkdev/ui';
-import { parseFile } from '../../../lib/parseFile';
+import { parseFile } from '@/lib/parseFile';
 
 interface Params {
   id: string;
