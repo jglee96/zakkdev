@@ -9,7 +9,7 @@ interface Props {
 const MapCard = ({ fileName, frontMatter }: Props) => {
   return (
     <div key={fileName}>
-      <Card className="w-96 h-44">
+      <Card className="w-96 h-44 transform transition duration-150 hover:cursor-pointer hover:scale-105 hover:-translate-x-1 hover:-translate-y-1">
         <CardHeader>
           <title>{frontMatter?.title}</title>
         </CardHeader>
