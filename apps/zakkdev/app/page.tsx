@@ -29,17 +29,17 @@ export function Index() {
           />
         </CardContent>
         <CardFooter className="float-right">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" asChild>
             <Link href="https://github.com/jglee96">
               <GitHubLogoIcon />
             </Link>
           </Button>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" asChild>
             <Link href="https://jglee96.tistory.com/">
               <RocketIcon />
             </Link>
           </Button>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" asChild>
             <Link href="https://codepen.io/jglee96">
               <CubeIcon />
             </Link>

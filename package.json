@@ -24,7 +24,6 @@
     "rehype-stringify": "^9.0.3",
     "remark-parse": "^10.0.2",
     "remark-rehype": "^10.1.0",
-    "swr": "^2.1.5",
     "tailwind-merge": "^1.13.2",
     "tailwindcss-animate": "^1.0.6",
     "tslib": "^2.3.0",

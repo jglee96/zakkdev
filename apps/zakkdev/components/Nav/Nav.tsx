@@ -6,11 +6,8 @@ import {
   NavigationMenuLink,
   NavigationMenuList,
   navigationMenuTriggerStyle,
-  Button,
 } from '@zakkdev/ui';
-import { LockClosedIcon } from '@radix-ui/react-icons';
 import DarkModeSelector from '../DarkModeSelector/DarkModeSelector';
-import { supabase } from '../../lib/supabase';
 import Link from 'next/link';
 
 const Nav = () => {
@@ -19,21 +16,21 @@ const Nav = () => {
       <div className="font-bold">Zakklee</div>
       <NavigationMenuList className="center">
         <NavigationMenuItem>
-          <Link id="home_page" href="/">
+          <Link id="home_page" href="/" legacyBehavior passHref>
             <NavigationMenuLink className={navigationMenuTriggerStyle()}>
               Home
             </NavigationMenuLink>
           </Link>
         </NavigationMenuItem>
         <NavigationMenuItem>
-          <Link id="blog_page" href="/blog">
+          <Link id="blog_page" href="/blog" legacyBehavior passHref>
             <NavigationMenuLink className={navigationMenuTriggerStyle()}>
               Blog
             </NavigationMenuLink>
           </Link>
         </NavigationMenuItem>
         <NavigationMenuItem>
-          <Link id="map_page" href="/map">
+          <Link id="map_page" href="/map" legacyBehavior passHref>
             <NavigationMenuLink className={navigationMenuTriggerStyle()}>
               Map
             </NavigationMenuLink>
@@ -41,18 +38,6 @@ const Nav = () => {
         </NavigationMenuItem>
       </NavigationMenuList>
       <div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={async () => {
-            const { data, error } = await supabase.auth.signInWithOAuth({
-              provider: 'github',
-            });
-            console.log(data, error);
-          }}
-        >
-          <LockClosedIcon />
-        </Button>
         <DarkModeSelector />
       </div>
     </NavigationMenu>
