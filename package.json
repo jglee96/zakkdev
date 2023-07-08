@@ -35,9 +35,11 @@
     "@nx/jest": "16.5.0",
     "@nx/js": "16.5.0",
     "@nx/linter": "16.5.0",
+    "@nx/next": "16.5.0",
     "@nx/react": "16.5.0",
     "@nx/vite": "16.5.0",
     "@nx/workspace": "16.5.0",
+    "@tailwindcss/typography": "^0.5.9",
     "@testing-library/react": "14.0.0",
     "@types/jest": "^29.4.0",
     "@types/node": "18.14.2",
@@ -74,7 +76,6 @@
     "vite-plugin-dts": "2.3.0",
     "vite-plugin-eslint": "^1.8.1",
     "vite-tsconfig-paths": "^4.0.2",
-    "vitest": "0.32.4",
-    "@nx/next": "16.5.0"
+    "vitest": "0.32.4"
   }
 }

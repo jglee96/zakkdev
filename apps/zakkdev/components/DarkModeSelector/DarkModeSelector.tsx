@@ -11,8 +11,11 @@ import {
   DesktopIcon,
   Half2Icon,
 } from '@radix-ui/react-icons';
+import { useTheme } from 'next-themes';
 
 export function DarkModeSelector() {
+  const { setTheme } = useTheme();
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger>
@@ -28,15 +31,27 @@ export function DarkModeSelector() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent aria-label="menu for hange the color one of scheme system, light, dark">
-        <DropdownMenuItem key="system" className="gap-2">
+        <DropdownMenuItem
+          key="system"
+          className="gap-2"
+          onClick={() => setTheme('system')}
+        >
           <DesktopIcon />
           System
         </DropdownMenuItem>
-        <DropdownMenuItem key="light" className="gap-2">
+        <DropdownMenuItem
+          key="light"
+          className="gap-2"
+          onClick={() => setTheme('light')}
+        >
           <SunIcon />
           Light
         </DropdownMenuItem>
-        <DropdownMenuItem key="dark" className="gap-2">
+        <DropdownMenuItem
+          key="dark"
+          className="gap-2"
+          onClick={() => setTheme('dark')}
+        >
           <MoonIcon />
           Dark
         </DropdownMenuItem>

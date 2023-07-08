@@ -15,9 +15,9 @@ const PostCard = ({ fileName, frontMatter }: Props) => {
       className="w-64 h-72 transform transition duration-150 hover:cursor-pointer hover:scale-105 hover:-translate-x-1 hover:-translate-y-1"
     >
       <Link href={`blog/${fileName}`}>
-        <CardContent>
+        <CardContent className="pt-6">
           <Image
-            className="rounded mt-6"
+            className="rounded"
             width={250}
             height={180}
             src={`https://picsum.photos/seed/${fileName}/250/180`}

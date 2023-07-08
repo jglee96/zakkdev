@@ -3,6 +3,8 @@ import Script from 'next/script';
 import Nav from '@/components/Nav/Nav';
 import { Inter } from 'next/font/google';
 import '@/styles/styles.css';
+import { ThemeProvider } from '@/components/ThemeProvider';
+import { useTheme } from 'next-themes';
 
 export const metadata: Metadata = {
   title: 'zakklee.dev',
@@ -65,8 +67,12 @@ export default function RootLayout({
           }}
         ></noscript>
         {/* <!-- End Google Tag Manager (noscript) --> */}
-        <Nav />
-        <section className="mx-4 mt-28 pb-8">{children}</section>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          <div className="prose dark:prose-invert prose-p:m-0 prose-a:no-underline prose-img:m-0 max-w-none">
+            <Nav />
+            <section className="mx-4 mt-28 pb-8">{children}</section>
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );
