@@ -16,7 +16,7 @@ export function Index() {
     <div className="flex flex-wrap justify-center gap-6 align-middle">
       <Card className="w-full max-w-xl">
         <CardHeader>
-          <CardTitle>Zakklee</CardTitle>
+          <CardTitle className="m-0">Zakklee</CardTitle>
           <CardDescription>jglee96</CardDescription>
         </CardHeader>
         <CardContent className="flex justify-center">
