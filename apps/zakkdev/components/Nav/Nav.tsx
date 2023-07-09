@@ -12,7 +12,7 @@ import Link from 'next/link';
 
 const Nav = () => {
   return (
-    <div className="fixed w-full top-2 px-4 pt-2 pb-6 z-10">
+    <div className="sticky w-full top-2 px-4 pt-2 pb-10 z-10">
       <NavigationMenu className="max-w-none w-full h-16 align-middle justify-between shadow-lg shadow-secondary rounded-xl p-2 bg-background">
         <div className="font-bold">Zakklee</div>
         <NavigationMenuList className="center">
