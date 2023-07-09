@@ -68,7 +68,7 @@ export default function RootLayout({
         ></noscript>
         {/* <!-- End Google Tag Manager (noscript) --> */}
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <div className="prose dark:prose-invert prose-p:m-0 prose-a:no-underline prose-img:m-0 max-w-none">
+          <div className="prose dark:prose-invert prose-headings:m-0 prose-p:m-0 prose-a:no-underline prose-img:m-0 max-w-none">
             <Nav />
             <section className="mx-4 mt-28 pb-8">{children}</section>
           </div>
