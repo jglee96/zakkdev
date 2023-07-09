@@ -1,8 +1,10 @@
 'use client';
 
 import Giscus from '@giscus/react';
+import { useTheme } from 'next-themes';
 
 export function Comment() {
+  const { resolvedTheme } = useTheme();
   return (
     <Giscus
       repo="jglee96/zakkdev"
@@ -14,7 +16,7 @@ export function Comment() {
       reactionsEnabled="1"
       emitMetadata="0"
       inputPosition="top"
-      theme={'light'}
+      theme={resolvedTheme === 'dark' ? 'dark_dimmed' : 'light'}
       lang="ko"
       loading="lazy"
     />

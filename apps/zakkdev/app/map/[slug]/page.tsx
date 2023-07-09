@@ -1,4 +1,5 @@
 import {
+  Button,
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
@@ -40,25 +41,16 @@ export default async function MapIssue({ params }: { params?: Params }) {
   return (
     <>
       <MapScript code={code} />
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
+      <div className="flex flex-col items-center">
         <div
           id="map"
-          style={{
-            width: '100%',
-            height: '500px',
-            margin: '10px',
-            border: '2px solid',
-          }}
+          className="w-full h-96 m-2 border-solid border-2 border-border"
         />
-        <Collapsible>
-          <CollapsibleTrigger>Code</CollapsibleTrigger>
-          <CollapsibleContent>
+        <Collapsible className="w-full">
+          <CollapsibleTrigger asChild>
+            <Button>Code</Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent className="data-[state=open]:animate-collaps-down data-[state=closed]:animate-collaps-up">
             <div dangerouslySetInnerHTML={{ __html: block }} />
           </CollapsibleContent>
         </Collapsible>

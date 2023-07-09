@@ -4,7 +4,6 @@ import Nav from '@/components/Nav/Nav';
 import { Inter } from 'next/font/google';
 import '@/styles/styles.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
-import { useTheme } from 'next-themes';
 
 export const metadata: Metadata = {
   title: 'zakklee.dev',
