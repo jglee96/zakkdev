@@ -1,6 +1,7 @@
 import { Card, CardContent, CardFooter, CardHeader } from '@zakkdev/ui';
 import { MapCode } from '@zakkdev/types';
 import { IssueBadge } from '@zakkdev/ui';
+import Link from 'next/link';
 
 interface Props {
   fileName: string;
@@ -8,8 +9,11 @@ interface Props {
 }
 const MapCard = ({ fileName, frontMatter }: Props) => {
   return (
-    <div key={fileName}>
-      <Card className="w-96 h-44 transform transition duration-150 hover:cursor-pointer hover:scale-105 hover:-translate-x-1 hover:-translate-y-1">
+    <Card
+      key={fileName}
+      className="w-96 h-44 transform transition duration-150 hover:cursor-pointer hover:scale-105 hover:-translate-x-1 hover:-translate-y-1"
+    >
+      <Link href={`map/${fileName}`}>
         <CardHeader>
           <title>{frontMatter?.title}</title>
         </CardHeader>
@@ -19,8 +23,8 @@ const MapCard = ({ fileName, frontMatter }: Props) => {
         <CardFooter>
           <IssueBadge status={frontMatter?.status} />
         </CardFooter>
-      </Card>
-    </div>
+      </Link>
+    </Card>
   );
 };
 

@@ -6,8 +6,9 @@ import {
 import { markdownToHtml } from '@zakkdev/markdown';
 import { Comment } from '@zakkdev/ui';
 import { transpile } from 'typescript';
-import Script from 'next/script';
 import { parseFile } from '@/lib/parseFile';
+import MapScript from '@/components/MapScript';
+import '@/styles/themes/prism-laserwave.css';
 
 interface Params {
   slug: string;
@@ -35,13 +36,10 @@ async function getMap(params?: Params) {
 
 export default async function MapIssue({ params }: { params?: Params }) {
   const { code, block } = await getMap(params);
+
   return (
     <>
-      <Script
-        type="text/javascript"
-        src={`https://openapi.map.naver.com/openapi/v3/maps.js?ncpClientId=${process.env.NEXT_PUBLIC_NAVER_MAP_CLIENT_ID}&submodules=drawing`}
-        onReady={() => new Function(code)()}
-      />
+      <MapScript code={code} />
       <div
         style={{
           display: 'flex',
