@@ -14,7 +14,6 @@ interface Props {
   frontMatter: MapCode;
 }
 const MapCard = ({ fileName, frontMatter }: Props) => {
-  console.log(frontMatter);
   return (
     <Card
       key={fileName}

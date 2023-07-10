@@ -11,7 +11,7 @@ import { GitHubLogoIcon, CubeIcon, RocketIcon } from '@radix-ui/react-icons';
 import Image from 'next/image';
 import Link from 'next/link';
 
-export function Index() {
+export default function Page() {
   return (
     <div className="flex flex-wrap justify-center gap-6 align-middle">
       <Card className="w-full max-w-xl">
@@ -71,5 +71,3 @@ export function Index() {
     </div>
   );
 }
-
-export default Index;
