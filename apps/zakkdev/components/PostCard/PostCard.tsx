@@ -1,64 +1,37 @@
-import { Card, Grid, Text } from '@nextui-org/react';
+import { Card, CardContent, CardFooter } from '@zakkdev/ui';
+import Image from 'next/image';
 import { Post } from '@zakkdev/types';
 import dayjs from 'dayjs';
-import { useRouter } from 'next/router';
+import Link from 'next/link';
 
 interface Props {
   fileName: string;
   frontMatter: Post;
 }
 const PostCard = ({ fileName, frontMatter }: Props) => {
-  const router = useRouter();
-
   return (
-    <Grid
+    <Card
       key={fileName}
-      css={{ w: '$7xl', display: 'flex', justifyContent: 'center' }}
+      className="w-64 h-72 transform transition duration-150 hover:cursor-pointer hover:scale-105 hover:-translate-x-1 hover:-translate-y-1"
     >
-      <Card
-        isPressable
-        isHoverable
-        variant={'flat'}
-        borderWeight="bold"
-        css={{ w: '80%', h: '300px' }}
-        onClick={() => {
-          router.push(`blog/${fileName}`);
-        }}
-      >
-        <Card.Body
-          css={{
-            p: '$lg',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-          }}
-        >
-          <Card css={{ w: '100%', h: '90%' }} variant="bordered">
-            <Card.Image
-              src={`https://picsum.photos/seed/${fileName}/250/180`}
-              objectFit="cover"
-              width="100%"
-              height="100%"
-              alt={fileName}
-            />
-          </Card>
-        </Card.Body>
-        <Card.Footer
-          css={{
-            p: 20,
-            flexDirection: 'column',
-            alignItems: 'flex-start',
-          }}
-        >
-          <Text b size="$md">
-            {frontMatter?.title}
-          </Text>
-          <Text size="$sm">
+      <Link href={`blog/${fileName}`}>
+        <CardContent className="pt-6">
+          <Image
+            className="rounded"
+            width={250}
+            height={180}
+            src={`https://picsum.photos/seed/${fileName}/250/180`}
+            alt={fileName}
+          />
+        </CardContent>
+        <CardFooter className="flex flex-col items-start">
+          <p className="text-base font-bold">{frontMatter?.title}</p>
+          <p className="text-sm">
             {dayjs(frontMatter?.date).format('YYYY.MM.DD')}
-          </Text>
-        </Card.Footer>
-      </Card>
-    </Grid>
+          </p>
+        </CardFooter>
+      </Link>
+    </Card>
   );
 };
 

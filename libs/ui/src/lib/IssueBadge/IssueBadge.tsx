@@ -1,5 +1,5 @@
 import { IssueType } from '@zakkdev/types';
-import { Badge } from '@nextui-org/react';
+import { Badge } from '../shadcn/Badge';
 
 interface Props {
   status?: IssueType;

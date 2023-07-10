@@ -12,6 +12,23 @@ const nextConfig = {
     // See: https://github.com/gregberge/svgr
     svgr: false,
   },
+  images: {
+    dangerouslyAllowSVG: true,
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'github-readme-stats.vercel.app',
+        port: '',
+        pathname: '/api/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'picsum.photos',
+        port: '',
+        pathname: '/seed/**',
+      },
+    ],
+  },
 };
 
 const plugins = [

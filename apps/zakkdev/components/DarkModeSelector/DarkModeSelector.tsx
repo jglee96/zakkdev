@@ -1,47 +1,62 @@
-import { Dropdown } from '@nextui-org/react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  Button,
+} from '@zakkdev/ui';
+import {
+  SunIcon,
+  MoonIcon,
+  DesktopIcon,
+  Half2Icon,
+} from '@radix-ui/react-icons';
 import { useTheme } from 'next-themes';
-import LightModeOutlinedIcon from '@mui/icons-material/LightModeOutlined';
-import DarkModeOutlinedIcon from '@mui/icons-material/DarkModeOutlined';
-import Brightness4Icon from '@mui/icons-material/Brightness4';
-import { useEffect, useState } from 'react';
 
 export function DarkModeSelector() {
-  const [selectedKey, setSelectedKey] = useState<Set<string>>(
-    new Set(['system'])
-  );
-  const { setTheme, theme } = useTheme();
-
-  useEffect(() => setSelectedKey(new Set([theme ?? 'system'])), [theme]);
+  const { setTheme } = useTheme();
 
   return (
-    <Dropdown>
-      <Dropdown.Button
-        color="gradient"
-        icon={<Brightness4Icon />}
-        aria-label="button for hange the color one of scheme system, light, dark"
-      />
-      <Dropdown.Menu
-        aria-label="menu for hange the color one of scheme system, light, dark"
-        css={{ $$dropdownMenuMinWidth: '160px' }}
-        // variant="light"
-        variant="flat"
-        color="secondary"
-        disallowEmptySelection
-        selectionMode="single"
-        selectedKeys={selectedKey}
-        onSelectionChange={(keys) => setTheme(Array.from(keys)[0].toString())}
-      >
-        <Dropdown.Item key="system" icon={<Brightness4Icon />}>
+    <DropdownMenu>
+      <DropdownMenuTrigger>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="button for hange the color one of scheme system, light, dark"
+          asChild
+        >
+          <div>
+            <Half2Icon className="h-4 w-4" />
+          </div>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent aria-label="menu for hange the color one of scheme system, light, dark">
+        <DropdownMenuItem
+          key="system"
+          className="gap-2"
+          onClick={() => setTheme('system')}
+        >
+          <DesktopIcon />
           System
-        </Dropdown.Item>
-        <Dropdown.Item key="light" icon={<LightModeOutlinedIcon />}>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          key="light"
+          className="gap-2"
+          onClick={() => setTheme('light')}
+        >
+          <SunIcon />
           Light
-        </Dropdown.Item>
-        <Dropdown.Item key="dark" icon={<DarkModeOutlinedIcon />}>
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          key="dark"
+          className="gap-2"
+          onClick={() => setTheme('dark')}
+        >
+          <MoonIcon />
           Dark
-        </Dropdown.Item>
-      </Dropdown.Menu>
-    </Dropdown>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }
 
