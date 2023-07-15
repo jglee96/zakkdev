@@ -1,9 +1,11 @@
 import PostCard from '@/components/PostCard/PostCard';
-import { supabase } from '@/lib/supabase';
 import { parseFile } from '@/lib/parseFile';
 import { Post } from '@zakkdev/types';
+import { cookies } from 'next/headers';
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 
 async function getPosts() {
+  const supabase = createServerComponentClient({ cookies });
   const { data, error } = await supabase.storage.from('articles').list('posts');
 
   if (error != null) {

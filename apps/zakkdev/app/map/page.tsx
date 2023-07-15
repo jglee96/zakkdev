@@ -1,9 +1,11 @@
 import MapCard from '@/components/MapCard/MapCard';
-import { supabase } from '@/lib/supabase';
 import { parseFile } from '@/lib/parseFile';
 import { MapCode } from '@zakkdev/types';
+import { cookies } from 'next/headers';
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 
 async function getMaps() {
+  const supabase = createServerComponentClient({ cookies });
   const { data, error } = await supabase.storage.from('articles').list('map');
 
   if (error != null) {
