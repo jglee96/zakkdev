@@ -18,15 +18,9 @@ export default function Login() {
     router.refresh();
   };
 
-  const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    router.refresh();
-  };
-
   return (
     <>
       <Button onClick={handleSignIn}>Sign in</Button>
-      <Button onClick={handleSignOut}>Sign out</Button>
     </>
   );
 }
