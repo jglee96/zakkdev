@@ -3,17 +3,28 @@
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@zakkdev/ui';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import BlogUpload from './components/BlogUpload';
 
 export default function Manage() {
   const router = useRouter();
   const supabase = createClientComponentClient();
+  const [authCheck, setAuthCheck] = useState<boolean>(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data, error }) => {
-      if (data.session == null) router.push('/');
+      if (data.session == null) {
+        setAuthCheck(false);
+        router.push('/');
+      } else {
+        setAuthCheck(true);
+      }
     });
   });
+
+  if (authCheck === false) {
+    return <>Auth Check...</>;
+  }
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -27,24 +38,10 @@ export default function Manage() {
           <CardTitle>계정</CardTitle>
         </CardHeader>
         <CardContent>
-          <Button onClick={handleSignOut}>Sign out</Button>
+          <Button onClick={handleSignOut}>로그아웃</Button>
         </CardContent>
       </Card>
-      <Card className="w-96">
-        <CardHeader>
-          <CardTitle>BLOG 게시물 업로드</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form>
-            <div className="flex flex-row">
-              <input className="block" type="file" />
-              <Button className="flex break-keep" type="submit">
-                업로드
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
+      <BlogUpload />
     </div>
   );
 }
