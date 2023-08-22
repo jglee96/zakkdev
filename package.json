@@ -28,7 +28,8 @@
     "tailwind-merge": "^1.13.2",
     "tailwindcss-animate": "^1.0.6",
     "tslib": "^2.3.0",
-    "unified": "^10.1.2"
+    "unified": "^10.1.2",
+    "zustand": "^4.4.1"
   },
   "devDependencies": {
     "@nx/cypress": "16.5.0",

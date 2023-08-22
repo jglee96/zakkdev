@@ -4,7 +4,7 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useRouter } from 'next/navigation';
 import { Button, Card, CardContent, CardHeader, CardTitle } from '@zakkdev/ui';
 import { useEffect, useState } from 'react';
-import BlogUpload from './components/BlogUpload';
+import BlogUpload from '../../components/manage/BlogUpload';
 
 export default function Manage() {
   const router = useRouter();
