@@ -1,23 +1,30 @@
 import MapCard from '@/components/MapCard/MapCard';
-import { parseFile } from '@/lib/parseFile';
 import { MapCode } from '@zakkdev/types';
 import { cookies } from 'next/headers';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 
 async function getMaps() {
   const supabase = createServerComponentClient({ cookies });
-  const { data, error } = await supabase.storage.from('articles').list('map');
+  const { data, error } = await supabase
+    .from('map')
+    .select('*')
+    .order('id')
+    .range(0, 9);
 
   if (error != null) {
     console.log(error);
     return [];
   }
-  const promises = data.map(async (file) => {
-    const fileName = file.name.split('.')[0];
-    const { data } = await parseFile(`map/${fileName}`);
-
-    return { fileName, frontMatter: data as MapCode };
-  });
+  const promises = data.map(
+    async (item): Promise<{ file: string; frontmatter: MapCode }> => ({
+      file: item.file,
+      frontmatter: {
+        title: item.title,
+        excerpt: item.description,
+        status: item.status,
+      },
+    })
+  );
 
   const list = await Promise.all(promises);
 
@@ -31,9 +38,9 @@ export default async function Map() {
     <div className="flex flex-wrap justify-center gap-x-24 gap-y-10">
       {maps.map((item) => (
         <MapCard
-          fileName={item.fileName}
-          frontMatter={item.frontMatter}
-          key={item.fileName}
+          fileName={item.file}
+          frontMatter={item.frontmatter}
+          key={item.file}
         />
       ))}
     </div>

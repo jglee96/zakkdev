@@ -23,7 +23,7 @@ const PostCard = ({ fileName, frontMatter }: Props) => {
         <CardHeader>
           <CardTitle>{frontMatter.title}</CardTitle>
         </CardHeader>
-        <CardContent className="h-20 text-sm text-slate-500">
+        <CardContent className="h-20 text-ellipsis text-sm text-slate-500">
           {frontMatter.excerpt}
         </CardContent>
         <CardFooter className="flex flex-col items-start">
