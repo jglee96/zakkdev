@@ -11,8 +11,7 @@ import { parseFile } from '@/lib/parseFile';
 import MapScript from '@/components/MapScript';
 import '@/styles/themes/prism-laserwave.css';
 import { Metadata, ResolvingMetadata } from 'next';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createClient } from '@supabase/supabase-js';
 
 type Props = {
   params: { id: string };
@@ -25,7 +24,10 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const id = params.id;
 
-  const supabase = createServerComponentClient({ cookies });
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
 
   const { data, error } = await supabase.from('map').select().eq('id', id);
 
