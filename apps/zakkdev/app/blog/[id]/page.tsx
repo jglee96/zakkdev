@@ -21,7 +21,7 @@ export async function generateMetadata(
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
 
-  const { data, error } = await supabase.from('blog').select().eq('id', id);
+  const { data, error } = await supabase.from('blog').select().eq('file', id);
 
   if (error != null) {
     console.log(error);
