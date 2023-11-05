@@ -14,7 +14,7 @@ import { Metadata, ResolvingMetadata } from 'next';
 import { createClient } from '@supabase/supabase-js';
 
 type Props = {
-  params: { id: string };
+  params: { slug: string };
   searchParams: { [key: string]: string | string[] | undefined };
 };
 
@@ -22,14 +22,14 @@ export async function generateMetadata(
   { params, searchParams }: Props,
   parent: ResolvingMetadata
 ): Promise<Metadata> {
-  const id = params.id;
+  const slug = params.slug;
 
   const supabase = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   );
 
-  const { data, error } = await supabase.from('map').select().eq('id', id);
+  const { data, error } = await supabase.from('map').select().eq('file', slug);
 
   if (error != null) {
     console.log(error);
