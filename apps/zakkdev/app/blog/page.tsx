@@ -9,7 +9,7 @@ async function getPosts() {
   const { data, error } = await supabase
     .from('blog')
     .select('*')
-    .order('id')
+    .order('created_at', { ascending: false })
     .range(0, 9);
 
   if (error != null) {
