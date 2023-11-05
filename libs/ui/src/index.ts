@@ -8,3 +8,4 @@ export * from './lib/shadcn/NavigationMenu';
 export * from './lib/shadcn/DropdownMenu';
 export * from './lib/shadcn/Badge';
 export * from './lib/shadcn/Collapsible';
+export * from './lib/shadcn/Input';

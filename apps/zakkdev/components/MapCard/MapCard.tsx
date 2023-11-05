@@ -23,7 +23,7 @@ const MapCard = ({ fileName, frontMatter }: Props) => {
         <CardHeader>
           <CardTitle className="m-0">{frontMatter?.title}</CardTitle>
         </CardHeader>
-        <CardContent className="text-ellipsis h-20">
+        <CardContent className="h-20 text-ellipsis text-sm text-slate-500">
           {frontMatter?.excerpt}
         </CardContent>
         <CardFooter>
