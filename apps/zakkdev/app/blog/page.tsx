@@ -1,24 +1,32 @@
 import PostCard from '@/components/PostCard/PostCard';
-import { parseFile } from '@/lib/parseFile';
 import { Post } from '@zakkdev/types';
 import { cookies } from 'next/headers';
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 
 async function getPosts() {
   const supabase = createServerComponentClient({ cookies });
-  const { data, error } = await supabase.storage.from('articles').list('posts');
+
+  const { data, error } = await supabase
+    .from('blog')
+    .select('*')
+    .order('id')
+    .range(0, 9);
 
   if (error != null) {
     console.log(error);
     return [];
   }
 
-  const promises = data.map(async (file) => {
-    const fileName = file.name.split('.')[0];
-    const { data } = await parseFile(`posts/${fileName}`);
-
-    return { fileName, frontMatter: data as Post };
-  });
+  const promises = data.map(
+    async (item): Promise<{ file: string; frontmatter: Post }> => ({
+      file: item.file,
+      frontmatter: {
+        title: item.title,
+        excerpt: item.description,
+        date: item.created_at,
+      },
+    })
+  );
 
   const list = await Promise.all(promises);
 
@@ -32,9 +40,9 @@ export default async function Blog() {
     <div className="flex flex-wrap justify-center gap-x-24 gap-y-10">
       {posts.map((post, index) => (
         <PostCard
-          fileName={post.fileName}
-          frontMatter={post.frontMatter}
-          key={post.fileName}
+          fileName={post.file}
+          frontMatter={post.frontmatter}
+          key={post.file}
         />
       ))}
     </div>

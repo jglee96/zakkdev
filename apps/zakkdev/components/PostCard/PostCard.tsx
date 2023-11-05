@@ -1,5 +1,6 @@
 import {
   Card,
+  CardContent,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -16,13 +17,15 @@ const PostCard = ({ fileName, frontMatter }: Props) => {
   return (
     <Card
       key={fileName}
-      className="w-72 transform transition duration-150 hover:cursor-pointer hover:scale-105 hover:-translate-x-1 hover:-translate-y-1"
+      className="w-96 transform transition duration-150 hover:cursor-pointer hover:scale-105 hover:-translate-x-1 hover:-translate-y-1"
     >
       <Link href={`blog/${fileName}`}>
         <CardHeader>
           <CardTitle>{frontMatter.title}</CardTitle>
         </CardHeader>
-        {/* <CardContent className="h-20">{frontMatter.excerpt}</CardContent> */}
+        <CardContent className="h-20 text-sm text-slate-500">
+          {frontMatter.excerpt}
+        </CardContent>
         <CardFooter className="flex flex-col items-start">
           <p className="text-sm">
             {dayjs(frontMatter?.date).format('YYYY.MM.DD')}

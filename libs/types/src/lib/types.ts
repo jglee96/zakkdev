@@ -2,7 +2,6 @@ export interface Post {
   title: string;
   excerpt?: string;
   date: string;
-  author?: { name: string };
 }
 
 export interface MapCode {
