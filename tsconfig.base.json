@@ -16,10 +16,10 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "@/*": ["apps/zakkdev/*"],
       "@zakkdev/markdown": ["libs/markdown/src/index.ts"],
       "@zakkdev/types": ["libs/types/src/index.ts"],
-      "@zakkdev/ui": ["libs/ui/src/index.ts"],
-      "@/*": ["apps/zakkdev/*"]
+      "@zakkdev/ui": ["libs/ui/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
