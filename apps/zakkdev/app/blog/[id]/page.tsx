@@ -3,8 +3,7 @@ import { Comment } from '@zakkdev/ui';
 import { parseFile } from '@/lib/parseFile';
 import '@/styles/themes/prism-laserwave.css';
 import { Metadata, ResolvingMetadata } from 'next';
-import { cookies } from 'next/headers';
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@supabase/supabase-js';
 
 type Props = {
   params: { id: string };
@@ -17,7 +16,10 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const id = params.id;
 
-  const supabase = createServerComponentClient({ cookies });
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  );
 
   const { data, error } = await supabase.from('blog').select().eq('id', id);
 

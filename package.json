@@ -33,6 +33,7 @@
   },
   "devDependencies": {
     "@nx/cypress": "17.0.3",
+    "@nx/eslint": "17.0.3",
     "@nx/eslint-plugin": "17.0.3",
     "@nx/jest": "17.0.3",
     "@nx/js": "17.0.3",
@@ -54,6 +55,7 @@
     "autoprefixer": "^10.4.13",
     "babel-jest": "^29.4.1",
     "cypress": "^13.0.0",
+    "encoding": "^0.1.13",
     "eslint": "8.46.0",
     "eslint-config-next": "^13.4.7",
     "eslint-config-prettier": "9.0.0",
@@ -76,7 +78,6 @@
     "vite-plugin-dts": "2.3.0",
     "vite-plugin-eslint": "^1.8.1",
     "vite-tsconfig-paths": "^4.0.2",
-    "vitest": "0.32.4",
-    "@nx/eslint": "17.0.3"
+    "vitest": "0.32.4"
   }
 }
