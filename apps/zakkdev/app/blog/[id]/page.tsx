@@ -1,9 +1,9 @@
-import { markdownToHtml } from '@zakkdev/markdown';
 import { Comment } from '@zakkdev/ui';
 import { parseFile } from '@/lib/parseFile';
 import '@/styles/themes/prism-laserwave.css';
 import { Metadata, ResolvingMetadata } from 'next';
 import { createClient } from '@supabase/supabase-js';
+import { compileMDX } from 'next-mdx-remote/rsc';
 
 type Props = {
   params: { id: string };
@@ -50,16 +50,16 @@ async function getPost(params?: Params) {
   }
   const { content } = await parseFile(`posts/${id}`);
 
-  const post = await markdownToHtml(content);
-
-  return post;
+  return content;
 }
 
 export default async function Blog({ params }: { params?: Params }) {
   const post = await getPost(params);
+  const { content } = await compileMDX({ source: post });
+
   return (
     <>
-      <div dangerouslySetInnerHTML={{ __html: post }} />
+      {content}
       <Comment />
     </>
   );
