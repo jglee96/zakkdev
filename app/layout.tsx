@@ -10,9 +10,9 @@ import {
   MantineColorsTuple,
   MantineProvider,
 } from "@mantine/core";
+import { Header } from "@/components/header";
 
 import "@mantine/core/styles.css";
-import { Header } from "@/components/header";
 
 const inter = Inter({ subsets: ["latin"] });
 

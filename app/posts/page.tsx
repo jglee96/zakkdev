@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
-import { Text, Title } from "@mantine/core";
+import { Box, Text } from "@mantine/core";
 import dayjs from "dayjs";
+import Link from "next/link";
 
 interface Post {
   title: string;
@@ -43,12 +44,16 @@ export default async function Posts() {
 
   return (
     <>
-      {posts.map(({ frontmatter: { title, excerpt, date } }) => (
-        <>
-          <Title>{title}</Title>
-          <Text>{excerpt}</Text>
-          <Text>{dayjs(date).format("YYYY-MM-DD")}</Text>
-        </>
+      {posts.map(({ file, frontmatter: { title, excerpt, date } }) => (
+        <Box key={title} maw={840} my="md">
+          <Text component={Link} href={`/posts/${file}`} fw={700} fz="xl">
+            {title}
+          </Text>
+          <Text c="dimmed">{excerpt}</Text>
+          <Text c="dimmed" fz="xs">
+            {dayjs(date).format("YYYY-MM-DD")}
+          </Text>
+        </Box>
       ))}
     </>
   );
