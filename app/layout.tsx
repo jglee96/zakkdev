@@ -70,10 +70,12 @@ export default function RootLayout({
         {/* <!-- End Google Tag Manager (noscript) --> */}
         <MantineProvider theme={theme}>
           <AppShell header={{ height: 84 }} padding="md">
-            <AppShellHeader>
+            <AppShellHeader mx={{ sm: 80, md: 160, xl: 340 }} px={16}>
               <Header />
             </AppShellHeader>
-            <AppShellMain>{children}</AppShellMain>
+            <AppShellMain mx={{ sm: 80, md: 160, xl: 340 }}>
+              {children}
+            </AppShellMain>
           </AppShell>
         </MantineProvider>
       </body>

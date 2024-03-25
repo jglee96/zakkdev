@@ -2,6 +2,7 @@
 
 import {
   ActionIcon,
+  Button,
   Flex,
   Group,
   Text,
@@ -22,14 +23,21 @@ export function Header() {
 
   return (
     <Flex justify="space-between" align="center" h="100%">
-      <ActionIcon component={Link} href="/" variant="transparent">
-        <IconBlob />
-      </ActionIcon>
+      <Button
+        component={Link}
+        href="/"
+        leftSection={<IconBlob />}
+        variant="transparent"
+      >
+        <Text fw={600} c="text">
+          zakklee
+        </Text>
+      </Button>
       <Group justify="space-between">
-        <Text component={Link} href="/posts">
+        <Text component={Link} href="/posts" fw={600}>
           Posts
         </Text>
-        <Text component={Link} href="/about">
+        <Text component={Link} href="/about" fw={600}>
           About
         </Text>
         <ActionIcon
