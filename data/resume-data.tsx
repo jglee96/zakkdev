@@ -2,8 +2,9 @@ import { IconBrandCodepen, IconBrandGithub } from "@tabler/icons-react";
 
 export const RESUME_DATA = {
   name: "이종건",
+  summary:
+    "🔭 I’m currently working on TENELEVEN\n🌱 I’m currently learning Three.js, AWS\n🏆 I’m currently working with TypeScript, React\n🏆 I’m interesed in WTF (When To Fetch)",
   about: "about",
-  summary: "summery",
   avatarUrl: "https://avatars.githubusercontent.com/u/1017620?v=4",
   contact: {
     email: "zakklee96@gmail.com",

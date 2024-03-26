@@ -1,18 +1,24 @@
 import { RESUME_DATA } from "@/data/resume-data";
 import { Title, Text, Flex, Anchor, Stack, Badge } from "@mantine/core";
+import classes from "./page.module.css";
 
 export default function About() {
   return (
     <>
       <Title>{RESUME_DATA.name}</Title>
-      <Text>{RESUME_DATA.summary}</Text>
+      <Text className={classes.summary}>{RESUME_DATA.summary}</Text>
       <Title>About</Title>
       <Text>{RESUME_DATA.about}</Text>
       <Title>Work Experience</Title>
       {RESUME_DATA.work.map((item) => (
         <Stack key={item.company} gap={2} my="xl">
           <Flex justify="space-between">
-            <Anchor fz="lg" fw={700} href={item.link} c="text">
+            <Anchor
+              fz="lg"
+              fw={700}
+              href={item.link}
+              c="var(--mantine-color-text)"
+            >
               {item.company}
             </Anchor>
             <Text>{`${item.start} - ${item.end}`}</Text>
