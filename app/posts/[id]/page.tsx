@@ -5,6 +5,8 @@ import { Metadata, ResolvingMetadata } from "next";
 import { compileMDX } from "next-mdx-remote/rsc";
 
 import "@/themes/prism-laserwave.css";
+import "@/themes/markdown.css";
+import remarkGfm from "remark-gfm";
 
 type Props = {
   params: { id: string };
@@ -55,7 +57,10 @@ export default async function Page({ params }: { params?: Params }) {
   const post = await getPost(params);
   const { content } = await compileMDX({
     source: post,
-    options: { parseFrontmatter: true },
+    options: {
+      parseFrontmatter: true,
+      mdxOptions: { remarkPlugins: [remarkGfm] },
+    },
   });
 
   return (
