@@ -1,0 +1,29 @@
+blockquote {
+  border-left: 10px solid var(--mantine-primary-color-filled);
+  margin-left: 0px;
+  margin-right: 0px;
+  padding-left: 20px;
+  padding-right: 20px;
+
+  font-weight: 700;
+}
+
+table,
+th,
+tr,
+td {
+  margin: auto;
+  border: 1px solid var(--mantine-primary-color-filled);
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 8px 16px;
+}
+
+a {
+  text-decoration: none;
+  font-weight: 700;
+  color: var(--mantine-color-blue-outline);
+}
