@@ -1,7 +1,7 @@
 import { IconBrandCodepen, IconBrandGithub } from "@tabler/icons-react";
 
 export const RESUME_DATA = {
-  name: "이종건",
+  name: "zakklee",
   summary:
     "🔭 I’m currently working on TENELEVEN\n🌱 I’m currently learning Three.js, AWS\n🏆 I’m currently working with TypeScript, React\n🏆 I’m interesed in WTF (When To Fetch)",
   about: "about",
@@ -41,7 +41,7 @@ export const RESUME_DATA = {
       link: "https://www.1011.co.kr",
       title: "Software Engineer",
       start: "2022",
-      end: "~",
+      end: "current",
       description: "Frontend - React",
     },
     {

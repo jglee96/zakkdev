@@ -48,7 +48,7 @@ export default async function Home() {
     <>
       <Title>{RESUME_DATA.name}</Title>
       <Text className={classes.summary}>{RESUME_DATA.summary}</Text>
-      <Space h={80} />
+      <Space h="xl" />
       <Title>Lastest Posts</Title>
       {posts.map(({ file, frontmatter: { title, excerpt, date } }) => (
         <Box key={title} maw={840} my="md">
