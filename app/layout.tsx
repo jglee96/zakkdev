@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import Script from "next/script";
 import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import {
   AppShell,
   AppShellHeader,
@@ -54,6 +54,7 @@ export default function RootLayout({
       </head>
       <body>
         <Analytics />
+        <SpeedInsights />
         <MantineProvider theme={theme}>
           <AppShell header={{ height: 84 }} padding="md">
             <AppShellHeader mx={{ sm: 80, md: 160, xl: 340 }} px={16}>
