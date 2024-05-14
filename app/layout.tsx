@@ -60,7 +60,7 @@ export default function RootLayout({
             <AppShellHeader mx={{ sm: 80, md: 160, xl: 340 }} px={16}>
               <Header />
             </AppShellHeader>
-            <AppShellMain mx={{ sm: 80, md: 160, xl: 340 }}>
+            <AppShellMain mx={{ sm: 80, md: 160, xl: 340 }} h="100dvh">
               {children}
             </AppShellMain>
           </AppShell>

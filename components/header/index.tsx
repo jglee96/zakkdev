@@ -34,6 +34,9 @@ export function Header() {
         </Text>
       </Button>
       <Group justify="space-between">
+        <Text component={Link} href="/projects" fw={600}>
+          Projects
+        </Text>
         <Text component={Link} href="/posts" fw={600}>
           Posts
         </Text>
