@@ -1,7 +1,7 @@
 import { Box, Space, Text, Title } from "@mantine/core";
 import classes from "./page.module.css";
 import { RESUME_DATA } from "@/data/resume-data";
-import { createClient } from "@/utils/supabase/server";
+import { getDocPageMetas } from "@/utils/affine/reader";
 import Link from "next/link";
 import dayjs from "dayjs";
 
@@ -12,33 +12,9 @@ interface Post {
 }
 
 async function getLatestPosts() {
-  const supabase = createClient();
+  const metas = await getDocPageMetas();
 
-  const { data, error } = await supabase
-    .from("blog")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .range(0, 2);
-
-  if (error != null) {
-    console.log(error);
-    return [];
-  }
-
-  const promises = data.map(
-    async (item): Promise<{ file: string; frontmatter: Post }> => ({
-      file: item.file,
-      frontmatter: {
-        title: item.title,
-        excerpt: item.description,
-        date: item.created_at,
-      },
-    })
-  );
-
-  const list = await Promise.all(promises);
-
-  return list;
+  return metas?.slice(0, 5);
 }
 
 export default async function Home() {
@@ -50,14 +26,14 @@ export default async function Home() {
       <Text className={classes.summary}>{RESUME_DATA.summary}</Text>
       <Space h="xl" />
       <Title>Lastest Posts</Title>
-      {posts.map(({ file, frontmatter: { title, excerpt, date } }) => (
+      {posts?.map(({ title, id, created, excerpt }) => (
         <Box key={title} maw={840} my="md">
-          <Text component={Link} href={`/posts/${file}`} fw={700} fz="xl">
+          <Text component={Link} href={`/posts/${id}`} fw={700} fz="xl">
             {title}
           </Text>
           <Text c="dimmed">{excerpt}</Text>
           <Text c="dimmed" fz="xs">
-            {dayjs(date).format("YYYY-MM-DD")}
+            {dayjs(created).format("YYYY-MM-DD")}
           </Text>
         </Box>
       ))}
