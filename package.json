@@ -20,6 +20,7 @@
     "@tabler/icons-react": "^3.1.0",
     "@vercel/analytics": "^1.2.2",
     "@vercel/speed-insights": "^1.0.10",
+    "affine-reader": "^2.4.2",
     "clsx": "^2.1.0",
     "dayjs": "^1.11.10",
     "meshline": "^3.3.0",
