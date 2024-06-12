@@ -15,6 +15,9 @@ export async function getDocPageMetas() {
 
   return metas
     ?.filter((p) => !p.trash)
+    .filter(
+      (p) => p.properties?.custom.find((c) => c.name === "show")?.value === true
+    )
     .map((p): WorkspacePage & { created?: string; excerpt?: string } => ({
       ...p,
       created:
