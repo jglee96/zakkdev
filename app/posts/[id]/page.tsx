@@ -19,7 +19,7 @@ export default async function Page({ params }: { params: { id: string } }) {
   });
   return (
     <>
-      {/* <Title>{affine.title}</Title> */}
+      <Title>{doc.title.toString()}</Title>
       <article>{content}</article>
       <Comment />
     </>

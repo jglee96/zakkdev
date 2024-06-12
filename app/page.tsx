@@ -14,7 +14,7 @@ interface Post {
 async function getLatestPosts() {
   const metas = await getDocPageMetas();
 
-  return metas?.slice(0, 5);
+  return metas?.slice(0, 3);
 }
 
 export default async function Home() {
