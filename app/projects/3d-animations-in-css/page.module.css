@@ -1,0 +1,132 @@
+@keyframes full-body-rotation {
+  from {
+    transform: rotateY(0deg) rotateX(0deg);
+  }
+
+  to {
+    transform: rotateY(-35deg) rotateX(25deg);
+  }
+}
+
+@keyframes separation-back {
+  from {
+    transform: translateZ(0px);
+  }
+  to {
+    transform: translateZ(-75px);
+  }
+}
+
+@keyframes separation-body {
+  from {
+    transform: translateZ(0px) translate(-50%, -50%);
+  }
+
+  to {
+    transform: translateZ(60px) translate(-50%, -50%);
+  }
+}
+
+@keyframes full-spin {
+  from {
+    transform: rotateY(-35deg) rotateX(25deg);
+  }
+
+  to {
+    transform: rotateY(360deg) rotateY(-35deg) rotateX(25deg);
+  }
+}
+
+.container {
+  width: 50%;
+  display: flex;
+  justify-content: center;
+  place-items: center;
+  transform-style: preserve-3d;
+}
+
+.diagram {
+  animation: full-body-rotation 1.5s ease-in-out forwards,
+    full-spin 20s linear infinite;
+  animation-delay: 0.5s, 4s;
+  perspective: 2000px;
+}
+
+.side {
+  position: absolute;
+  box-sizing: content-box;
+  width: 380px;
+  height: 380px;
+}
+
+.front {
+  background: rgba(30, 30, 30, 0.8);
+  border: 1px dashed rgba(175, 175, 175, 0.8);
+  padding: 1.5rem;
+  display: flex;
+  justify-content: space-between;
+  flex-direction: column;
+  transform-style: inherit;
+}
+
+.back {
+  border: 2px solid rgb(175, 175, 175);
+  padding: 1.5rem;
+  animation: separation-back 1s ease-in-out forwards;
+  animation-delay: 2.5s;
+}
+
+.header {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  transform-style: inherit;
+}
+
+.shape {
+  transform-style: inherit;
+}
+
+.body {
+  background-color: rgba(175, 175, 175, 0.8);
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  position: absolute;
+}
+
+.border {
+  border: 2px dashed rgba(75, 75, 75, 0.7);
+}
+
+.rectangle_md {
+  height: 70px;
+  width: 280px;
+}
+
+.rectangle_md.body {
+  animation: separation-body 0.2s ease-in-out forwards;
+  animation-delay: 3.25s;
+}
+
+.square {
+  height: 70px;
+  width: 70px;
+}
+
+.square.body {
+  animation: separation-body 0.2s ease-in-out forwards;
+  animation-delay: 3.4s;
+}
+
+.rectangle_lg {
+  height: 250px;
+  width: 100%;
+}
+
+.rectangle_lg.body {
+  margin-left: 2px;
+  animation: separation-body 0.2s ease-in-out forwards;
+  animation-delay: 3.6s;
+}
