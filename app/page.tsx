@@ -1,6 +1,5 @@
 import { Box, Space, Text, Title } from "@mantine/core";
 import classes from "./page.module.css";
-import { RESUME_DATA } from "@/data/resume-data";
 import { getDocPageMetas } from "@/utils/affine/reader";
 import Link from "next/link";
 import dayjs from "dayjs";
