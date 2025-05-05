@@ -2,6 +2,23 @@ import { Anchor } from "@mantine/core";
 
 export const PROJECT_DATA = [
   {
+    title: "3D animations in CSS",
+    summary: (
+      <>
+        Clone coding of{" "}
+        <Anchor
+          c="blue"
+          href="https://youtu.be/-vUHJ6invPM?si=iBr1__ci58bEmu6Y"
+          target="_blank"
+        >
+          Wait...you can create #D animations in CSS?
+        </Anchor>
+      </>
+    ),
+    writeDate: "2024-07-08",
+    editDate: "2024-11-19",
+  },
+  {
     title: "Snapping polygon with naver maps API",
     summary: (
       <>

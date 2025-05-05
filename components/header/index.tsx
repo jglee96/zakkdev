@@ -2,6 +2,7 @@
 
 import {
   ActionIcon,
+  Anchor,
   Button,
   Flex,
   Group,
@@ -40,9 +41,15 @@ export function Header() {
         <Text component={Link} href="/posts" fw={600}>
           Posts
         </Text>
-        <Text component={Link} href="/about" fw={600}>
+        <Anchor
+          href="https://www.linkedin.com/in/zakklee"
+          target="_blank"
+          underline="never"
+          c="inherit"
+          fw={600}
+        >
           About
-        </Text>
+        </Anchor>
         <ActionIcon
           onClick={() =>
             setColorScheme(computedColorScheme === "light" ? "dark" : "light")
