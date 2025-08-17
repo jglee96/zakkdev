@@ -7,7 +7,8 @@ import { getDocMarkdown } from "@/utils/affine/reader";
 import "@/themes/prism-laserwave.css";
 import "@/themes/markdown.css";
 
-export default async function Page({ params }: { params: { id: string } }) {
+export default async function Page(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const doc = await getDocMarkdown(params.id);
 
   if (doc === null) return <></>;
