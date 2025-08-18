@@ -2,6 +2,12 @@ import { Anchor } from "@mantine/core";
 
 export const PROJECT_DATA = [
   {
+    title: "Lorem Micsum",
+    summary: "Generate dummy audio, video files for testing with ffmpeg.wasm",
+    writeDate: "2025-08-18",
+    editDate: "2025-08-18",
+  },
+  {
     title: "3D animations in CSS",
     summary: (
       <>
