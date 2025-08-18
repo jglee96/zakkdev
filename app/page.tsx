@@ -4,10 +4,20 @@ import { getDocPageMetas } from "@/utils/affine/reader";
 import Link from "next/link";
 import dayjs from "dayjs";
 
-async function getLatestPosts() {
-  const metas = await getDocPageMetas();
+export const dynamic = "force-dynamic";
 
-  return metas?.slice(0, 3);
+async function getLatestPosts() {
+  try {
+    const metas = await getDocPageMetas();
+    if (!metas) {
+      return [];
+    }
+
+    return metas.slice(0, 3);
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
 }
 
 export default async function Home() {
@@ -29,14 +39,13 @@ export default async function Home() {
       </Text>
       <Space h="xl" />
       <Title>Lastest Posts</Title>
-      {posts?.map(({ title, id, created, excerpt }) => (
+      {posts?.map(({ title, id, createDate }) => (
         <Box key={title} maw={840} my="md">
           <Text component={Link} href={`/posts/${id}`} fw={700} fz="xl">
             {title}
           </Text>
-          <Text c="dimmed">{excerpt}</Text>
           <Text c="dimmed" fz="xs">
-            {dayjs(created).format("YYYY-MM-DD")}
+            {dayjs(createDate).format("YYYY-MM-DD")}
           </Text>
         </Box>
       ))}

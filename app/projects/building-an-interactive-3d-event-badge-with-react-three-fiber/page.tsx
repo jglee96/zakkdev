@@ -7,7 +7,7 @@ import {
   extend,
   useThree,
   useFrame,
-  Object3DNode,
+  type ThreeElement,
 } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
 import {
@@ -26,8 +26,8 @@ extend({ MeshLineGeometry, MeshLineMaterial });
 // Add types to ThreeElements elements so primitives pick up on it
 declare module "@react-three/fiber" {
   interface ThreeElements {
-    meshLineGeometry: Object3DNode<MeshLineGeometry, typeof MeshLineGeometry>;
-    meshLineMaterial: Object3DNode<MeshLineMaterial, typeof MeshLineMaterial>;
+    meshLineGeometry: ThreeElement<typeof MeshLineGeometry>;
+    meshLineMaterial: ThreeElement<typeof MeshLineMaterial>;
   }
 }
 
@@ -198,10 +198,8 @@ function Band() {
       <mesh ref={band}>
         <meshLineGeometry />
         <meshLineMaterial
-          color="white"
+          args={[{ color: "white", resolution, lineWidth: 1 }]}
           depthTest={false}
-          resolution={resolution}
-          lineWidth={1}
         />
       </mesh>
     </>

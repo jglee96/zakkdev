@@ -10,27 +10,34 @@ export function getAffineReader() {
 }
 
 export async function getDocPageMetas() {
-  const reader = getAffineReader();
-  const metas = await reader.getDocPageMetas();
+  try {
+    const reader = getAffineReader();
+    const metas = await reader.getDocPageMetas();
 
-  return metas
-    ?.filter((p) => !p.trash)
-    .filter(
-      (p) => p.properties?.custom.find((c) => c.name === "show")?.value === true
-    )
-    .map((p): WorkspacePage & { created?: string; excerpt?: string } => ({
-      ...p,
-      created:
-        p.properties?.custom.find((c) => c.name === "created")?.value ??
-        p.createDate,
-      excerpt: p.properties?.custom.find((c) => c.name === "excerpt")?.value,
-    }))
-    ?.sort((a, b) => dayjs(b.created).valueOf() - dayjs(a.created).valueOf());
+    if (!metas) {
+      return [];
+    }
+
+    const filteredMetas = metas
+      .filter((p) => !p.trash)
+      .filter((p) => !p.properties?.tags.includes("hidden"))
+      .sort((a, b) => b.createDate - a.createDate);
+
+    return filteredMetas;
+  } catch (error) {
+    console.error("Failed to get doc page metas:", error);
+    return [];
+  }
 }
 
 export async function getDocMarkdown(id: string) {
-  const reader = getAffineReader();
-  const doc = await reader.getDocMarkdown(id);
+  try {
+    const reader = getAffineReader();
+    const doc = await reader.getDocMarkdown(id);
 
-  return doc;
+    return doc;
+  } catch (error) {
+    console.error("Failed to get doc markdown:", error);
+    return null;
+  }
 }
