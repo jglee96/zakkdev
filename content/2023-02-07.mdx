@@ -1,0 +1,36 @@
+# 현재 state와 동일한 값으로 업데이트해도 리렌더링되는 경우
+
+React 함수형 컴포넌트에서 setState를 사용하면서 다음과 같은 생각을 합니다.
+
+> 현재 state와 다른 겂으로 업데이트할 때만 컴포넌트가 리렌더링되는구나
+
+React 공식 문서에서도 똑같이 말하고 있습니다. [Hooks API Reference](https://ko.legacy.reactjs.org/docs/hooks-reference.html#functional-updates)
+
+> 업데이트 함수가 현재 상태와 정확히 동일한 값을 반환한다면 바로 뒤에 일어날 리렌더링은 완전히 건너뛰게 됩니다.
+
+그런데 개발을 하다보면 반은 맞고 반은 틀리다는 것을 알게 됩니다.
+
+빠르게 [예제](https://codesandbox.io/embed/setstate-x-x-will-re-render-w1wbtx?fontsize=14\&hidenavigation=1\&theme=dark)를 통해 알아보겠습니다.
+
+위의 codesandbox를 보면 두개의 버튼이 있습니다. 버튼은 클릭시 다음과 같은 동작을 합니다.
+
+| 버튼               | 클릭 동작                                                       |
+| ---------------- | ----------------------------------------------------------- |
+| No Change        | 현재 state를 그대로 업데이트 ( setState(value => value) )             |
+| count is (state) | 현재 state를 1 증가 시켜 업데이트합니다. ( setState(value => value + 1) ) |
+
+console 창을 열고 count is 버튼을 클릭하면 re-render, useEffect re-render가 log로 보입니다. 다음으로 No Change 버튼을 클릭해보겠습니다. 예상대로라면 현재 state와 정확히 동일한 값으로 업데이트하기 때문에 리렌더링이 일어나지 않고, log가 보이지 않아야 합니다. 그러나 console을 보면 re-render가 보입니다.
+
+어떻게 된 일 일까요? 답은 똑같이 공식 문서에서 찾을 수 있습니다. [Hooks API Reference](https://ko.legacy.reactjs.org/docs/hooks-reference.html#bailing-out-of-a-state-update)
+
+> 실행을 회피하기 전에 React에서 특정 컴포넌트를 다시 렌더링하는 것이 여전히 필요할 수도 있다는 것에 주의하세요. React가 불필요하게 트리에 그 이상으로 더 깊게는 관여하지 않을 것이므로 크게 신경 쓰지 않으셔도 됩니다만, 렌더링시에 고비용의 계산을 하고 있자면 useMemo를 사용하여 그것들을 최적화할 수 있습니다.
+
+실행을 회피(bail out)하기 전에 React에서 다시 렌더링한 것으로 보입니다. 관련 내용에 대해 React issue로 등록된 답변을 보면 다음과 같습니다. [Bug: setState(x=>x) will re render component · Issue #20817 · facebook/react](https://github.com/facebook/react/issues/20817#issuecomment-1293655302)
+
+setState를 하게되면 React는 항상 기본적으로 state 업데이트를 queue에 올려놓습니다. 그리고 렌더링할 때 state가 동일한 값이라면 렌더링을 취소(bail out)합니다.
+
+위 예제에서 console에 찍힌 log를 다시 봅시다. "re-render"와 "useEffect re-render"가 있습니다. re-render는 useEffect 외부에서 생성되고 useEffect re-render는 useEffect 내부에서 생성됩니다. bail out 하기 전에 re-render log가 찍히게 되고 리렌더링이 되면 useEffect가 실행되는 동작이라는 것을 알 수 있습니다.
+
+예외도 있습니다. 예제에서 count is 버튼을 클릭하지 않고 바로 No Change 버튼을 클릭하면 re-render log가 보이지 않습니다. 이는 "fast bail out" 메커니즘이라고 합니다. [react/packages/react-reconciler/src/ReactFiberHooks.new.js at v18.0.0 · facebook/react](https://github.com/facebook/react/blob/v18.0.0/packages/react-reconciler/src/ReactFiberHooks.new.js#L2234-L2259)
+
+예제와 같은 경우 No Change 버튼을 클릭하여도 문제는 발생하지 않습니다. 그러나 간혹 setState flow가 꼬이게 되면 무한 리렌더링이 발생할 수도 있습니다. 심각하게 걱정할 내용은 아니지만 알 수 없는 이유로 무한 리렌더링이 발생한다면 의심해볼 만하다고 생각합니다.
