@@ -9,6 +9,7 @@ import {
   ColorSchemeScript,
   createTheme,
   MantineColorsTuple,
+  mantineHtmlProps,
   MantineProvider,
 } from "@mantine/core";
 import { Header } from "@/components/header";
@@ -48,7 +49,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="kr" className={inter.className}>
+    <html lang="kr" className={inter.className} {...mantineHtmlProps}>
       <head>
         <ColorSchemeScript />
       </head>
