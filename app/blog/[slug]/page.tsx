@@ -19,5 +19,6 @@ export default async function Page({
 }
 
 export async function generateStaticParams() {
-  return [{ slug: "2023-02-07" }, { slug: "2023-01-27" }];
+  const posts = getBlogPosts();
+  return posts.map(({ slug }) => ({ slug }));
 }

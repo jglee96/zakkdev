@@ -21,8 +21,3 @@ export default async function Posts() {
     </>
   );
 }
-
-export async function generateStaticParams() {
-  const posts = getBlogPosts();
-  return posts.map(({ slug }) => ({ slug }));
-}
