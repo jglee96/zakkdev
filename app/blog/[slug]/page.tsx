@@ -1,3 +1,5 @@
+import { getBlogPosts } from "@/utils/blog";
+
 export default async function Page({
   params,
 }: {
