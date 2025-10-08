@@ -1,27 +1,13 @@
 import { Box, Space, Text, Title } from "@mantine/core";
 import classes from "./page.module.css";
-import { getDocPageMetas } from "@/utils/affine/reader";
+import { getBlogPosts } from "@/utils/blog";
 import Link from "next/link";
 import dayjs from "dayjs";
 
 export const dynamic = "force-dynamic";
 
-async function getLatestPosts() {
-  try {
-    const metas = await getDocPageMetas();
-    if (!metas) {
-      return [];
-    }
-
-    return metas.slice(0, 3);
-  } catch (error) {
-    console.error(error);
-    return [];
-  }
-}
-
 export default async function Home() {
-  const posts = await getLatestPosts();
+  const posts = getBlogPosts();
 
   return (
     <>
@@ -39,13 +25,13 @@ export default async function Home() {
       </Text>
       <Space h="xl" />
       <Title>Lastest Posts</Title>
-      {posts?.map(({ title, id, createDate }) => (
+      {posts?.slice(0, 3).map(({ metadata: { title, publishedAt }, slug }) => (
         <Box key={title} maw={840} my="md">
-          <Text component={Link} href={`/posts/${id}`} fw={700} fz="xl">
+          <Text component={Link} href={`/blog/${slug}`} fw={700} fz="xl">
             {title}
           </Text>
           <Text c="dimmed" fz="xs">
-            {dayjs(createDate).format("YYYY-MM-DD")}
+            {dayjs(publishedAt).format("YYYY-MM-DD")}
           </Text>
         </Box>
       ))}

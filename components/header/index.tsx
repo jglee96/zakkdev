@@ -38,8 +38,8 @@ export function Header() {
         <Text component={Link} href="/projects" fw={600}>
           Projects
         </Text>
-        <Text component={Link} href="/posts" fw={600}>
-          Posts
+        <Text component={Link} href="/blog" fw={600}>
+          Blog
         </Text>
         <Anchor
           href="https://www.linkedin.com/in/zakklee"
