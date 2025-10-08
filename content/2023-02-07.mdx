@@ -10,13 +10,13 @@ React 공식 문서에서도 똑같이 말하고 있습니다. [Hooks API Refer
 
 그런데 개발을 하다보면 반은 맞고 반은 틀리다는 것을 알게 됩니다.
 
-빠르게 [예제](https://codesandbox.io/embed/setstate-x-x-will-re-render-w1wbtx?fontsize=14\&hidenavigation=1\&theme=dark)를 통해 알아보겠습니다.
+빠르게 [예제](https://codesandbox.io/embed/setstate-x-x-will-re-render-w1wbtx?fontsize=14&hidenavigation=1&theme=dark)를 통해 알아보겠습니다.
 
 위의 codesandbox를 보면 두개의 버튼이 있습니다. 버튼은 클릭시 다음과 같은 동작을 합니다.
 
-| 버튼               | 클릭 동작                                                       |
-| ---------------- | ----------------------------------------------------------- |
-| No Change        | 현재 state를 그대로 업데이트 ( setState(value => value) )             |
+| 버튼             | 클릭 동작                                                                 |
+| ---------------- | ------------------------------------------------------------------------- |
+| No Change        | 현재 state를 그대로 업데이트 ( setState(value => value) )                 |
 | count is (state) | 현재 state를 1 증가 시켜 업데이트합니다. ( setState(value => value + 1) ) |
 
 console 창을 열고 count is 버튼을 클릭하면 re-render, useEffect re-render가 log로 보입니다. 다음으로 No Change 버튼을 클릭해보겠습니다. 예상대로라면 현재 state와 정확히 동일한 값으로 업데이트하기 때문에 리렌더링이 일어나지 않고, log가 보이지 않아야 합니다. 그러나 console을 보면 re-render가 보입니다.

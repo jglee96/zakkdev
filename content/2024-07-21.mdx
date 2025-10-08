@@ -1,0 +1,49 @@
+# [Study] New Suspense SSR Architecture in React 18
+
+> 이 글은 [React Working Group/react-18](https://github.com/reactwg/react-18)에 있는 [New Suspense SSR Architecture in React 18](https://github.com/reactwg/react-18/discussions/37#discussion-3397355)을 공부하면서 정리한 것입니다.
+
+React 18에는 server-side rendering (SSR) 성능을 향상시키는 새로운 아키텍처가 적용되었습니다. 이 새로운 아키텍처와 그 설계, 그리고 이것이 해결하는 문제에 대해 high-level에서 알아보겠습니다.
+
+# What is SSR?
+
+SSR을 이해하기 위해서 사용자가 app을 실행할 때 격게되는 과정을 이해해야합니다.
+
+우리는 사용자가 웹 페이지에 접속했을 때 가능한 빠르게 상호작용 가능한 페이지를 보여주고 싶어합니다.
+
+![](/content/2024-07-21-assets/Eg495bJsXpanWr6YGcRj4ALi829lPhUHi6k046b7zXE=.png "초로색: 상호작용이 가능한 영역")
+
+상호작용이 가능하단 것은 모든 javascript event handler가 연결되어있어 버튼 클릭과 같은 동작들이 state를 업데이트 할 수 있다는 것을 의미합니다.이 말은 페이지는 javascript 코드가 모두 load 될 때까지는 상호작용이 불가능 하다는 것을 의미하기도 합니다.
+
+SSR을 사용하지 않는다면 사용자는 javascript가 모두 load되기 전 까지 아래와 같은 빈 페이지를 보게 됩니다.
+
+![](/content/2024-07-21-assets/kGwCjohUIPU7A55tRQpydhM0FzE5hmR61L0rBnUPbt4=.png)
+
+javascript의 용량이 커서 load 되기까지 긴 시간이 필요하다면 사용자느 좋지않은 경험을 하게되며, 이는 페이지 이탈까지 이어질 수 있습니다.
+
+하지만 SSR을 사용한다면 이와 같은 상황을 피할 수 있습니다. SSR은 react components가 서버에서 HTML로 render되고, 그 결과를 사용자에게 보내도록 합니다. 이 HTML은 완전히 상호작용은 되지 않지만 나머지 javascript가 load 되는 동안 사용자가 뭔가 볼 수 있도록 해줍니다.
+
+![](/content/2024-07-21-assets/Wdv_Pq3fvHFUyyQBjZwtlfFpXFg7A8Iq_o4_IGa2I2E=.png "회색: 콘텐츠가 있지만, 인터렉션 되지 않는 영역")
+
+상호작용이 되지 않는 콘텐츠는 무쓸모하다고 생각할 수 있지만, 콘텐츠가 매우 많은 웹사이트의 경우 javascript가 load되는 동안 사용자가 볼 것을 제공해주기 때문에 사용자 이탈을 막는데 매우 효과적일 수 있습니다.
+
+react와 app 코드를 모두 load 하였다면 event handler를 HTML에 연결하는 과정이 필요합니다. 이를 **hydration**이라고 합니다. 이는 상호작용이 없는 마른(dry) HTML에 상호작용이 가능하도록 event handler의 물(water)을 주는 것과 같다고 이름 붙여졌습니다.
+
+hydration이 끝나면 이제 페이지는 일반 react component처럼 state를 업데이트하고, 클릭에 반응하는 등의 상호작용을 할 수 있습니다.
+
+SSR이 마법처럼 보일 수 있지만, SSR은 웹 페이지가 더 빠르게 상호작용이 가능한 상태로 만들지 않습니다. 사용자에게 빈 페이지를 보여주지 않고 상호작용이 되지 않지만 콘텐츠를 보여줌으로써 사용자 경험을 개선해줍니다.또한 더 빠르고 쉬운 검색 엔진 색인 생성을 하여 SEO에 좋은 영향을 기대할 수 있습니다.
+
+> SSR과 Server Components를 서로 다른 개념입니다. 간단히 말해서 SSR은 HTML을 서버에서 만들어준다면, Server Components는 react object를 서버에서 만들어줍니다. 나중에 [공식 문서](<https://react.dev/reference/rsc/server-components#noun-labs-1201738-(2)>)를 공부해보겠습니다.
+
+# What Are the Problems with SSR Today?
+
+## You have to fetch everything before you can show anything
+
+현재 SSR은 component가 data를 기다리는 것을 허용하지 않습니다. 현재 api로 HTML은 render하기 위해서는 component를 위한 모든 data가 서버에 준비되어있어야합니다. 이 말은 모든 data를 준비하기 전까지는 HTML을 생성할 수 없으며, 이는 비효율적입니다.
+
+## You have to load everything before you can hydrate anyting
+
+현재 hydrate는 react tree에 single pass로 동작합니다. 이것은 한번 hydrate를 시작하면 모든 tree를 hydrate하기 까지 멈출 수 없음을 의미합니다. 즉, 상호작용을 하기 위해서는 모든 component들이 hydrate되어야 합니다.
+
+## How can we solve these problems?
+
+# React 18: Streaming HTML and Selective Hydration
