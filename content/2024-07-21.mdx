@@ -10,19 +10,38 @@ SSR을 이해하기 위해서 사용자가 app을 실행할 때 격게되는 과
 
 우리는 사용자가 웹 페이지에 접속했을 때 가능한 빠르게 상호작용 가능한 페이지를 보여주고 싶어합니다.
 
-![](/content/2024-07-21-assets/Eg495bJsXpanWr6YGcRj4ALi829lPhUHi6k046b7zXE=.png "초로색: 상호작용이 가능한 영역")
-
-상호작용이 가능하단 것은 모든 javascript event handler가 연결되어있어 버튼 클릭과 같은 동작들이 state를 업데이트 할 수 있다는 것을 의미합니다.이 말은 페이지는 javascript 코드가 모두 load 될 때까지는 상호작용이 불가능 하다는 것을 의미하기도 합니다.
+<p align="center">
+  <img
+    src="/content/2024-07-21-assets/Eg495bJsXpanWr6YGcRj4ALi829lPhUHi6k046b7zXE=.png"
+    alt="초로색: 상호작용이 가능한 영역"
+    width={"50%"}
+  />
+</p>
+상호작용이 가능하단 것은 모든 javascript event handler가 연결되어있어 버튼 클릭과
+같은 동작들이 state를 업데이트 할 수 있다는 것을 의미합니다.이 말은 페이지는 javascript
+코드가 모두 load 될 때까지는 상호작용이 불가능 하다는 것을 의미하기도 합니다.
 
 SSR을 사용하지 않는다면 사용자는 javascript가 모두 load되기 전 까지 아래와 같은 빈 페이지를 보게 됩니다.
 
-![](/content/2024-07-21-assets/kGwCjohUIPU7A55tRQpydhM0FzE5hmR61L0rBnUPbt4=.png)
+<p align="center">
+  <img
+    src="/content/2024-07-21-assets/kGwCjohUIPU7A55tRQpydhM0FzE5hmR61L0rBnUPbt4=.png"
+    alt="회색: 상호작용이 불가능한 영역"
+    width={"50%"}
+  />
+</p>
 
 javascript의 용량이 커서 load 되기까지 긴 시간이 필요하다면 사용자느 좋지않은 경험을 하게되며, 이는 페이지 이탈까지 이어질 수 있습니다.
 
 하지만 SSR을 사용한다면 이와 같은 상황을 피할 수 있습니다. SSR은 react components가 서버에서 HTML로 render되고, 그 결과를 사용자에게 보내도록 합니다. 이 HTML은 완전히 상호작용은 되지 않지만 나머지 javascript가 load 되는 동안 사용자가 뭔가 볼 수 있도록 해줍니다.
 
-![](/content/2024-07-21-assets/Wdv_Pq3fvHFUyyQBjZwtlfFpXFg7A8Iq_o4_IGa2I2E=.png "회색: 콘텐츠가 있지만, 인터렉션 되지 않는 영역")
+<p align="center">
+  <img
+    src="/content/2024-07-21-assets/Wdv_Pq3fvHFUyyQBjZwtlfFpXFg7A8Iq_o4_IGa2I2E=.png"
+    alt="회색: 콘텐츠가 있지만, 인터렉션 되지 않는 영역"
+    width={"50%"}
+  />
+</p>
 
 상호작용이 되지 않는 콘텐츠는 무쓸모하다고 생각할 수 있지만, 콘텐츠가 매우 많은 웹사이트의 경우 javascript가 load되는 동안 사용자가 볼 것을 제공해주기 때문에 사용자 이탈을 막는데 매우 효과적일 수 있습니다.
 
