@@ -1,0 +1,51 @@
+# React Production 환경 테스트
+
+회사에서 development 환경에서는 정상 동작하던 기능이 production 환경에서는 의도하지 않은 동작을 하는 이슈가 있었습니다. 비동기 작업이 포함된 기능이라 타이밍 문제가 있지 않았나 추측을 하였습니다. 어쨌든 어떤 로직 flow 차이로 오류가 발생하는지 분석하고 수정해야합니다. 수정 하나마다 배포하여 테스트를 할 수는 없습니다. 그래서 로컬에서 production 환경을 테스트할 수 있는 방법을 찾아 보았습니다.
+
+원리는 간단합니다. build 후에 간이 http server를 만들어서 결과물을 실행하는 것입니다. http server를 만드는 방법은 여러가지입니다. CRA 공식 문서에서 추천하는 방법은 serve 패키지를 사용하는 것입니다. ([링크](https://create-react-app.dev/docs/deployment/#static-server))
+
+```shellscript
+npm install -g serve
+serve -s build
+```
+
+이 방법을 사용하면 단점이 있습니다. hostname을 지정할 수 없어 [http://localhost:port](http://localhost:port/) 로 고정됩니다. https를 쓸 수가 없어 https api 통신이 필요한 경우 사용할 수 없습니다. 구글링을 해보니 spa-http-server 패키지를 사용하는 방법이 있습니다. ([링크](https://www.linkedin.com/pulse/how-test-production-build-react-js-app-locally-vinay-sharma-he-him-/))
+
+dev dependency로 spa-http-server를 설치합니다.
+
+```shellscript
+npm install --save-dev spa-http-server
+```
+
+https를 사용하기 위해 ssl 인증서를 발급하고, server 실행시 경로를 명시해주어야합니다. 저 혼자 개발해야하는 경우 ssl 인증서를 고정해두고 간단한 스크립트를 작성해주면 됩니다. 그러나 다른 팀원들도 똑같은 방법을 사용해야하기 때문에 자동으로 ssl 인증서를 발급하고 이를 사용하여 server를 실행하는 쉘 스크립트를 작성해줍니다.
+
+```shellscript
+#!/usr/bin/env bash
+if [ ! -e "key.pem" ] || [ ! -e "cert.pem" ]
+then
+  echo "key does not exists... create new key for https"
+  openssl req -newkey rsa:2048 -new -nodes -x509 -days 3650 -keyout key.pem -out cert.pem -batch
+fi
+cd build
+http-server --push-state -p (port) -a (domain) --ssl --cert ../cert.pem --key ../key.pem
+```
+
+쉘 스크립트에서는 인증서가 있는지 확인하여 없는 경우에만 새로 생성합니다. 또한 openssl 명령어 옵션으로 -batch를 주어서 interative 명령줄을 생성하지 않도록 합니다. http-server 명령어 옵션은 다음과 같습니다.
+
+| Title             | 설명                                                                |
+| ----------------- | ------------------------------------------------------------------- |
+| —push-state       | Enable HTML5 push state mode where all URIs respond with index.html |
+| -p (port)         | port 지정                                                           |
+| -a (domain)       | 사용할 domain ex. localhost                                         |
+| —cert ../cert.pem | ssl cert 파일 위치                                                  |
+| —key ../key.pem   | ssl key 파일 위치                                                   |
+
+마지막으로 package.json에 쉘 스크립트 실행 script를 추가해줍니다.
+
+```json
+"serve": "npm run build && bash ./serve.sh"
+```
+
+터미널에 npm run serve를 실행하면 build 결과물을 테스트할 수 있습니다.
+
+build 결과물을 실행하는 것이기 때문에 ts 코드가 로드되지 않습니다 .따라서 break point를 사용하지 못합니다. 원하는 부분에 console.log 등을 추가하는 방식으로 production 환경 테스트 및 디버깅이 가능합니다.
