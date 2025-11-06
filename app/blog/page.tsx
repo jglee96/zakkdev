@@ -1,9 +1,7 @@
-import { Box, Text, Group, Badge, Stack } from "@mantine/core";
+import { Text, Group, Badge, Stack } from "@mantine/core";
 import Link from "next/link";
-import dayjs from "dayjs";
-import { IconSparkles } from "@tabler/icons-react";
 import { getBlogPosts, getAllTags } from "@/utils/blog";
-import { BlogPagination } from "@/components/blog-pagination";
+import { BlogListItem, BlogPagination } from "@/components/blog";
 
 const POSTS_PER_PAGE = 10;
 
@@ -64,67 +62,36 @@ export default async function Posts({
         ))}
       </Group>
 
-      {/* 포스트 목록 */}
-      {posts.length > 0 ? (
-        <>
-          {posts.map(
-            ({ metadata: { title, publishedAt, tags, summary }, slug }) => (
-              <Box key={title} maw={840}>
-                <Text component={Link} href={`/blog/${slug}`} fw={700} fz="xl">
-                  {title}
-                </Text>
-                {summary && (
-                  <Group gap={4} mt={4} align="flex-start">
-                    <Badge
-                      size="xs"
-                      variant="light"
-                      color="blue"
-                      leftSection={<IconSparkles size={10} />}
-                    >
-                      AI 요약
-                    </Badge>
-                    <Text c="dimmed" fz="xs" style={{ flex: 1 }}>
-                      {summary}
-                    </Text>
-                  </Group>
-                )}
-                <Group gap="xs" mt="xs">
-                  <Text c="dimmed" fz="xs">
-                    {dayjs(publishedAt).format("YYYY-MM-DD")}
-                  </Text>
-                  {tags && tags.length > 0 && (
-                    <>
-                      {tags.map((tag: string) => (
-                        <Badge
-                          key={tag}
-                          component={Link}
-                          href={buildUrl(tag)}
-                          size="xs"
-                          variant="light"
-                          style={{ cursor: "pointer" }}
-                        >
-                          {tag}
-                        </Badge>
-                      ))}
-                    </>
-                  )}
-                </Group>
-              </Box>
-            )
-          )}
+      <Stack gap={0}>
+        {/* 포스트 목록 */}
+        {posts.length > 0 ? (
+          <>
+            {posts.map(
+              ({ metadata: { title, publishedAt, tags, summary }, slug }) => (
+                <BlogListItem
+                  key={slug}
+                  title={title}
+                  publishedAt={publishedAt}
+                  slug={slug}
+                  tags={tags}
+                  summary={summary}
+                />
+              )
+            )}
 
-          {/* 페이지네이션 */}
-          <BlogPagination
-            total={totalPages}
-            currentPage={currentPage}
-            selectedTag={selectedTag}
-          />
-        </>
-      ) : (
-        <Text c="dimmed" ta="center" py="xl">
-          포스트가 없습니다.
-        </Text>
-      )}
+            {/* 페이지네이션 */}
+            <BlogPagination
+              total={totalPages}
+              currentPage={currentPage}
+              selectedTag={selectedTag}
+            />
+          </>
+        ) : (
+          <Text c="dimmed" ta="center" py="xl">
+            포스트가 없습니다.
+          </Text>
+        )}
+      </Stack>
     </Stack>
   );
 }
