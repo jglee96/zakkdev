@@ -1,10 +1,7 @@
-import { Box, Space, Text, Title } from "@mantine/core";
+import { Space, Text, Title } from "@mantine/core";
 import classes from "./page.module.css";
 import { getBlogPosts } from "@/utils/blog";
-import Link from "next/link";
-import dayjs from "dayjs";
-
-export const dynamic = "force-dynamic";
+import { BlogListItem } from "@/components/blog";
 
 export default async function Home() {
   const posts = getBlogPosts();
@@ -25,16 +22,18 @@ export default async function Home() {
       </Text>
       <Space h="xl" />
       <Title>Lastest Posts</Title>
-      {posts?.slice(0, 3).map(({ metadata: { title, publishedAt }, slug }) => (
-        <Box key={title} maw={840} my="md">
-          <Text component={Link} href={`/blog/${slug}`} fw={700} fz="xl">
-            {title}
-          </Text>
-          <Text c="dimmed" fz="xs">
-            {dayjs(publishedAt).format("YYYY-MM-DD")}
-          </Text>
-        </Box>
-      ))}
+      {posts
+        ?.slice(0, 3)
+        .map(({ metadata: { title, publishedAt, summary, tags }, slug }) => (
+          <BlogListItem
+            key={slug}
+            title={title}
+            publishedAt={publishedAt}
+            slug={slug}
+            tags={tags}
+            summary={summary}
+          />
+        ))}
     </>
   );
 }
