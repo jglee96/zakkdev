@@ -30,8 +30,11 @@ function readMDXFile(filePath: string) {
   // tags 추출 (frontmatter에서 가져오거나 빈 배열)
   const tags = data.tags || [];
 
+  // summary 추출 (frontmatter에서 가져오거나 빈 문자열)
+  const summary = data.summary || "";
+
   return {
-    metadata: { title, publishedAt, tags },
+    metadata: { title, publishedAt, tags, summary },
     content: content.trim(), // frontmatter가 제거된 content
   };
 }
