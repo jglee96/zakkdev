@@ -14,6 +14,7 @@ const withMDX = createMDX({
     remarkPlugins: [
       // Without options
       "remark-gfm",
+      "remark-frontmatter",
     ],
   },
 });
