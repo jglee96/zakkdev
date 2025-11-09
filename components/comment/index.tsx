@@ -21,7 +21,6 @@ export function Comment() {
       inputPosition="top"
       theme={computedColorScheme === "dark" ? "dark_dimmed" : "light"}
       lang="ko"
-      loading="lazy"
     />
   );
 }
