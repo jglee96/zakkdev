@@ -1,0 +1,170 @@
+---
+tags:
+  - react
+  - study
+summary: >-
+  상태 관리 도구는 UI 일관성을 위해 필수적이며, React의 useSyncExternalStore를 통해 외부 스토어와 안전하게 연결해야
+  한다.
+---
+
+# 상태 관리 도구를 쓰는 이유는 성능이 아니라 유지보수
+
+실시간 데이터를 화면에 계속 갱신해서 보여주는 서비스를 개발하면서 전역 상태가 필요해졌습니다. 이때 전역 상태는 편의 기능이라기보다 UI 일관성 문제로 시작합니다. 렌더링 도중 값이 바뀌면 같은 화면에서도 서로 다른 값을 읽을 수 있고(tearing), 이걸 피하려면 외부 스토어와 React를 안전하게 연결해야 합니다.
+
+그래서 `useSyncExternalStore`로 외부 스토어를 직접 붙여보며, 이 과정에서 생기는 구현 범위(구독, 스냅샷, 비교, 참조 안정성)를 확인했습니다. 동시에 Zustand가 React와 연결되는 부분이 실제로 얼마나 얇은지, 그리고 그 추가분이 성능/번들 측면에서 얼마나 되는지도 측정했습니다.
+
+## 전역 상태가 어려운 이유: UI 일관성
+
+실시간 데이터가 여러 컴포넌트에서 공유되면, 상태는 React 바깥(local/sessionStorage, WebSocket)에 존재하게 됩니다. 이때 React 동시성 렌더링에서는 tearing 문제가 발생할 수 있습니다.
+렌더링 도중 외부 스토어가 업데이트되면, 같은 화면 안에서 어떤 컴포넌트는 이전 값을, 어떤 컴포넌트는 새 값을 읽는 일이 생깁니다.
+
+여기서 중요한 것은 전역 상태를 “가볍게” 만드는 것보다, 동시성에서도 안전하게(=일관되게) 읽도록 만드는 것입니다. 이 역할을 위해 React가 제공한 표준 API가 useSyncExternalStore입니다.
+
+## useSyncExternalStore를 쓸 때 지켜야 하는 두 가지 규칙
+
+useSyncExternalStore 자체는 단순합니다. 중요한 건 훅이 아니라 스토어 쪽이 지켜야 하는 규칙입니다. 그렇지 않으면 React가 같은 값을 읽지 못합니다.
+첫째, subscribe는 스토어가 변경될 때마다 콜백을 반드시 호출해야 합니다. React는 이 신호를 기준으로 다시 스냅샷을 읽어야 하는 타이밍을 잡기 때문입니다.
+둘째, getSnapshot은 값이 바뀌지 않았다면 같은 값을 반환해야 합니다. 특히 객체를 반환한다면 값이 같을 때 동일 참조를 유지하는 게 중요합니다. 그렇지 않으면 변경이 없어도 매번 새 객체가 생기고, 불필요한 리렌더가 연쇄적으로 발생합니다.
+요약하면, 바뀌면 바뀌었다고 알려주고(subscribe), 값은 안정적으로 돌려주면 됩니다(getSnapshot). 이 두 규칙을 지키면 React 동시성 렌더링에서도 tearing을 피하는 방식으로 외부 스토어를 붙일 수 있습니다.
+
+## Zustand의 React 바인딩은 생각보다 얇다
+
+Zustand를 “상태 관리 라이브러리”라고 부르지만, React와 연결되는 부분만 떼어 보면 꽤 얇습니다.
+
+`zustand/react`의 `useStore`는 결국 `React.useSyncExternalStore`에 `subscribe`를 연결하고, `getState()`로 읽어 온 값을 selector로 한 번 가공해서 돌려주는 구조입니다.
+
+즉, 여기서의 선택은 “Zustand가 uSES를 쓰냐 마냐”가 아니라, selector/shallow/equalityFn 같은 구독 최적화와 운영 기능을 어디까지 직접 구현할지에 가깝습니다.
+
+여기서 중요한 디테일이 하나 있습니다. 기본 `create`/`useStore` 조합은 “selector”까지는 제공하지만, “equalityFn”까지는 기본값으로 얹지 않습니다. selector가 매번 새 객체를 만들어내면 React 입장에서는 값이 바뀐 걸로 보이기 때문에 그대로 리렌더됩니다. ([react.ts#L30](https://github.com/pmndrs/zustand/blob/267a57c32c24822ecb66418ecdbcf05476313edd/src/react.ts#L30))
+
+그래서 Zustand는 두 가지 선택지를 별도로 제공합니다.
+
+- “객체를 골라 쓰되, 얕은 비교 정도면 충분하다”면 `useShallow`를 얹는 방식이 있습니다. `useShallow`는 이전 선택 결과를 ref로 잡아두고 shallow 비교가 같으면 이전 참조를 재사용합니다. ([useShallow 문서](https://zustand.docs.pmnd.rs/hooks/use-shallow))
+- “임의의 equalityFn으로 제어해야 한다”면 `zustand/traditional`의 `createWithEqualityFn`이 따로 있고, 여기서는 `useSyncExternalStoreWithSelector(..., equalityFn)`로 동작합니다. ([createWithEqualityFn 문서](https://zustand.docs.pmnd.rs/apis/create-with-equality-fn))
+
+## 직접 구현으로 갈 때 늘어나는 것들
+
+- 외부 이벤트(WebSocket, storage event 등)와 연결은 위의 두 규칙만 지키면 됩니다.
+- 대신 selector/비교(shallow·equalityFn)/참조 안정성/운영 기능(devtools·persist) 같은 요구가 붙으면, 그 구현 범위를 내가 계속 유지해야 합니다.
+
+## 직접 구현의 시작
+
+useSyncExternalStore를 사용한 스토어 구현의 가장 단순한 형태는 “단일 스냅샷 + listeners set”입니다. 핵심은 변경 시에만 새 객체를 만들어 참조 안정성을 지키는 것입니다.
+
+```typescript
+import { useSyncExternalStore } from "react";
+
+type Snapshot = {
+  data: Array<{ id: string; value: number }>;
+  isLoading: boolean;
+  error?: unknown;
+};
+
+let snapshot: Snapshot = { data: [], isLoading: false };
+const listeners = new Set<() => void>();
+
+export function subscribe(listener: () => void) {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
+}
+
+function notify() {
+  listeners.forEach((listener) => listener());
+}
+
+export function setSnapshot(next: Snapshot) {
+  if (isEqual(snapshot, next)) return;
+  snapshot = next;
+  notify();
+}
+
+export function useSnapshot() {
+  return useSyncExternalStore(subscribe, () => snapshot);
+}
+```
+
+여기까지는 괜찮습니다. 문제는 실전에서 상태가 더 복잡해진다는 점입니다. 스토리지 이벤트처럼 탭 간 동기화까지 들어가면, 결국 isEqual 같은 비교가 안전장치가 됩니다. (바뀌지 않았으면 교체하지 않기)
+이 지점부터 직접 구현의 유지보수 비용이 생깁니다.
+
+- 비교 로직을 누가 유지하나?
+- selector와 선택 결과 비교(shallow/equalityFn)가 필요해지면 누가 구현하나?
+- devtools/persist 같은 운영 요구가 붙으면 어디까지 커스텀하나?
+
+## Zustand가 얹는 추가분이 얼마나 큰지
+
+만약에, 직접 구현 범위를 줄여주는 대가가 아주 크면, 직접 만들 이유가 생깁니다. 그래서 같은 조건에서 벤치마크를 통해 그 비용을 비교해보았습니다.
+
+- 구독 컴포넌트 50개
+- 상태 업데이트 100회
+- 길이 1000짜리 데이터가 매번 갱신
+- 5번 반복해 평균/최소/최대 측정
+
+### Zustand 예제
+
+<iframe
+  src="https://stackblitz.com/edit/vitejs-vite-i5sxcwpo?ctl=1&embed=1&file=src%2FApp.tsx"
+  width="100%"
+  height="500px"
+></iframe>
+
+### useSyncExternalStore 예제
+
+<iframe
+  src="https://stackblitz.com/edit/vitejs-vite-ub6mfsub?ctl=1&embed=1&file=bundle-benchmark.js"
+  width="100%"
+  height="500px"
+></iframe>
+
+### 런타임 업데이트 성능
+
+|                                | 평균(ms) | 최소(ms) | 최대(ms) |
+| ------------------------------ | -------- | -------- | -------- |
+| Zustand                        | 20.48    | 19.00    | 22.20    |
+| useSyncExternalStore           | 20.14    | 18.30    | 21.60    |
+| Zustand - useSyncExternalStore | -0.34    | -0.70    | -0.60    |
+
+차이는 노이즈 수준이라, “직접 구현이 더 빠르다” 같은 결론을 내리기 어려웠습니다.
+
+### 번들 크기
+
+|                                | raw(KB) | gzip(KB) | brotli(KB) |
+| ------------------------------ | ------- | -------- | ---------- |
+| Zustand                        | 191.78  | 60.46    | 52.15      |
+| useSyncExternalStore           | 191.21  | 60.18    | 51.84      |
+| Zustand - useSyncExternalStore | +0.57   | +0.28    | +0.31      |
+
+Zustand를 추가했을 때 번들 크기 차이는 약 0.5KB 내외로 매우 작았습니다. 즉, “Zustand가 얹는 추가분”은 벤치마크 환경에서는 결정에 영향을 줄 만큼 크지 않았습니다. 벤치마크 조건에서는, 번들/업데이트 비용 때문에 “직접 구현을 택해야 한다”는 근거를 만들기 어려웠습니다.
+
+## 상태 관리 도구를 쓰는 이유는 성능이 아니라 유지보수
+
+상태 관리 도구 선택은 “패키지를 넣냐 빼냐”가 아니라, 직접 구현 범위를 어디까지 가져가고 유지보수 부담을 얼마나 가져갈지의 문제입니다. 어떤 선택을 하는 것이 좋은지 기준을 다음과 같이 생각해보았습니다.
+
+### useSyncExternalStore 로 직접 만드는 쪽이 맞는 경우
+
+- 외부 저장소, 외부 이벤트를 직접 다뤄야 한다
+- 요구사항이 단순하고, 스토어 경계가 작게 유지될 가능성이 높다
+- selector로 구독 범위를 잘게 나누고, 선택 결과가 바뀌었는지 비교하는 로직(shallow/equalityFn)을 직접 관리할 수 있다
+- 같은 값이면 같은 참조를 유지하는 방식으로(getSnapshot의 참조 안정성), 불필요한 리렌더를 스스로 통제할 수 있다
+
+### Zustand 같은 상태 관리 도구를 쓰는 쪽이 맞는 경우
+
+- selector로 필요한 조각만 구독해야 한다 (`useStore(store, selector)` 패턴이 필요한 경우)
+- 선택 결과가 객체/배열이라 참조가 자주 바뀌어, shallow 비교나 equalityFn이 필요하다
+- devtools/persist 같은 운영 요구가 붙을 가능성이 높다
+- “패키지 추가 비용”보다 “직접 구현 유지 비용”이 더 리스크다
+
+---
+
+## 마무리
+
+이 글에서 얻고 싶었던 답은 “Zustand가 더 낫다”가 아니었습니다. 실시간 데이터 UI에서 전역 상태를 붙일 때, 직접 구현해야 하는 범위가 어디까지인지를 분명히 하고 싶었습니다. 정리하면 다음과 같습니다.
+
+- `useSyncExternalStore`는 외부 스토어를 React 동시성 렌더링에 안전하게 붙이기 위한 표준 API입니다. 핵심은 훅이 아니라 `subscribe`/`getSnapshot` 규칙을 제대로 지키는 것입니다.
+- Zustand의 React 바인딩은 그 표준 API 위에 얇게 올라가 있고, selector를 기본으로 제공합니다. 반면 객체/배열을 selector로 돌려줄 때 생기는 리렌더 문제는 `useShallow`나 `createWithEqualityFn` 같은 선택지로 해결합니다.
+- 벤치마크 조건에서는 Zustand의 번들/업데이트 추가분이 작아서, 가볍게 만들기만을 이유로 직접 구현을 택할 근거를 만들기 어려웠습니다.
+
+그래서 결론은 단순합니다.
+
+> 전역 상태 도구를 고르는 기준은 패키지를 넣냐 빼냐가 아니라, 직접 구현 범위를 어디까지로 둘지입니다.
+
+직접 구현을 선택한다면, 구독 최적화(selector·비교·참조 안정성)와 운영 기능(devtools·persist)까지 포함해 앞으로도 계속 관리할 범위를 미리 적어두는 게 좋습니다. 반대로 라이브러리를 선택한다면, 그 범위를 줄이는 대신 생기는 비용(번들/런타임)을 한 번은 측정해두면 논쟁이 아니라 근거로 결정할 수 있습니다.
