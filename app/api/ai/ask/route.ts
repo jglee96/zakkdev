@@ -170,7 +170,7 @@ export async function POST(request: Request) {
           const limit = requestedLimit
             ? Math.max(1, Math.min(6, requestedLimit))
             : 4;
-          const hits = searchPosts(query, limit);
+          const hits = await searchPosts(query, limit);
 
           hits.forEach((hit) => collectSource(sources, hit));
           result = { hits };
