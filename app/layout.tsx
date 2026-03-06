@@ -12,7 +12,7 @@ import {
   mantineHtmlProps,
   MantineProvider,
 } from "@mantine/core";
-import { Header } from "@/components/header";
+import { SiteHeader } from "@/widgets/site-header";
 
 import "@mantine/core/styles.css";
 
@@ -59,7 +59,7 @@ export default function RootLayout({
         <MantineProvider theme={theme}>
           <AppShell header={{ height: 84 }} padding="md">
             <AppShellHeader mx={{ sm: 80, md: 160, xl: 340 }} px={16}>
-              <Header />
+              <SiteHeader />
             </AppShellHeader>
             <AppShellMain mx={{ sm: 80, md: 160, xl: 340 }} h="100dvh">
               {children}

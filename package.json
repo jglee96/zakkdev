@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "build:embeddings": "tsx scripts/build-post-embeddings.ts",
     "add-summaries": "tsx scripts/add-summaries.ts",
     "add-summaries:force": "tsx scripts/add-summaries.ts --force",
     "add-summaries:gpt4": "tsx scripts/add-summaries.ts --model gpt-4o-mini"
@@ -33,6 +34,7 @@
     "openai": "^6.8.1",
     "react": "19.1.1",
     "react-dom": "19.1.1",
+    "react-markdown": "^10.1.0",
     "remark-frontmatter": "^5.0.0",
     "remark-gfm": "^4.0.1",
     "three": "^0.179.1",

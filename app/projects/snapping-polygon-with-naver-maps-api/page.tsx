@@ -1,12 +1,5 @@
-"use client";
+import { ProjectNaverMapPage } from "@/views/project-naver-map";
 
 export default function Page() {
-  return (
-    <iframe
-      src="https://navermap-snap.vercel.app/"
-      width="100%"
-      height="100%"
-      style={{ border: 0 }}
-    />
-  );
+  return <ProjectNaverMapPage />;
 }
