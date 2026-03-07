@@ -1,0 +1,144 @@
+---
+tags:
+  - korean
+  - unicode
+  - browser
+summary: >-
+  한국어는 자모 조합 구조를 가지고 있어, URL 상태 저장·LLM 음절 처리·텍스트 선택 성능 등 예상치 못한 곳에서 개발자를 곤란하게 만든다.
+---
+
+# 개발자는 한국어가 어렵다
+
+유니코드 15.1 기준으로 등록된 글자는 약 15만 자입니다. 그 중 한자(CJK Unified Ideographs)만 9만 자가 넘고, 한국어 음절 블록은 `0xAC00`('가')부터 `0xD7A3`('힣')까지 11,172자입니다. 알파벳 26자짜리 세계에서 설계된 도구들이 이 밀도 높은 문자 체계 앞에서 예상치 못하게 흔들리는 경우가 있습니다.
+
+직접 개발하면서 그 흔들림을 세 번 겪었습니다.
+
+---
+
+## 1. URL에 한국어를 저장할 때 — IME 조합 상태 문제
+
+어드민을 만들면서 검색어, 필터 같은 UI 상태를 URL 쿼리스트링에 저장했습니다. 영어라면 단순합니다. `apple`을 타이핑하면 `a` → `ap` → `app` → `apple` 순서로 URL이 업데이트되고, 어느 단계에서 멈춰도 의미 있는 문자열입니다.
+
+한국어 '사과'는 다릅니다. 키보드 입력 순서는 `ㅅ → ㅏ → ㄱ → ㅗ → ㅏ`이지만, 브라우저가 조합 중에 만들어내는 중간 문자열은 다음과 같습니다:
+
+```
+ㅅ → 사 → 삭 → 사고 → 사과
+```
+
+이 중간 상태를 그대로 URL에 저장하면 브라우저 히스토리에 조합 중 스냅샷들이 쌓입니다. 뒤로가기를 누르면 완성되지 않은 단어로 돌아가고, `%EC%82%AC%EA%B1%B1` 같은 스냅샷이 북마크에 들어가기도 합니다.
+
+### 왜 이런 일이 생기나
+
+한국어 입력은 **IME(Input Method Editor)** 를 통해 이루어집니다. 영어는 키를 누르면 즉시 문자가 확정되지만, 한국어는 자모를 조합해 음절 블록을 만드는 과정이 있습니다. 브라우저는 이 과정을 세 이벤트로 알려줍니다([MDN: compositionstart](https://developer.mozilla.org/en-US/docs/Web/API/Element/compositionstart_event)).
+
+- `compositionstart`: 조합 시작 (첫 자모 입력)
+- `compositionupdate`: 조합 중 (매 자모마다)
+- `compositionend`: 조합 완료 (음절이 확정되는 순간)
+
+React의 `onChange`는 `compositionupdate` 중에도 발생합니다. 따라서 매 `onChange`마다 URL을 업데이트하면 조합 중인 값이 그대로 들어갑니다.
+
+해결책은 `isComposing` 상태를 직접 추적해 URL 업데이트를 조합이 끝난 후로 미루는 것입니다:
+
+```tsx
+const [isComposing, setIsComposing] = useState(false);
+
+<input
+  value={query}
+  onChange={(e) => {
+    setQuery(e.currentTarget.value);
+    if (!isComposing) {
+      updateSearchParams(e.currentTarget.value);
+    }
+  }}
+  onCompositionStart={() => setIsComposing(true)}
+  onCompositionEnd={(e) => {
+    setIsComposing(false);
+    updateSearchParams(e.currentTarget.value);
+  }}
+/>
+```
+
+[`e.nativeEvent.isComposing`](https://developer.mozilla.org/en-US/docs/Web/API/InputEvent/isComposing)으로도 확인할 수 있지만, `compositionend` 이후 `onChange`가 발생하는 순서가 브라우저마다 다르게 구현되어 있어 직접 상태로 관리하는 편이 더 안전합니다. Chrome은 `compositionend` 이후 `onChange`가 발생하고, Firefox는 반대로 `onChange`가 먼저 발생합니다.
+
+영어 입력은 한 글자 단위로 URL에 반영해도 문제가 없지만, 한국어는 음절이 완성되기 전까지 URL을 기다리게 해야 합니다.
+
+---
+
+## 2. LLM에게 발음이 비슷한 단어를 찾게 했을 때 — 음절 구조의 벽
+
+[어떡하라고](https://memepop.zakklee.dev/m/eotteokharago)라는 프로젝트를 만들면서, 주어진 문장을 비슷한 발음의 다른 단어로 치환하는 기능이 필요했습니다. '어떡하라고'를 '어떠카라고', '어뚝하라고' 같은 식으로 바꾸는 것입니다. ([repo](https://github.com/jglee96/memepop))
+
+LLM에게 이 작업을 시켜보면 결과가 어색합니다. '하라고'를 발음이 비슷한 것으로 바꿔달라고 하면, 기대하는 결과는 '할아고'처럼 자모를 재조합하는 것이지만 실제로는 '하라공'처럼 마지막 음절에 받침을 붙이거나 엉뚱한 음절로 교체하는 경우가 많았습니다. '어떡' 부분도 ㅇ, ㄸ의 변형은 떠올리면서도 '어떠' '어떻' 선에서 벗어나지 못했습니다.
+
+### 왜 LLM은 이게 어려운가
+
+한국어 음절은 **초성 + 중성 + 종성**의 세 요소로 이루어집니다.
+
+```
+가 = 초성(ㄱ) + 중성(ㅏ) + 종성(없음)
+닭 = 초성(ㄷ) + 중성(ㅏ) + 종성(ㄱ)
+```
+
+Unicode에서 한국어 음절은 단일 코드 포인트로 표현됩니다([Unicode 표준 Section 3.12](https://www.unicode.org/versions/Unicode15.0.0/ch03.pdf)):
+
+```
+음절 코드 = (초성 인덱스 × 21 + 중성 인덱스) × 28 + 종성 인덱스 + 0xAC00
+```
+
+'사'는 `(ㅅ=9, ㅏ=0, 종성 없음=0)` → `(9×21+0)×28+0+0xAC00` = `U+C0AC`. 이 공식으로 `0xAC00`('가')부터 `0xD7A3`('힣')까지 [11,172개 음절](https://www.unicode.org/charts/PDF/UAC00.pdf)이 빠짐없이 채워집니다.
+
+LLM이 텍스트를 처리할 때 한국어 음절은 대부분 **하나의 토큰**으로 취급됩니다. OpenAI의 cl100k_base 기준 tiktoken은 '하라고'를 다음과 같이 분리합니다:
+
+```
+# tiktoken (cl100k_base) 기준 토크나이저 분리 예시
+"하라고" → ['하', '라', '고']  # 음절 단위 3토큰
+"hello"  → ['hello']           # 단어 단위 1토큰
+
+# LLM이 보는 것: 음절 원자, 내부 자모 구조 불투명
+# "라" 토큰으로부터 ㄹ, ㅏ를 추론하려면 추가 지식 필요
+```
+
+모델 입장에서 각 음절은 원자 단위이고, 음절 내부의 자모 구조(초성이 ㅎ이고 중성이 ㅏ라는 사실)는 모델이 보는 표현에 직접 드러나지 않습니다.
+
+그래서 '라'를 발음이 비슷한 것으로 바꾸라고 하면:
+
+- 모델은 '라'와 **의미적으로** 유사한 것을 찾으려 합니다
+- 발음 유사도를 처리하려면 '라 = ㄹ+ㅏ'로 분해해야 하는데, 이 분해는 토크나이저 수준에서 명시적으로 주어지지 않습니다
+- 음절 경계를 넘는 자모 재조합('할아고'처럼 ㄹ 받침이 다음 음절 초성으로 이동하는 것)은 훨씬 더 어렵습니다
+
+영어에서 'hello'의 'l'을 비슷한 발음으로 바꾸는 것은, 알파벳이 이미 음소 단위로 분리되어 있고 학습 데이터에 라임·두운 같은 음성학적 패턴이 충분히 노출되어 있어 비교적 잘 됩니다. 한국어의 자모 단위 조작은 모델에게 훨씬 높은 추상화 수준을 요구합니다.
+
+실용적인 해결책은 프롬프트에서 음절을 자모로 분해한 표현을 명시적으로 제공하거나(`하라고` → `ㅎ-ㅏ ㄹ-ㅏ ㄱ-ㅗ`), 후처리 단계에서 규칙 기반 자모 조작을 추가하는 방식이었습니다.
+
+---
+
+## 3. 한국어 텍스트를 드래그할 때 — 문자 폭과 선택 범위 계산 비용
+
+[geur](https://github.com/jglee96/geur)를 개발하면서 텍스트 드래그로 선택 영역을 표시하는 기능을 구현했습니다. 영문 글을 드래그할 때는 부드러웠는데, 한국어 글을 드래그하면 렌더링이 버벅였습니다.
+
+처음에는 `mousemove` 핸들러의 문제라고 생각했습니다. 하지만 이벤트 발생 빈도를 줄여도 한국어에서만 느린 현상이 계속됐습니다. 원인을 추적해보니 마우스 위치로부터 텍스트 선택 범위를 계산하는 과정 자체가 달랐습니다.
+
+### 왜 CJK 텍스트 선택이 더 느린가
+
+브라우저에서 마우스 위치에 해당하는 텍스트 위치를 찾을 때는 [`document.caretPositionFromPoint()`](https://developer.mozilla.org/en-US/docs/Web/API/Document/caretPositionFromPoint)를 사용합니다. 이 API는 Chrome 128+부터 표준으로 지원되며, 이전 버전에서는 비표준 `caretRangeFromPoint()`를 사용해야 합니다. 크로스브라우저 코드에서는 두 API를 모두 처리해야 합니다. 이 과정은 내부적으로 **hit testing**—마우스 좌표가 어느 글리프(glyph)에 속하는지 계산합니다.
+
+영문 텍스트는 각 글자가 비교적 단순한 bounding box를 가지고, hit testing도 단순합니다. 한국어 텍스트는 다릅니다:
+
+- 각 음절 블록은 정방형의 **전각(full-width)** 글리프로, 폰트에 11,172개 음절 각각의 글리프가 필요합니다. [OpenType Hangul shaping](https://learn.microsoft.com/en-us/typography/script-development/hangul)에서는 초성·중성·종성 조합 규칙을 폰트 내부 GSUB 테이블로 처리합니다
+- 선택 범위(Range)를 업데이트할 때 `getClientRects()`를 호출하면 CJK 구간에서 [UAX #29](https://www.unicode.org/reports/tr29/) 기준 Unicode grapheme cluster 경계 계산이 발생합니다
+- 한국어는 음절 중간에서 커서가 멈출 수 없기 때문에 경계 스냅(snapping) 로직이 추가됩니다
+- 한국어 폰트는 영문 폰트보다 파일 크기가 훨씬 큽니다. 라틴 폰트가 100~300KB인 데 비해, Noto Sans KR 전체 포함 시 최대 16MB에 달하며 서브셋 처리 후에도 ~5MB 수준입니다. 메트릭 조회 테이블 규모도 이에 비례합니다
+
+`mousemove`가 초당 60회 발생할 때 이 계산이 매번 반복되면, 긴 한국어 단락에서 16ms 프레임 버짓을 넘기기 쉽습니다.
+
+해결책으로는 선택 범위 업데이트에 `requestAnimationFrame`을 적용해 프레임당 한 번으로 제한하거나([참고: High-performance input handling](https://nolanlawson.com/2019/08/11/high-performance-input-handling-on-the-web/)), 문자 위치 캐싱을 통해 반복 계산을 줄이는 방식을 적용했습니다.
+
+---
+
+## 마무리
+
+세 가지 문제를 돌아보면 공통점이 있습니다. 한국어는 **자모 → 음절 → 단어**라는 조합 구조를 가지고 있고, 대부분의 도구는 그 중간 단계—조합 중인 음절—를 제대로 처리하지 않아도 영어 환경에서는 동작합니다. 영어 사용자 기준으로 설계된 도구들은 이 중간 상태를 아예 고려하지 않는 경우가 많습니다.
+
+IME 조합 중 URL 업데이트는 조용히 오동작합니다. LLM의 자모 단위 조작 실패는 생성 결과가 어색하게 나옵니다. CJK 텍스트 선택 성능 저하는 사용자가 버벅임으로 체감합니다.
+
+영어로 테스트하면 통과하고 한국어에서 들어오는 버그들입니다. 한국어 사용자를 위한 제품을 만든다면 한국어로 먼저 테스트하는 것이 가장 빠른 검증 방법이라는 생각이 들었습니다.
