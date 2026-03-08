@@ -1,0 +1,89 @@
+---
+tags:
+  - react
+  - jotai
+  - recoil
+summary: >-
+  React 19로 올리면서 Recoil을 Jotai로 교체했다. 단순한 API 치환이 아니라 업데이트 사이클이 달라지는 마이그레이션이었다.
+---
+
+# Recoil에서 Jotai로 마이그레이션하기
+
+React 버전을 19로 올리면서 Recoil도 함께 교체하기로 했습니다. Recoil은 프로젝트가 archived 상태라 React 19 지원 여부가 불분명합니다. 비슷한 설계 철학을 가진 Jotai로 전환하는 것이 기술 부채를 줄이는 방향이었습니다.
+
+---
+
+## 마이그레이션 계획
+
+Cursor의 plan 모드로 작업 순서를 설계했습니다. 범위가 넓고 파일 간 의존 관계가 있는 작업일수록 순서를 먼저 정해두는 것이 효과적입니다. Cursor가 제안한 순서는 다음과 같습니다.
+
+```md
+1. 의존성 변경 (package.json)
+2. Jotai Provider 및 진입점
+3. 전역/공통 atoms (Recoil → Jotai)
+4. Storage 훅 (atomFamily → Jotai)
+5. 도메인별 atoms
+6. 훅/컴포넌트 일괄 치환
+7. 다른 패키지 React 19 대응
+8. 검증 — 타입 체크, 빌드
+```
+
+하위 의존성을 먼저 교체하고 상위 컴포넌트로 올라가는 순서입니다. 중간에 놓치는 파일이 줄고, 한 단계씩 빌드를 확인하면서 진행할 수 있었습니다.
+
+---
+
+## Recoil과 Jotai의 설계 차이
+
+API가 비슷해 보이지만, 내부 동작 방식에는 중요한 차이가 있습니다.
+
+**Recoil**: `atomFamily` + `selector` 기반입니다. atom 간 의존 관계를 selector로 선언하면, 상위 atom이 바뀔 때 의존하는 atom과 컴포넌트들이 같은 커밋 사이클 안에서 업데이트됩니다.
+
+**Jotai**: atom 하나씩 독립적으로 구독합니다. `atomWithStorage`처럼 외부 저장소와 동기화하는 atom은 내부적으로 subscribe 사이클이 한 번 더 끼어들 수 있습니다.
+
+이 차이가 마이그레이션 중 실제 버그로 드러났습니다.
+
+---
+
+## storage 구독 타이밍 이슈
+
+search param으로 받아온 id를 session storage에 저장하고, 다른 훅에서 그 id를 읽어 api 요청을 보내는 패턴이 있었습니다.
+
+```ts
+// 기존 흐름
+useEffect(() => {
+  if (idFromParam) {
+    setId(idFromParam); // Jotai atom(+storage)에 저장
+  }
+}, [idFromParam]);
+
+// 다른 훅에서
+const id = useAtomValue(idAtom);
+useEffect(() => {
+  if (id) fetchData(id); // id가 이전 값이면 요청하지 못함
+}, [id]);
+```
+
+Recoil에서는 `setId`가 호출된 뒤 의존하는 selector와 컴포넌트가 같은 사이클 안에서 업데이트되었습니다. Jotai + `atomWithStorage`로 바꾼 뒤에는 storage 동기화가 비동기로 끼어들면서, `fetchData`를 호출하는 시점에 `id`가 아직 이전 값인 경우가 생겼습니다.
+
+### 해결: 렌더 단계 동기 쓰기
+
+`useEffect` 안에서 set하는 대신, 렌더 단계에서 store와 storage에 동기적으로 값을 씁니다.
+
+```ts
+const [id, setId] = useAtom(idAtom);
+
+// 렌더 중 동기적으로 갱신 — 같은 렌더에서 이후 훅들이 최신 값을 읽는다
+if (idFromParam && idFromParam !== id) {
+  setId(idFromParam);
+}
+```
+
+렌더 단계에서 상태를 직접 쓰는 것은 일반적으로 피해야 하는 패턴이지만, 외부 source(URL param)를 store에 반영하는 "sync" 역할에 한정할 때는 효과적입니다. 이후 호출되는 훅들이 같은 렌더 사이클에서 이미 갱신된 값을 읽기 때문에 타이밍 문제가 사라집니다.
+
+---
+
+## 마무리
+
+Recoil에서 Jotai로의 전환은 API 치환보다 **업데이트 사이클 모델이 달라지는 마이그레이션**에 가깝습니다. 두 라이브러리의 내부 동작 방식을 이해하지 않으면, Recoil에서는 보이지 않았던 타이밍 이슈가 Jotai로 바꾼 뒤에 드러날 수 있습니다.
+
+마이그레이션처럼 범위가 넓고 반복적인 작업에서는 순서를 먼저 설계하는 것이 중요합니다. Cursor의 plan 모드는 파일 간 의존 관계를 정리하고 작업 단위를 나누는 데 유용했습니다.
