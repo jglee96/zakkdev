@@ -39,6 +39,7 @@ const theme = createTheme({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://zakklee.dev"),
   title: "zakklee.dev",
   description: "Zakklee's Blog made with Next.js, Vercel",
 };

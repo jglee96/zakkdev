@@ -62,6 +62,18 @@ export function getBlogPosts() {
   return getMDXData(path.join(process.cwd(), "content"));
 }
 
+export function getBlogPostMetadataBySlug(slug: string) {
+  if (!slug) return null;
+
+  const post = getBlogPosts().find((item) => item.slug === slug);
+  if (!post) return null;
+
+  return {
+    slug: post.slug,
+    ...post.metadata,
+  };
+}
+
 // 모든 태그 목록 가져오기
 export function getAllTags() {
   const posts = getBlogPosts();
