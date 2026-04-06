@@ -103,8 +103,7 @@ export default function RootLayout({
         <MantineProvider theme={theme}>
           <AppShell header={{ height: 64 }} padding={0}>
             <AppShellHeader
-              mx={{ sm: 80, md: 160, xl: 340 }}
-              px={16}
+              px={{ base: 20, sm: 80, md: 160, xl: 340 }}
               style={{ borderBottom: "1px solid #DDD8D2" }}
             >
               <SiteHeader />
