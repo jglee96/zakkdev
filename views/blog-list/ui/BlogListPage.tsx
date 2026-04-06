@@ -1,7 +1,7 @@
-import { Text, Group, Badge, Stack } from "@mantine/core";
 import Link from "next/link";
 import { getAllTags, getBlogPosts, PostListItem } from "@/entities/post";
 import { BlogPagination } from "./BlogPagination";
+import classes from "./blog-list-page.module.css";
 
 const POSTS_PER_PAGE = 10;
 
@@ -23,47 +23,41 @@ export async function BlogListPage({
   const selectedTag = params.tag;
   const currentPage = Math.max(1, parseInt(params.page || "1", 10));
 
-  // 태그로 필터링
   const filteredPosts = selectedTag
     ? allPosts.filter((post) => post.metadata.tags?.includes(selectedTag))
     : allPosts;
 
-  // 페이지네이션 계산
   const totalPages = Math.ceil(filteredPosts.length / POSTS_PER_PAGE);
   const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
   const endIndex = startIndex + POSTS_PER_PAGE;
   const posts = filteredPosts.slice(startIndex, endIndex);
 
   return (
-    <Stack gap="md">
-      {/* 태그 필터 */}
-      <Group gap="xs">
-        <Text size="sm" fw={500}>
-          태그:
-        </Text>
-        <Badge
-          component={Link}
-          href={buildUrl()}
-          variant={!selectedTag ? "filled" : "light"}
-          style={{ cursor: "pointer" }}
-        >
-          전체
-        </Badge>
-        {allTags.map((tag) => (
-          <Badge
-            key={tag}
-            component={Link}
-            href={buildUrl(tag)}
-            variant={selectedTag === tag ? "filled" : "light"}
-            style={{ cursor: "pointer" }}
+    <div>
+      <div className={classes.filterStrip}>
+        <span className={classes.filterLabel}>Filter</span>
+        <div className={classes.filterTags}>
+          <Link
+            href={buildUrl()}
+            className={!selectedTag ? classes.tagActive : classes.tagInactive}
           >
-            {tag}
-          </Badge>
-        ))}
-      </Group>
+            All
+          </Link>
+          {allTags.map((tag) => (
+            <Link
+              key={tag}
+              href={buildUrl(tag)}
+              className={
+                selectedTag === tag ? classes.tagActive : classes.tagInactive
+              }
+            >
+              {tag}
+            </Link>
+          ))}
+        </div>
+      </div>
 
-      <Stack gap={0}>
-        {/* 포스트 목록 */}
+      <div>
         {posts.length > 0 ? (
           <>
             {posts.map(
@@ -78,8 +72,6 @@ export async function BlogListPage({
                 />
               )
             )}
-
-            {/* 페이지네이션 */}
             <BlogPagination
               total={totalPages}
               currentPage={currentPage}
@@ -87,11 +79,11 @@ export async function BlogListPage({
             />
           </>
         ) : (
-          <Text c="dimmed" ta="center" py="xl">
+          <p style={{ textAlign: "center", padding: "40px 0", color: "#5E5A56" }}>
             포스트가 없습니다.
-          </Text>
+          </p>
         )}
-      </Stack>
-    </Stack>
+      </div>
+    </div>
   );
 }

@@ -2,19 +2,24 @@
 
 import {
   ActionIcon,
-  Anchor,
-  Button,
   Flex,
   Group,
   Text,
   useComputedColorScheme,
   useMantineColorScheme,
 } from "@mantine/core";
-import { IconBlob, IconMoon, IconSun } from "@tabler/icons-react";
+import { IconMoon, IconSun } from "@tabler/icons-react";
 import cx from "clsx";
 
 import classes from "./site-header.module.css";
 import Link from "next/link";
+
+const navItems = [
+  { label: "Projects", href: "/projects" },
+  { label: "Blog", href: "/blog" },
+  { label: "AI", href: "/ai" },
+  { label: "About", href: "https://www.linkedin.com/in/zakklee", external: true },
+];
 
 export function SiteHeader() {
   const { setColorScheme } = useMantineColorScheme();
@@ -24,35 +29,47 @@ export function SiteHeader() {
 
   return (
     <Flex justify="space-between" align="center" h="100%">
-      <Button
+      <Text
         component={Link}
         href="/"
-        leftSection={<IconBlob />}
-        variant="transparent"
+        fw={400}
+        fz="md"
+        style={{ textDecoration: "none", letterSpacing: "0" }}
+        c="var(--mantine-color-text)"
       >
-        <Text fw={600} c="text">
-          zakklee
-        </Text>
-      </Button>
-      <Group justify="space-between">
-        <Text component={Link} href="/projects" fw={600}>
-          Projects
-        </Text>
-        <Text component={Link} href="/blog" fw={600}>
-          Blog
-        </Text>
-        <Text component={Link} href="/ai" fw={600}>
-          AI
-        </Text>
-        <Anchor
-          href="https://www.linkedin.com/in/zakklee"
-          target="_blank"
-          underline="never"
-          c="inherit"
-          fw={600}
-        >
-          About
-        </Anchor>
+        zakklee
+      </Text>
+      <Group gap={24} className={classes.nav}>
+        {navItems.map((item) =>
+          item.external ? (
+            <Text
+              key={item.label}
+              component="a"
+              href={item.href}
+              target="_blank"
+              fz="12px"
+              fw={400}
+              tt="uppercase"
+              lts="0.1em"
+              className={classes.navLink}
+            >
+              {item.label}
+            </Text>
+          ) : (
+            <Text
+              key={item.label}
+              component={Link}
+              href={item.href}
+              fz="12px"
+              fw={400}
+              tt="uppercase"
+              lts="0.1em"
+              className={classes.navLink}
+            >
+              {item.label}
+            </Text>
+          )
+        )}
         <ActionIcon
           onClick={() =>
             setColorScheme(computedColorScheme === "light" ? "dark" : "light")
@@ -60,8 +77,8 @@ export function SiteHeader() {
           variant="transparent"
           aria-label="Toggle color scheme"
         >
-          <IconSun className={cx(classes.icon, classes.light)} stroke={1.5} />
-          <IconMoon className={cx(classes.icon, classes.dark)} stroke={1.5} />
+          <IconSun className={cx(classes.icon, classes.light)} stroke={1.2} />
+          <IconMoon className={cx(classes.icon, classes.dark)} stroke={1.2} />
         </ActionIcon>
       </Group>
     </Flex>

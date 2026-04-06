@@ -4,7 +4,14 @@ import cx from "clsx";
 
 export function Project3dCssPage() {
   return (
-    <Center w="100%" h="100%" bg="dark">
+    <Center
+      bg="dark"
+      style={{
+        position: "fixed",
+        inset: 0,
+        top: "var(--app-shell-header-height, 64px)",
+      }}
+    >
       <section className={cx(classes.container, classes.diagram)}>
         <div className={cx(classes.side, classes.front)}>
           <header className={classes.header}>

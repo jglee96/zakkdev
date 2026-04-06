@@ -1,0 +1,21 @@
+/* Braun 하우징 크림 배경 */
+body {
+  background-color: #f4f1ec;
+}
+
+[data-mantine-color-scheme="dark"] body {
+  background-color: #131110;
+}
+
+/* 제품 엣지 스트라이프 — Braun 악센트 */
+body::before {
+  content: "";
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #c74219;
+  z-index: 9999;
+  pointer-events: none;
+}

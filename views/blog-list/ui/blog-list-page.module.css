@@ -1,0 +1,66 @@
+.filterStrip {
+  display: flex;
+  align-items: center;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #ddd8d2;
+  margin-bottom: 4px;
+}
+
+.filterLabel {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #5e5a56;
+  padding-right: 20px;
+  margin-right: 20px;
+  border-right: 1px solid #ddd8d2;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.filterTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.tagInactive {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #5e5a56;
+  text-decoration: none;
+  line-height: 1;
+  transition: color 150ms ease;
+}
+
+.tagInactive:hover {
+  color: #c74219;
+}
+
+.tagActive {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #c74219;
+  text-decoration: none;
+  line-height: 1;
+}
+
+@mixin dark {
+  .filterStrip {
+    border-bottom-color: #2a2724;
+  }
+
+  .filterLabel {
+    border-right-color: #2a2724;
+    color: #8a8480;
+  }
+
+  .tagInactive {
+    color: #8a8480;
+  }
+}

@@ -1,88 +1,161 @@
 /*
- * Laserwave Theme originally by Jared Jones for Visual Studio Code
- * https://github.com/Jaredk3nt/laserwave
- *
- * Ported for PrismJS by Simon Jespersen [https://github.com/simjes]
+ * Neutral code theme inspired by Dieter Rams / Braun design language
+ * Warm gray palette with muted syntax colors
  */
 
 code[class*="language-"],
 pre:has(code[class*="language-"]) {
-  background: #27212e;
-  color: #ffffff;
-  /* The following properties are standard, please leave them as they are */
-  font-size: 1em;
+  background: #f5f4f2;
+  color: #2e2d2b;
+  font-size: 0.9em;
   direction: ltr;
   text-align: left;
   white-space: pre;
   word-spacing: normal;
   word-break: normal;
-  line-height: 1.5;
+  line-height: 1.6;
   -moz-tab-size: 2;
   -o-tab-size: 2;
   tab-size: 2;
-  /* The following properties are also standard */
   -webkit-hyphens: none;
   -moz-hyphens: none;
   -ms-hyphens: none;
   hyphens: none;
 }
 
+@mixin dark {
+  code[class*="language-"],
+  pre:has(code[class*="language-"]) {
+    background: #1a1918;
+    color: #f0efed;
+  }
+
+  .token.comment,
+  .token.prolog,
+  .token.cdata {
+    color: #787571;
+  }
+
+  .token.punctuation {
+    color: #98958e;
+  }
+
+  .token.builtin,
+  .token.constant,
+  .token.boolean {
+    color: #c9a96e;
+  }
+
+  .token.number {
+    color: #c9a96e;
+  }
+
+  .token.important,
+  .token.atrule,
+  .token.property,
+  .token.keyword {
+    color: #d8d6d2;
+    font-weight: 500;
+  }
+
+  .token.doctype,
+  .token.operator,
+  .token.inserted,
+  .token.tag,
+  .token.class-name,
+  .token.symbol {
+    color: #b8b5af;
+  }
+
+  .token.attr-name,
+  .token.function,
+  .token.deleted,
+  .token.selector {
+    color: #e8a88e;
+  }
+
+  .token.attr-value,
+  .token.regex,
+  .token.char,
+  .token.string {
+    color: #b8c4a0;
+  }
+
+  .token.entity,
+  .token.url,
+  .token.variable {
+    color: #d8d6d2;
+  }
+
+  code[class*="language-"]::-moz-selection,
+  code[class*="language-"] ::-moz-selection,
+  pre:has(code[class*="language-"]) ::-moz-selection {
+    background: #454340;
+  }
+
+  code[class*="language-"]::selection,
+  code[class*="language-"] ::selection,
+  pre:has(code[class*="language-"]) ::selection {
+    background: #454340;
+  }
+}
+
 code[class*="language-"]::-moz-selection,
 code[class*="language-"] ::-moz-selection,
-pre:has(code[class*="language-"]) ::-moz-selection,
 pre:has(code[class*="language-"]) ::-moz-selection {
-  background: #eb64b927;
+  background: #d8d6d2;
   color: inherit;
 }
 
 code[class*="language-"]::selection,
 code[class*="language-"] ::selection,
-pre:has(code[class*="language-"]) ::selection,
 pre:has(code[class*="language-"]) ::selection {
-  background: #eb64b927;
+  background: #d8d6d2;
   color: inherit;
 }
 
 /* Properties specific to code blocks */
 pre:has(code[class*="language-"]) {
-  padding: 1em; /* this is standard */
-  margin: 0.5em 0; /* this is the default */
-  overflow: auto; /* this is standard */
-  border-radius: 0.5em;
+  padding: 1.25em;
+  margin: 1.5em 0;
+  overflow: auto;
+  border-radius: 4px;
+  border: 1px solid var(--mantine-color-warm-gray-2);
 }
 
 /* Properties specific to inline code */
 :not(pre) > code[class*="language-"] {
   padding: 0.2em 0.3em;
-  border-radius: 0.5rem;
-  white-space: normal; /* this is standard */
+  border-radius: 4px;
+  white-space: normal;
 }
 
 .token.comment,
 .token.prolog,
 .token.cdata {
-  color: #91889b;
+  color: #98958e;
 }
 
 .token.punctuation {
-  color: #7b6995;
+  color: #787571;
 }
 
 .token.builtin,
 .token.constant,
 .token.boolean {
-  color: #ffe261;
+  color: #7a5230;
 }
 
 .token.number {
-  color: #b381c5;
+  color: #7a5230;
 }
 
 .token.important,
 .token.atrule,
 .token.property,
 .token.keyword {
-  color: #40b4c4;
+  color: #5c5955;
+  font-weight: 500;
 }
 
 .token.doctype,
@@ -91,30 +164,30 @@ pre:has(code[class*="language-"]) {
 .token.tag,
 .token.class-name,
 .token.symbol {
-  color: #74dfc4;
+  color: #454340;
 }
 
 .token.attr-name,
 .token.function,
 .token.deleted,
 .token.selector {
-  color: #eb64b9;
+  color: #6b4a2e;
 }
 
 .token.attr-value,
 .token.regex,
 .token.char,
 .token.string {
-  color: #b4dce7;
+  color: #8b6834;
 }
 
 .token.entity,
 .token.url,
 .token.variable {
-  color: #ffffff;
+  color: #5c5955;
 }
 
-/* The following rules are pretty similar across themes, but feel free to adjust them */
+/* The following rules are standard across themes */
 .token.bold {
   font-weight: bold;
 }
