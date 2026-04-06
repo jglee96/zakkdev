@@ -1,7 +1,6 @@
-import { Badge, Box, Group, Text } from "@mantine/core";
-import { IconSparkles } from "@tabler/icons-react";
 import dayjs from "dayjs";
 import Link from "next/link";
+import classes from "./post-list-item.module.css";
 
 interface Props {
   title: string;
@@ -10,55 +9,31 @@ interface Props {
   summary?: string;
   tags?: string[];
 }
-export function PostListItem({
-  title,
-  summary,
-  publishedAt,
-  slug,
-  tags,
-}: Props) {
+
+export function PostListItem({ title, summary, publishedAt, slug, tags }: Props) {
   return (
-    <Box maw={840} my="md">
-      <Text component={Link} href={`/blog/${slug}`} fw={700} fz="xl">
-        {title}
-      </Text>
-      {summary && (
-        <Group gap={4} mt={4} align="flex-start">
-          <Badge
-            size="xs"
-            variant="light"
-            color="blue"
-            leftSection={<IconSparkles size={10} />}
-          >
-            AI 요약
-          </Badge>
-          <Text c="dimmed" fz="xs" style={{ flex: 1 }}>
-            {summary}
-          </Text>
-        </Group>
-      )}
-      <Group gap="xs" mt="xs">
-        <Text c="dimmed" fz="xs">
-          {dayjs(publishedAt).format("YYYY-MM-DD")}
-        </Text>
+    <div className={classes.item}>
+      <div className={classes.meta}>
+        <span className={classes.date}>
+          {dayjs(publishedAt).format("YYYY.MM.DD")}
+        </span>
         {tags && tags.length > 0 && (
-          <>
-            {tags.map((tag: string) => (
-              <Badge
-                key={tag}
-                component={Link}
-                href={buildUrl(tag)}
-                size="xs"
-                variant="light"
-                style={{ cursor: "pointer" }}
-              >
+          <div className={classes.tags}>
+            {tags.map((tag) => (
+              <Link key={tag} href={buildUrl(tag)} className={classes.tag}>
                 {tag}
-              </Badge>
+              </Link>
             ))}
-          </>
+          </div>
         )}
-      </Group>
-    </Box>
+      </div>
+      <div className={classes.content}>
+        <Link href={`/blog/${slug}`} className={classes.title}>
+          {title}
+        </Link>
+        {summary && <p className={classes.summary}>{summary}</p>}
+      </div>
+    </div>
   );
 }
 
