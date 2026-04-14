@@ -1,0 +1,200 @@
+---
+tags:
+  - react
+  - javascript
+  - library
+summary: >-
+  React wrapper가 없으면 못 쓴다고 생각했던 시절부터, 굳이 필요한가 의심했던 시절, 그리고 있으면 좋겠다고 생각하게 된 지금까지. 생각이 바뀐 이유.
+---
+
+# React Wrapper, 꼭 있어야 하나
+
+처음 react-three-fiber를 봤을 때 "이게 맞다"는 확신이 왔다.
+
+Three.js의 씬을 JSX로 선언하고, 컴포넌트가 unmount되면 알아서 dispose 해주고, `useFrame`으로 애니메이션 루프를 React 안으로 끌어오는 방식. 세련됐다. 그 당시 나는 React wrapper 없이 vanilla 라이브러리를 쓰는 게 왜 어색한지를 이걸 보면서 처음으로 정확히 이해했다고 생각했다. 모든 라이브러리에 이런 게 있어야 한다고.
+
+그 생각이 부분적으로 틀렸다는 걸 나중에 알았는데, 맞는 부분도 있었다는 걸 지금은 더 잘 안다.
+
+---
+
+## 처음에는 wrapper가 없으면 못 쓴다고 생각했다
+
+vanilla 라이브러리를 React에서 쓸 때 막막하게 느껴지는 이유가 있다. 인스턴스를 언제 만들고 언제 없애야 하는지를 직접 관리해야 하기 때문이다. `useRef`에 넣어야 하는지, `useState`에 넣어야 하는지, `useEffect` 의존성 배열은 어떻게 해야 하는지. 처음엔 이게 헷갈린다.
+
+react-three-fiber는 그 복잡함을 전부 숨겨준다. Three.js로 큐브 하나를 렌더링하려면 vanilla에서는 이렇게 해야 한다.
+
+```js
+const scene = new THREE.Scene()
+const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000)
+const renderer = new THREE.WebGLRenderer()
+const geometry = new THREE.BoxGeometry()
+const material = new THREE.MeshStandardMaterial({ color: 'orange' })
+const mesh = new THREE.Mesh(geometry, material)
+scene.add(mesh)
+renderer.setAnimationLoop(() => {
+  mesh.rotation.x += 0.01
+  renderer.render(scene, camera)
+})
+```
+
+react-three-fiber를 쓰면 이렇게 된다.
+
+```jsx
+function Box() {
+  const meshRef = useRef()
+  useFrame((_, delta) => (meshRef.current.rotation.x += delta))
+  return (
+    <mesh ref={meshRef}>
+      <boxGeometry />
+      <meshStandardMaterial color="orange" />
+    </mesh>
+  )
+}
+
+<Canvas>
+  <ambientLight />
+  <Box />
+</Canvas>
+```
+
+왜 이게 잘 동작하냐면, Three.js의 scene graph 구조 자체가 React component tree와 닮아 있기 때문이다. Three.js의 객체들은 `Object3D.add()`로 부모-자식 관계를 만든다. scene 안에 mesh가 있고, group 안에 여러 mesh가 있고, 그 group이 다시 scene에 붙는다. 이 트리 구조를 JSX로 옮기면 대응 관계가 자연스럽다. `<boxGeometry />`나 `<meshStandardMaterial />`을 `<mesh>` 안에 쓰는 건 R3F가 geometry와 material을 prop처럼 연결하는 자체 규칙이고, 조명, 그룹, 자식 mesh 같은 실제 scene graph 계층도 같은 방식으로 표현된다.
+
+react-three-fiber를 만든 Paul Henschel이 한 말이 있다. "JSX는 그것을 다른 형태로 표현하는 방법일 뿐이지만, 본질적으로는 같다. 더 짧고, 더 깔끔하고, 그리고 managed 되고 reactive 해진다."[^1] 핵심은 여기에 있다. react-three-fiber는 Three.js를 React처럼 쓰이도록 바꾼 게 아니다. Three.js가 원래 가지고 있던 계층 구조를 JSX로 표현했을 뿐이다. 도메인 모델이 이미 트리였기 때문에 wrapper가 자연스럽게 들어맞은 것이다.
+
+이 접근이 너무 좋아 보여서, 지도 API에도 똑같이 적용하려 했다. 네이버 맵스를 쓸 때 Map 인스턴스를 어디에서 생성하고 어떻게 관리할지가 항상 고민이었는데, React 컴포넌트 lifecycle에 맡기면 깔끔해질 것 같았다. 문제는 모든 API의 모양이 Three.js 같지 않다는 거였다.
+
+---
+
+## 그러다 "굳이?"라는 생각이 들었다
+
+React 공식 문서에는 "Escape Hatches"라는 챕터가 있다. `useEffect`가 존재하는 이유를 설명하는 부분이다.
+
+> "Effects are an escape hatch from the React paradigm. They let you step outside of React and synchronize your components with some external system."[^2]
+
+문서는 계속해서 이렇게 말한다. 외부 시스템이 없다면 Effect도 필요 없다고. Drawing Manager 같은 외부 시스템과 연결할 때 `useEffect`를 쓰는 건 맞는 방향이다. 문제는 그 `useEffect`를 선언적 컴포넌트 뒤에 숨기려 할 때 생긴다. escape hatch를 없애는 게 아니라 가리는 것이다.
+
+네이버 맵스에서 Drawing Manager를 써야 할 때가 왔다. 사용자가 지도 위에서 직접 폴리곤을 그리는 도구다.
+
+처음엔 당연히 컴포넌트로 만들려고 했다.
+
+```tsx
+<DrawingManager
+  mode={drawingMode}
+  onDrawingComplete={(overlay) => addOverlay(overlay)}
+/>
+```
+
+근데 실제로 구현해보면 이상해진다. Drawing Manager는 그냥 "그리기 도구"가 아니다. 내부에 자체 상태 머신이 있다. 현재 모드(폴리곤, 선, 마커), 지금 그리는 중인지 아닌지, 이미 그려진 오버레이 목록. 이 상태들이 전부 매니저 인스턴스 안에 있다.[^3]
+
+```js
+const manager = new naver.maps.drawing.DrawingManager({ map })
+manager.setMode(naver.maps.drawing.DrawingMode.POLYGON)
+manager.addListener('drawingComplete', (overlay) => { /* ... */ })
+manager.setOptions('polygonOptions', { fillColor: '#ff0000' })
+```
+
+이걸 React props로 제어하려면 `mode` prop이 바뀔 때마다 `setMode()`를 호출해야 하는데, 그러면 컴포넌트는 그냥 얇은 proxy가 된다. 그리고 매니저 내부 상태가 바뀌었을 때 React state와 동기화하는 로직이 점점 복잡해진다.
+
+더 근본적인 문제가 있다. 선언적인 포장은 명령형을 없애지 않는다. 그냥 한 층 아래에 숨길 뿐이다. `<DrawingManager mode="polygon" />`이라고 쓰면 선언적으로 보이지만, 실제로는 그 컴포넌트 내부 어딘가에서 `manager.setMode('polygon')`을 호출하고 있다. 사용자 입장에서 그 사실을 모른다는 게 편의가 아니라 불투명함이 된다. 예상치 못한 동작이 생겼을 때 무슨 일이 일어나고 있는지 알기 어렵다.
+
+결국 model/view로 나눠서 생각하는 쪽으로 방향을 바꿨다. Drawing Manager는 자체 생명을 가진 외부 시스템이다. React는 그걸 직접 통제하려 하지 말고, 이벤트로 연결만 하면 된다. `addListener`로 React state를 업데이트하고, 반대로 React state가 바뀌면 매니저 메서드를 직접 호출하는 방식. useEffect가 escape hatch인 이유가 정확히 이것이다.
+
+그때부터 "모든 라이브러리에 React wrapper가 필요한 건 아니다"라는 생각이 자리를 잡았다.
+
+---
+
+## 지금은 있으면 좋겠다고 생각한다
+
+요즘 [sukooru](https://github.com/jglee96/sukooru)라는 스크롤 복원 라이브러리를 만들고 있다. 페이지를 뒤로 갔을 때 스크롤 위치가 복원되는 기능이다.
+
+코어는 프레임워크에 의존하지 않도록 만들었다. `createSukooru()`로 인스턴스를 만들고, `mount()`로 popstate 이벤트를 연결하고, `registerContainer()`로 복원할 스크롤 컨테이너를 등록한다. 어떤 환경에서도 쓸 수 있다.
+
+라이브러리를 쓰는 사람이 아니라 만드는 사람의 입장에 서면, 완전히 다른 질문이 생긴다. 사용자가 이걸 잘못 쓸 수 있는 방법이 몇 가지나 되는가.
+
+코어 API를 React에서 직접 쓰면 이런 코드를 작성해야 한다.
+
+```tsx
+function ScrollContainer({ children }) {
+  const sukooruRef = useRef(createSukooru())
+
+  useLayoutEffect(() => {
+    const cleanup = sukooruRef.current.mount()
+    return cleanup
+  }, [])
+
+  useLayoutEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const handle = sukooruRef.current.registerContainer(el, 'main')
+    void sukooruRef.current.restore()
+    return () => {
+      void sukooruRef.current.save()
+      handle.unregister()
+    }
+  }, [])
+
+  return <div ref={containerRef}>{children}</div>
+}
+```
+
+틀린 코드가 아니다. 잘 동작한다. 근데 이걸 쓰는 사람마다 직접 짜야 한다면 문제가 생긴다. `useEffect`가 아니라 `useLayoutEffect`를 써야 한다는 걸 알아야 하고, cleanup 함수에서 `save()`와 `unregister()`를 둘 다 호출해야 한다는 걸 알아야 하고, `restore()`가 반환하는 Promise를 어떻게 처리해야 하는지도 알아야 한다. 하나라도 빠뜨리면 메모리 누수가 생기거나 스크롤이 복원되지 않는다.
+
+라이브러리를 쓰는 사람이 `useLayoutEffect`를 써야 한다는 것도, cleanup 순서도, `restore()`의 Promise 처리도 직접 알아야 한다면, 그 지식은 사실상 public API의 일부다. adapter는 그 지식을 라이브러리 내부로 옮긴다. lifecycle을 올바르게 연결하는 방법은 하나로 정해져 있는데, 그걸 매번 사용자가 짜야 한다는 건 라이브러리가 해야 할 일을 넘긴 것이다.
+
+`@sukooru/react`를 만든 이유가 이거다.
+
+```tsx
+// 앱 루트에
+<SukooruProvider>
+  <App />
+</SukooruProvider>
+
+// 컴포넌트 내에서
+const { ref, status } = useScrollRestore({ containerId: 'main' })
+return <div ref={ref}>{children}</div>
+```
+
+`SukooruProvider` 내부는 이렇게 처리한다.
+
+```tsx
+useSafeLayoutEffect(() => {
+  const cleanup = instanceRef.current?.mount()
+  return cleanup
+}, [])
+```
+
+`useScrollRestore` 내부는 이렇게 처리한다.
+
+```tsx
+useSafeLayoutEffect(() => {
+  const containerHandle = sukooru.registerContainer(element, containerId)
+  void sukooru.restore(scrollKey).then(setStatus)
+  return () => {
+    void sukooru.save(scrollKey)
+    containerHandle.unregister()
+  }
+}, [containerId, scrollKey, sukooru])
+```
+
+이 코드는 사용자가 봐야 할 코드가 아니다. 라이브러리가 한 번 작성하고 검증한 코드다. 쓰는 사람은 `useScrollRestore`에 `containerId`만 넘기면 된다. lifecycle은 라이브러리가 알아서 챙긴다.[^4]
+
+중요한 건 이게 wrapper가 아니라 adapter라는 점이다. 코어 API는 그대로 노출되어 있고, React adapter를 우회해서 직접 `createSukooru()`를 쓸 수도 있다. 추상화가 한 층 더 생긴 게 아니라, React와 코어 사이에 다리를 놓은 것이다. React를 쓰지 않는 환경에서는 다리가 없어도 건물은 서 있다.
+
+---
+
+## 결국 질문이 잘못됐다
+
+"React wrapper가 필요한가"라는 질문에 답하려면 먼저 무엇 때문에 감싸려 하는지를 알아야 한다.
+
+react-three-fiber가 잘 동작하는 건 Three.js의 scene graph가 계층적이기 때문이다. 도메인 모델이 이미 트리였고, 그걸 JSX로 다시 표현했더니 React의 재조정 엔진이 그 트리를 관리해주기 시작한 것이다. 감싼 게 아니라, 이미 같은 모양이었다.
+
+Drawing Manager는 반대다. 내부에 자체 상태 머신을 가진 외부 시스템이다. 이걸 선언적으로 포장하면 얇고 불투명한 추상화가 된다. `useEffect`로 연결하는 게 맞는 방법인데, 그 위에 선언적 컴포넌트를 얹으면 escape hatch를 없애는 게 아니라 그냥 가리는 것이다. 선언적으로 쓰는 척하지만 그 아래에서는 여전히 명령형으로 동작한다.
+
+sukooru React adapter는 R3F나 Drawing Manager와 결이 다르다. API 구조가 트리인지 아닌지도 관계없고, 선언적이냐 명령형이냐도 관계없다. 올바르게 연결하는 방법이 정해져 있을 때 그 방법을 라이브러리가 담느냐, 사용자가 매번 직접 구현하느냐의 차이다.
+
+지금 나는 새 라이브러리를 볼 때 "React wrapper 있어요?"를 먼저 묻지 않는다. 대신 두 가지를 본다. 이 API의 구조가 컴포넌트 트리로 표현하기 자연스러운지, 그리고 이걸 올바르게 연결하는 방법이 정해져 있는데 그걸 내가 매번 짜야 하는지. 첫 번째 질문의 답이 yes면 wrapper가 빛난다. 두 번째 질문의 답이 yes면 adapter를 찾거나 직접 만든다.
+
+[^1]: Paul Henschel, ["Just a small annotation in regards to react-three-fiber"](https://medium.com/@drcmda/justr-a-small-annotaion-in-regards-to-react-three-fiber-d812f08b5f60). react-three-fiber가 Three.js를 바꾸지 않고 그 위에 React reconciler를 올린 이유에 대해 설명한 글이다.
+[^2]: [Escape Hatches, React 공식 문서](https://react.dev/learn/escape-hatches). Effects가 존재하는 이유와 외부 시스템 동기화의 개념을 설명한다. "외부 시스템이 없다면 Effect도 필요 없다"는 구절이 핵심이다.
+[^3]: [Naver Maps Drawing Manager API](https://navermaps.github.io/maps.js.ncp/docs/naver.maps.drawing.DrawingManager.html)
+[^4]: React가 외부 store와 연결하는 공식 방법은 [`useSyncExternalStore`](https://react.dev/reference/react/useSyncExternalStore)다. sukooru React adapter는 이 패턴과 유사한 방식으로 코어 인스턴스를 React lifecycle에 연결한다.
