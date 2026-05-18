@@ -1,0 +1,21 @@
+sequenceDiagram
+  participant A as Renderer A<br/>(login page)
+  participant S as Storage Service
+  participant B as Renderer B<br/>(dashboard)
+
+  A->>A: setItem("access", x)<br/>cached map 갱신 (sync)
+  A->>S: Mojo Put(access)
+  A->>A: setItem("refresh", y)<br/>cached map 갱신 (sync)
+  A->>S: Mojo Put(refresh)
+  A->>A: window.location.replace
+  Note over A: unload
+
+  Note over B: 새 document 로드
+  B->>S: Mojo GetAll()
+  Note over S: race window 열림<br/>(이전 Put과 새 GetAll의<br/>처리 순서가 가변)
+  S-->>B: 부분 상태<br/>(access nullish인 시나리오)
+
+  Note over B: zustand persist<br/>hydration
+  B->>B: setState({access:null, refresh:y})
+  B->>S: Mojo Put(remove access)
+  Note over S: if/else가 race 결과 영속화

@@ -1,0 +1,208 @@
+---
+tags:
+  - javascript
+  - browser
+  - chromium
+  - debugging
+summary: >-
+  로그인 직후 페이지를 이동하면 토큰이 사라지는 버그를 추적했다.
+  disk-commit race라는 단서에서 시작해서 Chromium의 localStorage 내부 구조까지 들어간 디버깅 기록.
+---
+
+# 사라지는 토큰을 따라간 디버깅
+
+회사에서 로그인 로직을 정리하다가 이상한 버그를 만났다. 로그인은 분명히 성공했는데, 대시보드로 넘어가면 가끔 다시 로그인 화면이었다. 새로고침하면 멀쩡했다. 사용자한테는 그냥 어쩌다 한 번 로그아웃되는 것처럼 보였다.
+
+코드는 평범했다. 로그인 응답에서 받은 토큰을 zustand store에 넣으면 persist 미들웨어가 custom storage를 거쳐 localStorage에 저장한다. accessToken과 refreshToken을 별도 키로 분리했다. 그리고 `window.location.replace`로 대시보드로 이동.
+
+```ts
+const { accessToken, refreshToken } = await api.login(credentials)
+store.setState({ accessToken, refreshToken })
+window.location.replace("/dashboard")
+```
+
+custom storage는 대략 이런 모양이었다. 토큰이 있으면 setItem, 없으면 removeItem.
+
+```ts
+function setItem(name, value) {
+  const { state } = JSON.parse(value)
+  if (state.accessToken) localStorage.setItem("accessToken", state.accessToken)
+  else localStorage.removeItem("accessToken")
+  if (state.refreshToken) localStorage.setItem("refreshToken", state.refreshToken)
+  else localStorage.removeItem("refreshToken")
+}
+```
+
+문제가 발생한 상황에서 localStorage를 까보면 `refreshToken`은 그대로 있는데 `accessToken`만 비어 있었다. 둘 다 같은 함수에서 동기로 연속 호출되는데 왜 한쪽만 사라지는지 이해가 안 됐다.
+
+## 첫 의심은 disk-commit race
+
+Claude Code에게 코드를 던지고 분석을 시켰더니 disk-commit race라는 답이 돌아왔다. 익숙한 모양의 문제였다.
+
+`localStorage.setItem`은 JS 입장에서 동기다. 호출 즉시 in-memory 표현이 업데이트되고, 같은 tick에서 `getItem`을 하면 방금 쓴 값을 읽는다. 그런데 그 값이 실제로 디스크에 commit되는 건 별도의 비동기 절차다. Chromium은 LevelDB, Firefox와 Safari는 SQLite를 백엔드로 쓰는데, 어느 쪽이든 in-memory와 on-disk 사이에 시간차가 있다.
+
+같은 document 안에서는 이 차이가 보이지 않는다. 그런데 `window.location.replace`는 cross-document navigation을 트리거한다. 현재 document는 unload되고 새 document가 같은 origin에서 시작된다. 새 document가 storage를 읽을 때 디스크 flush가 아직 안 됐다면 마지막에 쓴 값이 누락될 수 있다. 그게 disk-commit race의 정의다.
+
+가설은 그럴듯했다. 재현을 시도했다.
+
+## 재현이 안 된다
+
+가장 단순한 패턴부터 시작했다. localStorage에 두 키를 번갈아 쓰고 페이지를 reload하는 루프. 로컬에서는 mismatch가 0이었다. zustand persist를 끼워서 실제 코드와 같은 구조로 다시 만들었다. 그래도 0.
+
+여기서 처음 의심이 생겼다. 실제 환경에서는 분명히 깨졌는데 같은 코드가 로컬에선 안 깨진다. 무엇이 다른가.
+
+배포 환경과 로컬의 차이를 하나씩 지웠다. 같은 도메인이고, COOP 같은 헤더가 없고, service worker도 없고, 절대 경로 redirect도 없고, 같은 process 내 navigation이다. 운영 환경은 AWS ECS 위의 Next.js였고, 로컬은 Next.js dev 또는 빌드 후 prod 서버였다. 유의미한 환경 차이는 네트워크 latency와 번들 도착 시간 정도였다.
+
+그래서 데모를 더 가혹하게 만들었다. 두 setItem 사이에 인위적으로 gap을 만드는 옵션을 넣었다. zustand persist의 custom storage 안에서 첫 번째 setItem은 동기로 실행하고, 두 번째 setItem은 `setTimeout`으로 100ms 뒤로 미뤘다. 그 사이에 `location.replace`로 자기 자신을 reload한다.
+
+<iframe
+  src="/content/2026-05-18-assets/zustand-persist-race.html"
+  width="100%"
+  height="300px"
+  style={{ border: "1px solid #ddd", borderRadius: 4 }}
+></iframe>
+
+`Run`을 누르고 콘솔을 보면, gap이 100ms 정도일 때 두 번째 setItem이 매 iter마다 navigation에 잘려나가는 게 보인다. order를 access-first로 두면 `[demo] writeAccess`만 찍히고 `writeRefresh`는 한 번도 안 찍힌다. 순서를 뒤집으면 정확히 대칭이다.
+
+## 데모가 보여주는 race는 실제 버그와 방향이 반대다
+
+데모를 정리하면 메커니즘은 단순하다. 먼저 쓴 게 살아남고, 뒤로 밀린 게 사라진다. setTimeout으로 스케줄된 두 번째 작업이 unload에 의해 폐기되니까 당연한 결과다.
+
+문제는 실제 버그가 정반대였다는 것이다. 원본 코드에서 access가 먼저 쓰이고 refresh가 그 다음에 쓰였는데, 사라진 건 먼저 쓰인 access였다. 데모와 실제 버그는 같은 navigation race 클래스에 속하지만 서로 다른 메커니즘에서 나온 결과다.
+
+여기서 멈출 수도 있었다. disk-commit race라는 class의 버그가 실재한다는 건 데모로 증명했으니까. 다만 실제로 본 버그를 그대로 설명하지 못하는 가설을 글로 옮길 수는 없었다. 한 단계 더 들어가야 했다.
+
+## Chromium의 localStorage는 3-layer다
+
+`localStorage.setItem`이 동기로 보이는 이유는 renderer process 안에 캐시 맵이 있기 때문이다. Blink는 `CachedStorageArea`라는 클래스로 이 맵을 관리한다. setItem은 이 맵을 즉시 업데이트하고 JS에 동기로 반환한다.
+
+실제 데이터는 다른 process에 있다. Storage Service process 안에 `StorageAreaImpl`이 있고, 그 아래 `DomStorageDatabase`가 LevelDB를 감싼다. renderer와 storage service 사이는 Mojo IPC로 연결되어 있고, 메시지는 채널별 FIFO로 처리된다.[^1]
+
+전체 모양은 이렇다.
+
+<p align="center">
+<img
+  className="diagram-light responsive-half"
+  src="/content/2026-05-18-assets/localstorage-architecture-light.svg"
+  alt="Chromium localStorage 아키텍처. Renderer process의 CachedStorageArea가 Mojo IPC로 Storage Service의 StorageAreaImpl에 Put을 보내고, StorageAreaImpl이 DomStorageDatabase를 거쳐 LevelDB에 commit한다."
+/>
+<img
+  className="diagram-dark responsive-half"
+  src="/content/2026-05-18-assets/localstorage-architecture-dark.svg"
+  alt="Chromium localStorage 아키텍처. Renderer process의 CachedStorageArea가 Mojo IPC로 Storage Service의 StorageAreaImpl에 Put을 보내고, StorageAreaImpl이 DomStorageDatabase를 거쳐 LevelDB에 commit한다."
+/>
+</p>
+
+renderer 쪽의 `CachedStorageArea::SetItem`을 보면 동기 캐시 갱신과 Mojo Put 호출이 함께 일어난다. JS가 setItem을 호출한 그 순간에 in-memory `map_`이 업데이트되고, 같은 함수 안에서 `remote_area_->Put(...)`이 발화된다.[^2]
+
+```cpp
+bool CachedStorageArea::SetItem(const String& key,
+                                const String& value,
+                                Source* source) {
+  // ...
+  EnsureLoaded();
+  String old_value;
+  if (!map_->SetItem(key, value, &old_value))
+    return false;
+  // ...
+  if (!is_session_storage_for_prerendering_) {
+    remote_area_->Put(
+        StringToUint8Vector(key, GetKeyFormat()),
+        StringToUint8Vector(value, value_format), optional_old_value,
+        mojom::blink::StorageAreaSource::New(page_url, source_id),
+        base::IgnoreArgs<bool>(MakeVirtualTimePauserCallback(source)));
+  }
+  // ...
+}
+```
+
+storage service 쪽의 `StorageAreaImpl::Put`은 받은 키를 in-memory map에 즉시 반영한다. 그리고 디스크 commit은 별도로 예약한다. `StartCommitTimer`가 그 일을 한다.[^3]
+
+```cpp
+base::SingleThreadTaskRunner::GetCurrentDefault()->PostDelayedTask(
+    FROM_HERE,
+    base::BindOnce(&StorageAreaImpl::CommitChanges,
+                   weak_ptr_factory_.GetWeakPtr()),
+    ComputeCommitDelay());
+```
+
+`ComputeCommitDelay()`는 기본 delay와 rate limiter들이 요구하는 delay 중 큰 값을 쓴다. 즉 디스크 쓰기는 즉시 일어나는 게 아니라 batch로 묶여서 시간차를 두고 commit된다.
+
+여기서 navigation을 겹쳐보자. `window.location.replace`가 호출되면 browser process가 navigation을 시작한다. 새 document가 준비되면 이전 document는 unload되고 새 document가 commit된다. 새 document가 localStorage에 처음 접근할 때, storage service에 자기 origin의 전체 상태를 요청한다. 이게 `StorageArea::GetAll`이다.
+
+race window가 열리는 지점은 여기다. 이전 document가 보낸 Put 메시지들과, 새 document가 보낸 GetAll 메시지가 storage service에서 처리되는 순서가 결과를 가른다. Put이 다 처리된 다음에 GetAll이 도착하면 모든 게 정상이다. 그 사이에 GetAll이 끼면 일부 write가 GetAll 응답에 반영되지 않는다.
+
+다만 같은 Mojo 채널에서 Put 메시지는 FIFO다. setItem(access) 다음에 setItem(refresh)를 보냈으면 처리도 같은 순서. 그래서 단일 채널의 단순 race로 누락된다면 뒤쪽인 refresh가 누락되어야 정상이다. 실제로 본 결과는 그 반대였다. 단일 채널 race 모델만으로는 설명되지 않는다.
+
+## 진짜 메커니즘은 hydration이 race를 영속화시킨다
+
+원본 코드의 if/else 패턴을 다시 보자.
+
+```ts
+if (state.accessToken) localStorage.setItem("accessToken", state.accessToken)
+else localStorage.removeItem("accessToken")
+```
+
+이 패턴은 storage에 쓸 때만 동작하는 게 아니다. zustand persist는 새 document에서 store가 만들어질 때 자동으로 하이드레이션을 한다. 하이드레이션은 storage에서 상태를 읽어서 store에 반영하고, 그 반영이 setState를 트리거하면 다시 storage에 쓴다.
+
+대시보드가 로드되는 시점의 흐름을 상상해보자. 로그인 페이지에서 setState로 두 토큰을 한 번에 넣었다. custom storage가 두 setItem을 sync로 호출했다. renderer 캐시는 즉시 업데이트되고, Mojo Put 메시지 두 개가 storage service로 향했다. `window.location.replace`가 navigation을 시작한다.
+
+새 document가 로드되고 자기 자신의 Mojo 연결을 storage service와 만든다. 새 document의 GetAll이 storage service에 도착하는 시점이 핵심이다. Mojo는 채널 단위로 FIFO인데, 새 document의 GetAll 채널과 이전 document의 Put 채널은 서로 다른 채널이다. 채널 간 처리 순서는 storage service가 정한다. 그래서 이전 document의 Put이 다 처리되기 전에 새 document의 GetAll이 응답을 받는 race window가 열린다.
+
+다만 이 race window만으로는 access만 사라지는 비대칭 결과까지 깔끔히 설명되지는 않는다. 같은 채널에서 Put은 FIFO니까, race로 누락된다면 두 키가 함께 누락되거나 뒤쪽인 refresh가 누락되는 모양이 자연스럽다. 실제 결과는 그게 아니었다. 어딘가에 비대칭을 만드는 한 단계가 더 있다는 뜻이고, 가장 그럴듯한 후보가 새 document의 하이드레이션이다.
+
+전체 타임라인은 이렇다.
+
+<img
+  className="diagram-light"
+  src="/content/2026-05-18-assets/token-race-timeline-light.svg"
+  alt="토큰 race 타임라인. Renderer A에서 setItem 두 번과 location.replace, Storage Service에서 Put 처리와 GetAll 응답이 어긋나는 시점, Renderer B에서 hydration이 partial 상태를 가지고 setState하면서 race 결과가 영속화되는 흐름."
+/>
+<img
+  className="diagram-dark"
+  src="/content/2026-05-18-assets/token-race-timeline-dark.svg"
+  alt="토큰 race 타임라인. Renderer A에서 setItem 두 번과 location.replace, Storage Service에서 Put 처리와 GetAll 응답이 어긋나는 시점, Renderer B에서 hydration이 partial 상태를 가지고 setState하면서 race 결과가 영속화되는 흐름."
+/>
+
+여기서 if/else가 결정타다. 어떤 식으로든 하이드레이션이 부분 상태로 시작되는 순간, persist 구독자가 다시 발화해서 custom storage의 setItem을 호출한다. 이때 state의 access가 nullish라면 custom storage는 else 분기를 타고 `removeItem("accessToken")`을 호출한다.[^4] 처음엔 timing 문제로 짧게 닫혀 있던 상태가 코드 한 줄에 의해 디스크 위에 굳어버린다.
+
+이게 race 결과를 영속화시키는 함정이다. race 자체는 짧은 순간의 timing 문제지만, if/else는 그 산물을 보고 access는 없는 게 정상이라고 판단해서 명시적으로 지운다. 한번 지워지면 그 다음부터는 race 없이도 access가 비어 있다.
+
+실제 버그가 결정론적으로 보였던 이유도 여기 있을 가능성이 크다. race window가 한 번이라도 열려서 partial 상태가 만들어지면, if/else가 그 결과를 고정시켜버린다. 그래서 가끔 일어나는 게 아니라 어떤 조건이 맞으면 항상 일어나는 모양이 된다.
+
+여기까지가 단단한 부분이다. 이 아래부턴 가설이다. 정확히 어떤 micro 메커니즘이 access만 빠진 partial 상태를 만들었는지는 끝내 못 잡았다. 단일 채널의 Put FIFO만으로는 그 비대칭이 나오지 않으니, 하이드레이션 사이클 내의 추가 setState, 새 document 시작 시 다른 경로의 storage 접근, persist 내부 마이크로태스크 경계 같은 것들이 결합했을 수 있다. 운영 코드는 이미 고쳐졌고 배포 환경에서만 재현되는 버그였기 때문에, 더 깊이 파고들 자리가 사라졌다.
+
+다만 큰 그림은 흔들리지 않는다. navigation 경계 위에서 storage write의 순서나 가시성이 흔들릴 수 있는 race class가 존재하고, 그 결과가 partial 상태라면 if/else 패턴이 그것을 영속화시킨다. 로컬에서 재현이 안 됐던 것도 이 그림에서 자연스럽다. 로컬은 navigation이 워낙 빨라서 race window가 거의 안 열린다. ECS 환경에서는 번들 다운로드와 페이지 commit이 미세하게 늦어지면서 그 window가 열렸다.
+
+## Router.replace가 해결책이었던 이유
+
+실제 fix는 간단했다. `window.location.replace`를 Next.js의 `router.replace`로 바꿨다. SPA 라우팅이라 navigation 자체가 없다. document가 unload되지 않고, 새 Mojo 연결도, GetAll 라운드트립도, 하이드레이션 재실행도 없다. localStorage가 in-memory 캐시 그대로 유지된다.
+
+이 fix가 정확한 원인을 몰라도 작동한 이유는 명확하다. navigation 경계 자체를 없애버리니까, race가 일어날 수 있는 무대 자체가 사라진다.
+
+다만 한 단계 더 좋은 fix가 있다. 토큰 두 개를 별도 키로 저장할 이유가 사실 없다. 같이 발급되고 같이 폐기되는 값이다. 단일 키에 묶어 쓰면 if/else 패턴이 없어지고, race가 있어도 partial 상태가 만들어질 여지가 없다.
+
+```ts
+function setItem(name, value) {
+  const { state } = JSON.parse(value)
+  localStorage.setItem("auth", JSON.stringify(state))
+}
+```
+
+## 동기 API의 동기성은 어디까지인가
+
+이번 디버깅에서 가장 흔들렸던 직관은 동기 API의 의미였다. `localStorage.setItem`은 동기 API라고 외워두면 거의 모든 상황에서 맞는 말이다. 다만 그 동기성이 보장되는 영역은 renderer process의 in-memory cached map까지다. process 경계, document 경계, 디스크 경계가 끼면 다른 규칙이 적용된다.
+
+여기에 라이브러리 추상화가 한 겹 더 붙으면 더 복잡해진다. zustand persist는 storage adapter 패턴으로 storage를 추상화한다. 추상화 자체가 비동기를 가정하고 설계되어 있다. custom storage가 동기 함수더라도, persist는 그것을 비동기 시그니처에 맞춰서 호출한다. 그 사이에 미세한 microtask 경계가 생기고, 그 경계가 navigation과 만나면 의외의 결과가 나온다.
+
+if/else removeItem 패턴이 함정이 된 것도 같은 맥락이다. 그 자체로는 잘못된 코드가 아니다. 토큰이 없을 때 명시적으로 지우는 건 의도된 동작이다. 다만 그 동작이 race로 만들어진 partial 상태를 정상이라고 해석할 때 문제가 생긴다. 추상화는 자기가 받은 입력이 어떤 경로로 만들어졌는지 모른다.
+
+다음에 storage 관련 코드를 쓸 때는 두 가지를 챙기기로 했다. 같이 쓰이는 값은 같이 저장한다. partial 상태가 의미를 가지지 않는다면 partial이 만들어질 여지가 있는 API 사용 자체를 피한다. 그리고 full-page navigation이 꼭 필요한지 한 번 더 묻는다. SPA 라우팅으로 해결되는 케이스라면 거의 항상 그게 정답이다.
+
+[^1]: Mojo는 Chromium의 IPC 시스템이다. 채널 단위로 메시지 순서가 보장되지만, 서로 다른 채널 사이의 처리 순서는 receiver process가 정한다. [Mojo IPC 개요](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/mojo/README.md)와 [Service-ification 문서](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/services/README.md)에 디자인 배경이 있다.
+
+[^2]: [`CachedStorageArea::SetItem`](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/third_party/blink/renderer/modules/storage/cached_storage_area.cc) 구현. JS 호출 시점에 in-memory `map_`을 즉시 갱신하고, 같은 함수 안에서 `remote_area_->Put`으로 storage service에 비동기 메시지를 보낸다. 동기처럼 보이지만 디스크 commit까지의 책임은 storage service가 진다.
+
+[^3]: [`StorageAreaImpl::StartCommitTimer`](https://chromium.googlesource.com/chromium/src/+/refs/heads/main/components/services/storage/dom_storage/storage_area_impl.cc)와 `ComputeCommitDelay`. write 부담이 클수록 commit이 더 지연되도록 rate limiter가 들어있다. 즉 write 폭주 상황에서는 디스크 반영이 더 느려진다.
+
+[^4]: zustand persist의 하이드레이션 로직은 [`pmndrs/zustand`](https://github.com/pmndrs/zustand/blob/main/src/middleware/persist.ts) 참고. storage가 비동기 시그니처를 가지도록 설계되어 있어서, 동기 storage를 넘겨도 호출은 microtask 경계를 거친다. 하이드레이션 후 store에 적용된 state가 setState 형태로 발화하면 persist 구독자가 다시 storage.setItem을 호출한다.

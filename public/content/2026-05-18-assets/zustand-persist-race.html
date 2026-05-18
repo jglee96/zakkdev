@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <title>zustand persist race demo</title>
+  <style>
+    body { font-family: system-ui, sans-serif; padding: 12px; margin: 0; font-size: 13px; }
+    button { padding: 6px 12px; margin-right: 8px; cursor: pointer; }
+    pre { background: #f4f4f4; padding: 10px; margin: 8px 0 0; white-space: pre-wrap; }
+    .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+    label { font-size: 12px; color: #555; }
+    select, input[type="number"] { font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="row">
+    <button id="run">Run</button>
+    <button id="reset">Reset</button>
+    <label>iters
+      <input id="total" type="number" value="100" min="1" max="1000" style="width:64px" />
+    </label>
+    <label>order
+      <select id="order">
+        <option value="access-first">access → refresh</option>
+        <option value="refresh-first">refresh → access</option>
+      </select>
+    </label>
+    <label>gap (ms)
+      <input id="delay" type="number" value="0" min="0" max="2000" style="width:64px" />
+    </label>
+  </div>
+  <pre id="log">loading zustand...</pre>
+
+  <script type="module">
+    import { createStore } from "https://esm.sh/zustand@4/vanilla";
+    import { persist, createJSONStorage } from "https://esm.sh/zustand@4/middleware";
+
+    const params = new URLSearchParams(location.search);
+    const orderMode = params.get("order") === "refresh-first" ? "refresh-first" : "access-first";
+    const gapMs = Math.max(0, parseInt(params.get("delay") || "0", 10));
+
+    // 두 작업 사이의 gap을 setTimeout으로 직접 스케줄. await 체인이 아니라
+    // 별도 macrotask로 만들면 navigation에 의해 더 깔끔하게 잘린다.
+    function writeTokens(s) {
+      const writeAccess = () => {
+        console.log("[demo] writeAccess", s.accessToken);
+        if (s.accessToken) localStorage.setItem("accessToken", s.accessToken);
+        else localStorage.removeItem("accessToken");
+      };
+      const writeRefresh = () => {
+        console.log("[demo] writeRefresh", s.refreshToken);
+        if (s.refreshToken) localStorage.setItem("refreshToken", s.refreshToken);
+        else localStorage.removeItem("refreshToken");
+      };
+      const first  = orderMode === "access-first" ? writeAccess  : writeRefresh;
+      const second = orderMode === "access-first" ? writeRefresh : writeAccess;
+      first();
+      if (gapMs > 0) setTimeout(second, gapMs);
+      else second();
+    }
+
+    const splitStorage = {
+      getItem(name) {
+        const a = localStorage.getItem("accessToken");
+        const r = localStorage.getItem("refreshToken");
+        if (a == null && r == null) return null;
+        return JSON.stringify({ state: { accessToken: a, refreshToken: r }, version: 0 });
+      },
+      setItem(name, value) {
+        const parsed = JSON.parse(value);
+        writeTokens(parsed.state);
+      },
+      removeItem(name) {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+      },
+    };
+
+    const storage = createJSONStorage(() => splitStorage);
+
+    const store = createStore(
+      persist(
+        () => ({ accessToken: null, refreshToken: null }),
+        { name: "auth", storage }
+      )
+    );
+
+    const log = document.getElementById("log");
+    const totalInput = document.getElementById("total");
+    const orderSelect = document.getElementById("order");
+    const delayInput = document.getElementById("delay");
+    orderSelect.value = orderMode;
+    delayInput.value = String(gapMs);
+
+    let state = JSON.parse(sessionStorage.getItem("demo-state") || "null") ||
+      { running: false, iter: 0, total: 100, accessLost: 0, refreshLost: 0, bothLost: 0, samples: [] };
+
+    function render() {
+      const lines = [
+        "order: " + orderMode + ", gap: " + gapMs + "ms",
+        "iterations: " + state.iter + " / " + state.total,
+        "access lost: " + state.accessLost,
+        "refresh lost: " + state.refreshLost,
+        "both lost: " + state.bothLost,
+      ];
+      if (state.samples.length) {
+        lines.push("recent: " + state.samples.slice(-5)
+          .map(s => "expected=" + s.exp + " access=" + s.a + " refresh=" + s.r).join(" | "));
+      }
+      log.textContent = lines.join("\n");
+    }
+
+    function step() {
+      // 이전 iteration에서 쓴 값이 무엇이어야 했는지 확인
+      const expected = state.iter > 0 ? String(state.iter - 1) : null;
+      if (expected !== null) {
+        const a = localStorage.getItem("accessToken");
+        const r = localStorage.getItem("refreshToken");
+        const aLost = a !== expected;
+        const rLost = r !== expected;
+        if (aLost && rLost) state.bothLost++;
+        else if (aLost) state.accessLost++;
+        else if (rLost) state.refreshLost++;
+        if (aLost || rLost) state.samples.push({ exp: expected, a: a, r: r });
+      }
+
+      if (state.iter >= state.total) {
+        state.running = false;
+        sessionStorage.setItem("demo-state", JSON.stringify(state));
+        render();
+        return;
+      }
+
+      const v = String(state.iter);
+      // 회사 코드 그대로: setState 직후 동기적으로 location.replace
+      store.setState({ accessToken: v, refreshToken: v });
+      state.iter++;
+      sessionStorage.setItem("demo-state", JSON.stringify(state));
+      location.replace(location.pathname + location.search);
+    }
+
+    function buildQuery() {
+      const d = Math.max(0, parseInt(delayInput.value, 10) || 0);
+      return "?order=" + orderSelect.value + "&delay=" + d;
+    }
+
+    document.getElementById("run").onclick = () => {
+      const total = Math.max(1, Math.min(1000, parseInt(totalInput.value, 10) || 100));
+      const desiredQuery = buildQuery();
+      // 토큰 초기화도 함께
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      state = { running: true, iter: 0, total, accessLost: 0, refreshLost: 0, bothLost: 0, samples: [] };
+      sessionStorage.setItem("demo-state", JSON.stringify(state));
+      if (location.search !== desiredQuery) {
+        // URL 갱신 후 자동으로 시작되도록 sessionStorage에 running 상태 유지
+        location.replace(location.pathname + desiredQuery);
+        return;
+      }
+      step();
+    };
+    document.getElementById("reset").onclick = () => {
+      sessionStorage.removeItem("demo-state");
+      localStorage.removeItem("accessToken");
+      localStorage.removeItem("refreshToken");
+      location.replace(location.pathname);
+    };
+
+    if (state.running) step();
+    else render();
+  </script>
+</body>
+</html>

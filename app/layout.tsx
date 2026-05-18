@@ -113,7 +113,7 @@ export default function RootLayout({
                 px={{ base: 20, sm: 0 }}
                 pt={{ base: 28, sm: 40 }}
                 pb={{ base: 40, sm: 60 }}
-                style={{ maxWidth: 720, marginLeft: "auto", marginRight: "auto" }}
+                style={{ maxWidth: 768, marginLeft: "auto", marginRight: "auto" }}
               >
                 {children}
               </Box>

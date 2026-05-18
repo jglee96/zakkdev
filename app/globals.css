@@ -7,6 +7,27 @@ body {
   background-color: #131110;
 }
 
+/* Mermaid 다이어그램 라이트/다크 토글 */
+.diagram-dark {
+  display: none;
+}
+[data-mantine-color-scheme="dark"] .diagram-light {
+  display: none;
+}
+[data-mantine-color-scheme="dark"] .diagram-dark {
+  display: inline;
+}
+
+/* 반응형 반폭: 모바일은 100%, 데스크탑(>=768px)은 50% */
+.responsive-half {
+  width: 100%;
+}
+@media (min-width: 768px) {
+  .responsive-half {
+    width: 50%;
+  }
+}
+
 /* 제품 엣지 스트라이프 — Braun 악센트 */
 body::before {
   content: "";

@@ -1,0 +1,17 @@
+flowchart TB
+  subgraph R["Renderer Process"]
+    direction TB
+    JS["JS: localStorage.setItem(key, value)"]
+    CSA["CachedStorageArea<br/>in-memory map (sync)"]
+    JS --> CSA
+  end
+
+  subgraph S["Storage Service Process"]
+    direction TB
+    SAI["StorageAreaImpl<br/>Put() + StartCommitTimer()"]
+    DSD["DomStorageDatabase"]
+    LDB[("LevelDB (disk)")]
+    SAI --> DSD --> LDB
+  end
+
+  CSA -- "Mojo Put<br/>(FIFO per channel)" --> SAI
