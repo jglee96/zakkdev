@@ -14,7 +14,6 @@ export function ContentImageViewer({ children }: { children: React.ReactNode }) 
           setSrc((target as HTMLImageElement).src);
         }
       }}
-      style={{ cursor: "auto" }}
     >
       {children}
       <Modal
@@ -22,23 +21,54 @@ export function ContentImageViewer({ children }: { children: React.ReactNode }) 
         onClose={() => setSrc(null)}
         size="auto"
         centered
-        withCloseButton
+        radius={0}
         padding={0}
-        styles={{ body: { display: "flex" } }}
+        withCloseButton={false}
+        overlayProps={{ color: "#1C1917", backgroundOpacity: 0.72 }}
+        styles={{
+          content: {
+            background: "#FDFCF9",
+            border: "1px solid #C9C3B8",
+            boxShadow: "none",
+          },
+          body: { display: "flex", flexDirection: "column" },
+        }}
       >
         {src && (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={src}
-            alt=""
-            style={{
-              width: "min(900px, 90vw)",
-              height: "auto",
-              maxHeight: "85vh",
-              objectFit: "contain",
-              display: "block",
-            }}
-          />
+          <div style={{ position: "relative" }}>
+            <button
+              onClick={() => setSrc(null)}
+              aria-label="닫기"
+              style={{
+                position: "absolute",
+                top: 12,
+                right: 12,
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                color: "#86807A",
+                fontSize: 18,
+                lineHeight: 1,
+                padding: "4px 8px",
+                zIndex: 1,
+                letterSpacing: "-0.5px",
+              }}
+            >
+              ✕
+            </button>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt=""
+              style={{
+                width: "min(900px, 90vw)",
+                height: "auto",
+                maxHeight: "85vh",
+                objectFit: "contain",
+                display: "block",
+              }}
+            />
+          </div>
         )}
       </Modal>
     </div>
