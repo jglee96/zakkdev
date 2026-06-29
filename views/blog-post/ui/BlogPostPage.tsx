@@ -1,4 +1,5 @@
 import { getBlogPosts } from "@/entities/post";
+import { ContentImageViewer } from "@/components/ContentImageViewer";
 
 export async function BlogPostPage({
   params,
@@ -17,7 +18,11 @@ export async function BlogPostPage({
     );
   }
 
-  return <Content />;
+  return (
+    <ContentImageViewer>
+      <Content />
+    </ContentImageViewer>
+  );
 }
 
 export async function generateStaticParams() {

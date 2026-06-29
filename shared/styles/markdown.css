@@ -46,6 +46,7 @@ img {
   margin: 24px 0;
   max-width: 100%;
   height: auto;
+  cursor: zoom-in;
 }
 
 table {
