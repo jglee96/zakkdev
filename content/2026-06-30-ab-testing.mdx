@@ -1,0 +1,237 @@
+---
+title: 개발자 이력서에 숫자, 얼마나 믿을 수 있나
+summary: 커리어를 정리하다 내 기능의 임팩트를 수치화하려 했는데, 같은 기간에 여러 기능이 같이 나가서 변인 통제가 안 됐다. 이 궁금증을 Claude랑 같이 파다 보니 A/B 테스트 구조와 개발자 생산성 측정 논문까지 흘러갔다.
+tags: [experiment, ab-test, statistics, career]
+date: 2026-06-30
+---
+
+# 개발자 이력서에 숫자, 얼마나 믿을 수 있나
+
+연말에 커리어를 정리하다가 내가 만든 기능들의 임팩트를 숫자로 남겨두고 싶었다. "해당 기능 출시 후 전환율 X% 개선" 같은 형태. 지표가 있으면 나중에 쓸 수 있으니까.
+
+막상 데이터를 꺼내보니 문제가 있었다. 그 기간에 내 기능만 나간 게 아니었다. 다른 팀 기능도 두어 개 같이 배포됐고, 마케팅 캠페인도 겹쳤다. 지표가 오른 건 맞는데 내 기능 덕인지, 다른 것 덕인지 알 수가 없었다.
+
+여기서 의문이 생겼다. 대기업들은 이걸 어떻게 하나. 설마 한 기능을 측정하는 동안 다른 배포를 다 멈추나? 그럴 리는 없는데. A/B 테스트가 이 상황을 위한 답인 건가?
+
+이 의문을 Claude한테 던졌다. 같이 파다 보니 생각보다 잘 정리된 답이 있었다. 그리고 끝에선 내가 처음에 던진 질문 자체가 좀 틀렸다는 것도 알게 됐다.
+
+---
+
+## 변인 통제가 안 된 건 데이터 정리 실력 문제가 아니다
+
+내가 하려던 건 배포 전후 지표를 비교하는 거였다. before/after. 직관적이지만 결정적인 약점이 있다.
+
+같은 기간에 변한 게 내 기능만이 아니라는 거다. 다른 팀 기능, 캠페인, 계절성이 전부 같은 시점에 움직였다. 이걸 교란(confounding)이라고 부른다. 지표 변화 안에 원인이 여러 개 섞여서 내 기능의 몫만 꺼낼 수가 없는 상태.
+
+더 정확히는 식별(identification)의 문제다. 내 기능의 인과적 효과를 데이터에서 원리적으로 복원할 수 있냐는 질문인데, 이 구조에서는 불가능하다. 데이터를 아무리 잘 정리해도 답이 안 나온다. 내가 분석을 못 한 게 아니라 이 데이터로는 그 답을 낼 수 없는 거였다.[^1]
+
+---
+
+## 변인을 멈추는 게 아니라 무작위로 섞는다
+
+처음에 상상한 그림이 틀렸다. 한 기능을 측정하는 동안 다른 개발을 멈추는 게 아니다. 무작위 배정(randomization)으로 통제한다.
+
+사용자를 무작위로 대조군과 실험군에 나누면, 같은 기간에 나간 다른 기능이든 캠페인이든 계절성이든 두 군에 똑같이 영향을 준다. 교란 변수가 없어지는 게 아니라 양쪽에 균등하게 분산돼서, 두 군 사이의 차이를 낼 때 상쇄된다. 남는 차이는 내 기능을 받았느냐 아니냐 하나뿐이다.
+
+그래서 옆 팀이 동시에 뭘 배포해도 상관없다. 내 실험 입장에서 그건 양쪽에 똑같이 섞인 노이즈다. 변인을 멈추는 게 아니라 무작위화로 흩뿌려서 상쇄시키는 것, 그게 A/B 테스트다.
+
+---
+
+## 동시에 수백 개 실험을 어떻게 돌리나
+
+무작위로 나누는 건 알겠다. 그런데 한 회사가 동시에 수십 개, 수백 개 기능을 실험하면 한 사용자가 여러 실험에 동시에 들어갈 텐데, 서로 안 꼬이나?
+
+Google이 2010년 KDD에 낸 논문이 이 문제를 정면으로 다룬다. 제목 자체가 "Overlapping Experiment Infrastructure"다.[^2]
+
+딜레마는 이렇다. 한 사용자를 한 번에 하나의 실험에만 넣으면 안전하지만 실험을 빠르게 못 돌린다. 모든 파라미터를 독립적으로 변주하는 완전한 다요인 설계는 이론적으로 맞지만, 파라미터들이 서로 독립으로 변할 수 없어서 현실에선 안 된다. 논문이 든 예시가 간결했다. 배경색과 글자색은 둘 다 파란색이 유효한 값이지만, 파랑 위에 파랑이면 페이지를 못 읽는다.
+
+Google의 해법은 파라미터를 **레이어(layer)**로 쪼개는 거다. 독립적으로 변해도 되는 파라미터끼리 묶어 한 레이어로 만들고, 레이어 간 트래픽 분배를 직교(orthogonal)하게 한다. 한 사용자가 레이어마다 하나씩, 여러 실험에 동시에 들어가되 각 실험의 배정이 서로 독립이다.
+
+Microsoft도 Bing에서 같은 구조를 쓰는데 "number line"이라고 부르고, Google의 레이어와 같은 개념이라고 논문에 명시되어 있다.[^3] Bing이 하루에 200개가 넘는 실험을 동시에 돌린다는 숫자가 인상적이었다. 200개를 동시에 돌리는데 각각 독립적으로 측정된다.
+
+<p align="center">
+<img
+  className="diagram-light responsive-half"
+  src="/content/2026-06-30-ab-testing-assets/layer-structure-light.svg"
+  alt="같은 사용자가 UI 레이어와 랭킹 레이어에 각각 독립적으로 배정되는 구조. 두 레이어의 salt가 다르기 때문에 배정 결과도 다르다."
+/>
+<img
+  className="diagram-dark responsive-half"
+  src="/content/2026-06-30-ab-testing-assets/layer-structure-dark.svg"
+  alt="같은 사용자가 UI 레이어와 랭킹 레이어에 각각 독립적으로 배정되는 구조. 두 레이어의 salt가 다르기 때문에 배정 결과도 다르다."
+/>
+</p>
+
+한 실험 입장에서 보면, 동시에 돌아가는 나머지 199개는 대조군과 실험군 양쪽에 균등하게 배정된 노이즈다. "다른 팀 배포를 멈춰야 측정이 되는 거 아니냐"는 질문의 답이 여기 있다. 멈추는 게 아니라 직교하게 섞어서 동시에 다 돌린다.
+
+---
+
+## 실제 구현은 해시 하나로 된다
+
+직교라는 말이 추상적이라서 구현을 들여다봤다.
+
+"사용자를 무작위로 나눈다"는 말을 실제로 구현하면, 사용자 id를 해시 함수에 넣고 그 결과를 1000으로 나눈 나머지로 버킷 번호를 정한다. 예를 들어 버킷 0-499면 대조군, 500-999면 실험군. 해시 함수는 같은 입력에 항상 같은 출력을 내기 때문에, 같은 사용자는 페이지를 새로고침해도 다음 날 접속해도 항상 같은 군에 배정된다.
+
+문제는 이 방식을 그대로 쓰면 모든 실험에서 같은 사용자가 같은 버킷에 떨어진다는 거다. 버킷 537번 사용자는 모든 실험에서 실험군이 된다. 실험들이 독립이 아니라 서로 상관관계를 갖게 된다.
+
+해법은 해시를 계산할 때 실험 id를 같이 넣는 거다. `f(userId, experimentId) % 1000`. 실험마다 다른 값이 섞이니까 같은 사용자라도 실험마다 다른 버킷에 떨어진다. 실험 id가 일종의 salt 역할을 한다.[^2]
+
+<p align="center">
+<img
+  className="diagram-light responsive-half"
+  src="/content/2026-06-30-ab-testing-assets/hash-independence-light.svg"
+  alt="salt 없이 f(userId) % 1000을 쓰면 모든 실험에서 같은 버킷에 떨어져 상관관계가 생긴다. 실험 id를 salt로 섞으면 실험마다 다른 버킷에 떨어져 독립이 된다."
+/>
+<img
+  className="diagram-dark responsive-half"
+  src="/content/2026-06-30-ab-testing-assets/hash-independence-dark.svg"
+  alt="salt 없이 f(userId) % 1000을 쓰면 모든 실험에서 같은 버킷에 떨어져 상관관계가 생긴다. 실험 id를 salt로 섞으면 실험마다 다른 버킷에 떨어져 독립이 된다."
+/>
+</p>
+
+프론트엔드에서 feature flag와 연동하면 이런 모양이다.
+
+```ts
+async function digestHex(str: string): Promise<string> {
+  const buf = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(str)
+  );
+  return Array.from(new Uint8Array(buf))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function getVariant(
+  userId: string,
+  experimentId: string,
+  controlShare = 0.5
+): Promise<"control" | "treatment"> {
+  // experimentId를 섞어서 실험마다 독립적인 배정
+  const hex = await digestHex(`${experimentId}:${userId}`);
+  const bucket = parseInt(hex.slice(0, 8), 16) % 1000;
+  return bucket < controlShare * 1000 ? "control" : "treatment";
+}
+
+// 같은 사용자, 다른 두 실험 → 배정이 서로 독립
+const userId = "user_8675309";
+const [uiVariant, rankingVariant] = await Promise.all([
+  getVariant(userId, "ui-redesign-2026-06"),
+  getVariant(userId, "ranking-v2-2026-06"),
+]);
+
+console.log(uiVariant);      // "control"
+console.log(rankingVariant); // "treatment"  ← ui-redesign과 무관하게 배정
+```
+
+같은 사람이 `ui-redesign`에서는 대조군, `ranking-v2`에서는 실험군일 수 있다. 두 실험의 배정이 서로 독립이기 때문이다. 정말 독립인지 확인하고 싶으면 수천 명 돌려서 두 실험 배정의 교차표를 찍어보면 된다. 올바른 해시를 쓰면 상관이 0에 가깝게 나온다.
+
+React에서는 이런 형태가 된다.
+
+```tsx
+function useExperiment(experimentId: string) {
+  const { userId } = useUser();
+  const [variant, setVariant] = useState<"control" | "treatment" | null>(null);
+
+  useEffect(() => {
+    getVariant(userId, experimentId).then(setVariant);
+  }, [userId, experimentId]);
+
+  return variant;
+}
+
+function CheckoutButton() {
+  const variant = useExperiment("checkout-cta-2026-06");
+
+  if (variant === null) return <Skeleton />;
+
+  return variant === "treatment" ? (
+    <Button>지금 바로 구매</Button>
+  ) : (
+    <Button>구매하기</Button>
+  );
+}
+```
+
+실제 서비스에서는 이 배정 로직이 서버나 SDK 뒤에 있을 때가 많다. 원리는 같다. 실험 id를 섞은 해시로 독립적인 버킷을 만드는 것, 그게 중첩 실험 독립성의 기반이다.
+
+---
+
+## 두 기능이 서로 간섭하면
+
+내 기능이 옆 팀 기능과 상호작용하면 어떻게 되나. 직교하게 섞어도 두 기능이 서로 영향을 주면 측정이 오염되지 않나.
+
+중첩 구조는 이걸 두 가지로 처리한다. 간섭할 게 뻔한 파라미터들은 같은 레이어에 넣는다. 같은 레이어 안에서는 한 사용자가 하나의 실험에만 들어가니까 두 설정이 동시에 적용되는 일이 구조적으로 불가능하다. 이걸 상호 배타(mutually exclusive) 레이어라고 부른다.
+
+반대로 상호작용 자체가 궁금하면 두 실험의 교집합을 관측 가능하게 설계해서 교호작용(interaction effect)을 명시적으로 검정한다. Microsoft는 실험 간 통계적 상호작용이 감지되면 실험자에게 알림을 준다고 한다.[^3]
+
+결국 간섭은 막거나 측정하거나 둘 중 하나다.
+
+---
+
+## 근데 나는 flag도 없이 이미 나갔다
+
+여기까지 얘기하다가 정작 내 상황을 다시 봤다. 내 기능은 이미 모든 사용자에게 배포됐고, feature flag로 군을 나눠두지 않았다. 무작위화할 기회를 놓쳤으니 사후에 깨끗한 A/B는 없다.
+
+이미 배포된 걸 사후에 분석하려면 준실험(quasi-experimental) 방법으로 가야 한다. 무작위 대신 다른 가정에 기대서 가상의 대조군을 만드는 방법들이다.
+
+가장 흔한 게 이중차분(difference-in-differences, DiD)이다. 내 기능을 받은 그룹의 변화량을 안 받은 비슷한 그룹의 변화량과 비교한다. 기댈 가정은 평행 추세(parallel trends) — 내 기능이 없었다면 두 그룹이 같은 방향으로 움직였을 거라는 것. 이게 깨지면 결과가 편향된다.[^4]
+
+대조군으로 쓸 단일 그룹이 마땅치 않으면 합성 대조(synthetic control)를 쓴다. 여러 후보 그룹을 가중 조합해서 내 그룹의 배포 전 궤적을 흉내 내는 가상의 대조군을 만든다.[^5] 단절적 시계열(interrupted time series, ITS)도 있는데 추세가 비선형이거나 같은 시점에 다른 충격이 끼면 못 쓴다.[^6] 내가 처음에 막혔던 동시 배포 상황이 딱 ITS가 버티지 못하는 케이스다.
+
+공통점은 관측되지 않은 반사실(counterfactual)에 대한 가정 위에 서 있다는 거다. 무작위화는 설계 자체로 비교 가능성을 보장하는데, 준실험은 "이 가정이 맞다면"이라는 단서가 항상 붙는다. 그 가정을 걸고넘어지면 결론도 흔들린다.
+
+한 가지 더. CUPED라는 분산 감소 기법이 있다. 배포 전 데이터를 공변량으로 써서 추정량의 분산을 줄이는 방법으로, Bing에서 분산을 약 50% 줄여서 절반의 사용자로 같은 검정력을 냈다는 결과가 있다.[^7] 교란을 풀어주는 건가 싶었는데 아니다. 무작위 실험에서 민감도를 높여줄 뿐이고, 무작위가 아닌 비교의 편향은 못 고친다. 빠르게 해주는 거지 식별 문제를 푸는 게 아니다.
+
+---
+
+## 그래서 스타트업 개발자 성과 지표, 얼마나 믿을 수 있나
+
+이게 처음 의문이었다.
+
+의미 있는 숫자를 만들려면 인프라가 먼저 있어야 한다. feature flag 시스템, 실험 단위 배정 로직, 실험별 지표 파이프라인. 이게 없는 곳에서 "내 기능으로 전환율 X% 개선"이라는 숫자는 대부분 식별되지 않은 숫자다. 변인이 섞인 채로 전후 비교한 것이거나 상관관계를 인과관계처럼 쓴 것이거나.
+
+솔직히 국내 스타트업 대부분은 이 인프라가 없다. 실험 플랫폼을 갖춘 팀이 많지 않고, feature flag 자체를 쓰지 않는 곳도 있다. 그 환경에서 "수치로 증명된 성과"를 요구하거나 작성하는 건 양쪽 다 그 숫자의 한계를 모른 채 하는 경우가 많다.
+
+여기서 더 근본적인 문제도 있다. 개인의 기여를 지표에 귀속시키는 것 자체가 협업하는 소프트웨어 개발에서는 잘 안 된다.
+
+DORA의 네 지표 — 배포 빈도, 변경 리드 타임, 평균 복구 시간, 변경 실패율 — 는 전부 의도적으로 팀/시스템 레벨이다. 개인 점수표가 아니다.[^8] SPACE 프레임워크 논문도 같은 얘기를 한다. 소프트웨어 개발자의 성과는 정량화하기 어렵고, 개별 기여를 제품 결과에 직접 연결하기 어렵다고. 소프트웨어는 보통 여러 개발자의 기여의 합이고, 회사에서 소프트웨어는 개인이 아니라 팀이 만든다.[^9]
+
+활동 지표를 개인에게 쓰면 안 되는 이유가 굿하트의 법칙(Goodhart's Law)이다.[^10] 측정이 목표가 되는 순간 그것은 더 이상 좋은 측정이 아니다. 커밋 수를 목표로 잡으면 의미 없이 쪼갠 커밋이 나오고, 닫은 티켓 수를 잡으면 성급하게 닫힌 티켓이 나온다.
+
+---
+
+## 그럼 커리어 정리할 때 숫자를 어떻게 써야 하나
+
+두 질문을 분리하는 게 먼저다.
+
+"이 기능이 효과가 있었나"는 인과추론의 영역이다. 제대로 답하려면 배포 시점에 feature flag로 군을 나눠서 A/B로 내보냈어야 한다. 그랬다면 깨끗한 숫자가 나온다. 안 그랬다면 그 숫자에는 한계가 있다고 명시해야 한다.
+
+"내가 가치 있는 일을 했나"는 서사(narrative)의 영역이다. 어디서도 개인이 매출을 X만큼 올렸다는 걸 RCT로 증명하라고 하지 않는다. 기대하는 건 "무엇을 만들었고, 어떤 메커니즘으로 가치를 만들었고, 방향을 보여주는 근거가 있다"는 설득력 있는 이야기다. 숫자는 그 이야기에 곁들이는 근거지 증명이 아니다.
+
+내가 변인 통제에서 막힌 건 데이터 정리 실력 문제가 아니었다. 사후 측정의 구조적 한계고, 그 한계를 느낀 건 문제를 정확하게 본 거다. 인프라 없이 만든 숫자를 그냥 쓰는 것보다, 그 숫자의 한계를 아는 게 낫다.
+
+다음 기능부터는 feature flag 뒤에서 내보낼 것이다. 그게 쌓이면 쓸 수 있는 숫자가 생긴다.
+
+---
+
+[^1]: 무작위 통제 실험과 관측 연구의 인과 추론 차이는 Ron Kohavi, Diane Tang, Ya Xu, *Trustworthy Online Controlled Experiments: A Practical Guide to A/B Testing* (Cambridge University Press, 2020)에 정리되어 있다. 온라인 실험 분야의 표준 레퍼런스다.
+
+[^2]: Diane Tang, Ashish Agarwal, Deirdre O'Brien, Mike Meyer, "Overlapping Experiment Infrastructure: More, Better, Faster Experimentation," *Proceedings of the 16th ACM SIGKDD (KDD '10)*, 2010, pp. 17–26. 도메인/레이어/론치 레이어 설계와 `mod = f(cookie, layer) % 1000` 다이버전 방식이 여기 나온다. [PDF](https://research.google.com/pubs/archive/36500.pdf).
+
+[^3]: Ron Kohavi, Alex Deng, Brian Frasca, Toby Walker, Ya Xu, Nils Pohlmann, "Online Controlled Experiments at Large Scale," *KDD '13*, 2013, pp. 1168–1176. Bing이 하루 200개 이상의 실험을 동시에 돌린다는 수치, number line 개념, 해시 함수별 실험 간 상관 검증이 여기 있다. [DOI: 10.1145/2487575.2488217](https://dl.acm.org/doi/pdf/10.1145/2487575.2488217).
+
+[^4]: Marianne Bertrand, Esther Duflo, Sendhil Mullainathan, "How Much Should We Trust Differences-in-Differences Estimates?", *Quarterly Journal of Economics* 119(1), 2004, pp. 249–275. DiD의 평행 추세 가정과 추론상 함정을 다룬 논문이다.
+
+[^5]: Alberto Abadie, Alexis Diamond, Jens Hainmueller, "Synthetic Control Methods for Comparative Case Studies," *Journal of the American Statistical Association* 105(490), 2010, pp. 493–505.
+
+[^6]: Anita K. Wagner, Stephen B. Soumerai, Fang Zhang, Dennis Ross-Degnan, "Segmented regression analysis of interrupted time series studies in medication use research," *Journal of Clinical Pharmacy and Therapeutics* 27(4), 2002, pp. 299–309. ITS의 표준 분석법과 한계를 다룬다.
+
+[^7]: Alex Deng, Ya Xu, Ron Kohavi, Toby Walker, "Improving the Sensitivity of Online Controlled Experiments by Utilizing Pre-Experiment Data," *WSDM '13*, 2013, pp. 123–132. CUPED 원논문. Bing에서 분산을 약 50% 줄인 결과가 여기 있다. [DOI: 10.1145/2433396.2433413](https://dl.acm.org/doi/10.1145/2433396.2433413).
+
+[^8]: DORA의 네 핵심 지표는 Nicole Forsgren, Jez Humble, Gene Kim, *Accelerate: The Science of Lean Software and DevOps* (IT Revolution Press, 2018)에 정리되어 있다. 네 지표 모두 개인이 아니라 팀/시스템 단위의 전달 성과를 측정한다.
+
+[^9]: Nicole Forsgren, Margaret-Anne Storey, Chandra Maddila, Thomas Zimmermann, Brian Houck, Jenna Butler, "The SPACE of Developer Productivity: There's more to it than you think," *ACM Queue* 19(1), 2021, pp. 20–48. 생산성을 단일 지표로 환원할 수 없다는 점, 개별 기여를 제품 결과에 직접 연결하기 어렵다는 점, 활동 지표를 개인 보상에 단독으로 쓰면 안 된다는 점을 명시한다. [원문](https://cacm.acm.org/practice/the-space-of-developer-productivity/).
+
+[^10]: "측정이 목표가 되는 순간 좋은 측정이 아니다"라는 표현은 인류학자 Marilyn Strathern(1997)이 경제학자 Charles Goodhart의 1975년 관찰을 일반화한 것이다.
+

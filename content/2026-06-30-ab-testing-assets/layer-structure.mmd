@@ -1,0 +1,24 @@
+flowchart TD
+    U["user_8675309"]
+
+    U --> L1["UI 레이어\nsalt: ui-redesign-2026-06"]
+    U --> L2["랭킹 레이어\nsalt: ranking-v2-2026-06"]
+
+    L1 --> C1["대조군\n버킷 0–499"]
+    L1 --> T1["실험군\n버킷 500–999"]
+
+    L2 --> C2["대조군\n버킷 0–499"]
+    L2 --> T2["실험군\n버킷 500–999"]
+
+    C1 --> R1[\"→ control"\]
+    T2 --> R2[\"→ treatment"\]
+
+    style U fill:#EEEDFE,stroke:#534AB7,color:#3C3489
+    style L1 fill:#E1F5EE,stroke:#0F6E56,color:#085041
+    style L2 fill:#E6F1FB,stroke:#185FA5,color:#0C447C
+    style C1 fill:#9FE1CB,stroke:#0F6E56,color:#04342C
+    style T1 fill:#D3D1C7,stroke:#888780,color:#2C2C2A
+    style C2 fill:#D3D1C7,stroke:#888780,color:#2C2C2A
+    style T2 fill:#378ADD,stroke:#185FA5,color:#E6F1FB
+    style R1 fill:#085041,stroke:none,color:#E1F5EE
+    style R2 fill:#0C447C,stroke:none,color:#E6F1FB

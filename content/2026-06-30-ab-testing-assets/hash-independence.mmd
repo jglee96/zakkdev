@@ -1,0 +1,33 @@
+flowchart LR
+    subgraph BAD["❌  f(userId) % 1000 — salt 없음"]
+        direction TB
+        U1["user_8675309"] --> H1["hash(userId)\n= 버킷 537"]
+        H1 --> E1A["ui-redesign\n실험군 (537)"]
+        H1 --> E1B["ranking-v2\n실험군 (537)"]
+        NOTE1["두 실험이 항상 같은 군\n→ 상관관계 발생"]
+    end
+
+    subgraph GOOD["✅  f(userId, experimentId) % 1000 — salt 있음"]
+        direction TB
+        U2["user_8675309"] --> H2A["hash(ui-redesign:userId)\n= 버킷 221"]
+        U2 --> H2B["hash(ranking-v2:userId)\n= 버킷 764"]
+        H2A --> E2A["ui-redesign\n대조군 (221)"]
+        H2B --> E2B["ranking-v2\n실험군 (764)"]
+        NOTE2["다른 버킷 → 독립적인 배정"]
+    end
+
+    style U1 fill:#F1EFE8,stroke:#B4B2A9,color:#2C2C2A
+    style H1 fill:#B4B2A9,stroke:#5F5E5A,color:#2C2C2A
+    style E1A fill:#FCEBEB,stroke:#E24B4A,color:#A32D2D
+    style E1B fill:#FCEBEB,stroke:#E24B4A,color:#A32D2D
+    style NOTE1 fill:none,stroke:none,color:#A32D2D
+
+    style U2 fill:#F1EFE8,stroke:#B4B2A9,color:#2C2C2A
+    style H2A fill:#E1F5EE,stroke:#0F6E56,color:#085041
+    style H2B fill:#E6F1FB,stroke:#185FA5,color:#0C447C
+    style E2A fill:#E1F5EE,stroke:#0F6E56,color:#085041
+    style E2B fill:#E6F1FB,stroke:#185FA5,color:#0C447C
+    style NOTE2 fill:none,stroke:none,color:#0F6E56
+
+    style BAD fill:#FFF8F8,stroke:#E24B4A
+    style GOOD fill:#F4FBF8,stroke:#0F6E56
