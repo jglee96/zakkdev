@@ -34,7 +34,7 @@
 flowchart TD
   U[Browser: Desktop/Mobile] --> V[Vercel Next.js /finance]
   V --> API[app/api/finance/* Route Handlers]
-  API --> Auth[Auth.js or existing authentication + allowlist]
+  API --> Auth[Password login + signed session cookie]
   API --> Core[Shared Agent Runtime / OpenAI-compatible client]
   Core --> OR[OpenRouter: budget model + tools]
   API <--> DB[(AWS DynamoDB: bots / messages / memories / routines / runs)]
@@ -73,6 +73,19 @@ flowchart TD
 - 장문 공시 원문은 필요할 때만 S3에 저장하고 DB에는 식별자·링크·메타데이터를 기록한다.
 - `AgentRuns`의 원시 실행 로그는 TTL 정리 가능. 핵심 투자 가설/출처/최종 보고서는 별도 보존 정책 사용.
 
+### 개인용 비밀번호 인증 (MVP 확정)
+- GitHub OAuth/계정 allowlist 대신 단일 소유자 비밀번호 로그인을 사용한다. 가입/비밀번호 복구/다중 사용자 기능은 MVP에 포함하지 않으며, OAuth는 다중 사용자 확장 시 검토한다.
+- 비밀번호 원문은 저장하지 않는다. 로컬의 신뢰할 수 있는 도구로 Argon2id 해시를 생성하고 Vercel 서버 환경변수 `FINANCE_PASSWORD_HASH`에 저장한다. 암호학적으로 안전한 난수로 만든 최소 32바이트 세션 서명 키는 `FINANCE_SESSION_SECRET`에 별도 저장한다.
+- 두 변수에 `NEXT_PUBLIC_` 접두사를 붙이지 않는다. Production/Preview별 값을 분리하며 공개 preview도 인증 없이 열지 않는다. 저장소에는 변수 이름/설명만 남기고 원문·해시·서명 키는 코드, Git, 클라이언트 번들, 로그, 채팅에 넣지 않는다. 로컬은 Git에서 제외되는 `.env.local`을 사용한다. 필수 설정이 없으면 인증/금융 API를 닫는다.
+- 공개 `/finance/login` 화면에서 비밀번호를 HTTPS `POST /api/finance/auth/login` 본문으로 보낸다. 서버는 입력 크기 제한 → Origin 검증 → 공유 저장소 rate limit → Argon2id 검증 순서로 처리하며 비밀번호/쿠키/Authorization 원문을 로깅하지 않는다.
+- 로그인 성공 시 검증된 서명 라이브러리로 서버가 고정한 단일 `ownerId`, 발급/만료 시각을 포함한 세션을 발급한다. 서명 알고리즘·issuer·audience를 고정하고 초기 만료는 8시간, 자동 연장은 하지 않는다. 요청 본문이나 LLM의 ownerId를 세션에 복사하지 않는다.
+- 프로덕션 쿠키는 `__Host-finance-session`, `HttpOnly`, `Secure`, `SameSite=Strict`, `Path=/`, Domain 미설정, 세션 만료와 같은 Max-Age를 사용한다. 브라우저 localStorage에 토큰을 저장하지 않는다. HTTP localhost 개발만 별도 쿠키 이름/Secure 예외를 허용하고 배포 환경은 항상 HTTPS 설정을 사용한다.
+- `/finance/login`과 로그인 API를 제외한 금융 화면은 서버에서 세션을 검증하고 미인증 시 로그인으로 보낸다. 보호된 모든 금융 Route Handler는 직접 서명·만료·ownerId를 검증해 미인증에 401을 반환한다. 화면 숨김/middleware만으로 API 보호를 대신하지 않는다. 인증/금융 응답은 `Cache-Control: no-store`로 공유 캐시를 막는다.
+- 로그인·로그아웃 및 상태 변경 POST/PATCH/DELETE는 비밀이 아닌 서버 설정 `FINANCE_APP_ORIGIN`의 정확한 Origin과 비교하고 누락/불일치 요청을 거절한다. 임의의 요청 Host로 허용 Origin을 만들거나 `*.vercel.app` 전체를 허용하지 않는다. SameSite만으로 CSRF 검증을 대신하지 않는다.
+- 로그인 시도 제한은 DynamoDB 조건부 갱신 등 인스턴스 간 공유되는 저장소로 구현한다. 신뢰할 수 있는 배포 플랫폼의 IP 정보 기준 한도와 전체 로그인 경로 한도를 함께 적용하고 실패 시 429/Retry-After를 반환한다. 초기 IP별 15분당 5회, 전체 15분당 30회로 시작하며 영구 계정 잠금은 하지 않는다. 저장소 장애 시 로그인은 거절하고 임의의 X-Forwarded-For를 신뢰하지 않는다.
+- `POST /api/finance/auth/logout`은 같은 속성의 쿠키를 만료시킨다. Stateless 세션이므로 브라우저 쿠키 삭제가 탈취된 세션의 서버측 폐기를 의미하지는 않는다. 전체 세션 폐기는 `FINANCE_SESSION_SECRET` 회전으로 수행하며 비밀번호 변경 시 해시와 서명 키를 함께 회전한다.
+- AWS 예약 Worker는 별도 IAM Role로 실행한다. 웹 비밀번호/쿠키를 SQS에 보내지 않으며 저장된 ownerId와 Bot/Routine 권한을 검증한다.
+
 ### Agent Tool 정책
 - Main: `create_bot`, `list_bots`, `update_bot`, `create_routine`, `pause_routine`, `delete_routine`, `invoke_bot`, `list_reports`.
 - KR Stock: `search_dart_filings`, `get_financials`, `find_relevant_theses`, `save_insight`.
@@ -85,6 +98,8 @@ flowchart TD
 
 | HTTP API | 기능 | 실행 |
 |---|---|---|
+| `POST /api/finance/auth/login` | 비밀번호 검증·세션 쿠키 발급; 인증 전 Origin/rate limit 적용 | Vercel Node.js Route |
+| `POST /api/finance/auth/logout` | 세션 검증·쿠키 만료 | Vercel Node.js Route |
 | `POST /api/finance/chat` | 대화, Main Bot 도구 호출, 짧은 요청의 응답 | Vercel Node.js Route |
 | `GET/POST /api/finance/bots` | 소유 Bot 조회/생성 | Vercel |
 | `GET/PATCH /api/finance/bots/[botId]` | 설정·상태 확인/수정 | Vercel |
@@ -141,7 +156,7 @@ flowchart TD
 - **명시적 timeout:** OpenAI SDK의 기본 timeout 10분/재시도 2회를 그대로 쓰지 않는다. 금융 Provider는 `maxRetries: 0`; Runtime이 일시 장애에 한해 최대 1회 재시도하며 예산과 deadline을 다시 확인한다.
 - 동기 대화는 Route maxDuration 60초를 배포 플랜에서 확인하고 전체 deadline 50초, LLM 호출 timeout 최대 20초(남은 시간 이내), AbortSignal을 사용한다. 플랜 한도가 더 짧으면 deadline을 낮춘다. Worker는 전체 120초, LLM 호출 최대 40초로 시작한다.
 - 큰 리서치는 실행 시작 전에 durable run을 저장하고 SQS로 넘겨 `202 + runId`를 반환한다. enqueue 실패는 run 상태로 기록하고 재전송한다. 동기 deadline을 넘기면 작업을 중단하고 checkpoint/상태를 기록한다. 진행 중 실행을 새 run으로 몰래 재시작하지 않으며, 재개는 같은 run/checkpoint와 명시적인 재시도 경로를 사용한다.
-- 공개 블로그에서 `/finance`는 별도 인증·allowlist로 보호; API Route도 서버측 인증 강제. CloudWatch 등 로그에는 API Key/금융 개인 데이터 노출 금지.
+- 공개 블로그에서 `/finance`는 비밀번호 로그인·서명 세션으로 보호하며 로그인 API를 제외한 금융 API는 서버측 인증을 강제한다. Origin 검사와 공유 로그인 rate limit은 로그인 API에도 적용한다. CloudWatch 등 로그에는 비밀번호/해시/세션 키/쿠키/API Key/금융 개인 데이터 노출 금지.
 - 외부 뉴스·공시 텍스트는 **untrusted tool output**으로 취급하여 Prompt Injection이 Bot 생성·Routine 수정 등 privileged tool 실행으로 이어지지 않도록 분리.
 - 금융상품 매수/매도 지시, 실제 계좌 조작, 개인 맞춤 투자자문은 MVP에서 제외.
 
@@ -177,10 +192,11 @@ docs/
 ## 9. 구현 단계, 완료 조건, 우선순위
 
 ### P0 — 접근 통제·기반 (필수)
-- [ ] `/finance`와 모든 `/api/finance/*` 인증(소유자 allowlist) 적용. 기존 공개 `/ai`는 유지.
+- [ ] `/finance/login`, 비밀번호 로그인/로그아웃 API, 서명 세션 쿠키 및 금융 화면/API 서버측 인증 구현. 기존 공개 `/ai`는 유지.
+- [ ] Argon2id 해시/세션 키의 서버 환경변수 등록·회전 문서, Origin 검사, 분산 로그인 시도 제한 및 설정 누락 시 접근 차단.
 - [ ] AWS CDK 기반 최소 인프라(DynamoDB/예산 저장소, IAM, SQS/Worker DLQ, Scheduler 전달 DLQ, Lambda 및 Scheduler 역할)와 배포/회수 문서 구성. Worker 리소스는 P0에서 준비하고 실제 예약 실행 연결은 P3에서 수행.
 - [ ] 비용 한도, API Key/환경변수, 로컬 실행/배포 문서.
-- **DoD:** 미인증 사용자는 금융 API에 접근할 수 없고 기존 블로그 빌드/AI 페이지가 정상. 인프라 deploy/synth 및 권한 거절 검증, 동시 요청 예산 초과 차단을 확인. 구현 책임은 이슈 #44.
+- **DoD:** 미인증 사용자는 로그인 API 외 금융 API에 접근할 수 없고 기존 블로그 빌드/AI 페이지가 정상. 정상/오류 비밀번호, 위조/만료 세션, 로그아웃, 키 회전, Origin 거절, 여러 서버 인스턴스의 로그인 제한을 검증. 인프라 deploy/synth 및 권한 거절 검증, 동시 요청 예산 초과 차단을 확인. 구현 책임은 이슈 #44.
 
 ### P1 — Main Bot·전문 Bot·대화 (필수)
 - [ ] OpenRouter Provider와 모델별 Tool Calling/JSON schema smoke test.
@@ -215,14 +231,14 @@ docs/
 
 - Unit: Cron/Timezone DST 처리, Tool schema, ownership, finance calculations, 중복/정정 공시, 날짜 정밀도/point-in-time, input/output/step 상한, timeout 및 자식 Bot 예산 공유.
 - Integration (mocked AWS/OpenRouter + disposable AWS 환경 검증): Bot 생성→저장, 원자적 동시 예산 예약/불명확 과금, Routine 등록 응답 유실, 중지/삭제/수정 후 대기 메시지, lease 만료/늦은 Worker 쓰기, 결과 커밋 전후 강제 종료, SQS 재전달/부분 배치 실패, DLQ redrive/reconciliation, permission denial. Mock 통과만으로 실제 AWS 전달 계약 검증을 대신하지 않음.
-- E2E: 기존 사이트 `/ai` 회귀 + `/finance` 인증과 Bot/Routine 여정.
+- E2E: 기존 사이트 `/ai` 회귀 + 비밀번호 로그인/로그아웃 및 `/finance` Bot/Routine 여정. API 직접 호출·위조/만료 쿠키·Origin 누락/불일치·동시 로그인 제한·환경변수 누락·키 회전도 검증하고 응답/클라이언트 번들/로그에 시크릿이 없는지 확인.
 - 로그: `requestId`, `runId`, `botId`, duration, 모델, token usage, 비용 추정, tool execution outcome(민감한 입력/출력 원문 저장 최소화).
 - 배포/롤백: `/finance` feature flag, IAM least privilege, CDK destroy 범위와 DynamoDB data retention 정책 분리.
 - 의사결정 게이트: P1 완료 후 OpenRouter 모델 품질/비용 확인 → P2 진행; P2 데이터 정확도 확인 → P3 예약 실행 연결.
 
 ## 11. 확인해야 할 설계 결정
 
-1. 개인용 최초 사용자를 위한 인증: GitHub OAuth + 계정 allowlist를 권장(현재 repo에 인증 구현 없음).
+1. **확정:** 개인용 MVP는 Argon2id 비밀번호 검증 + 만료되는 서명 세션 쿠키. 서버 환경변수로 해시/세션 키를 관리하며 GitHub OAuth는 후속 다중 사용자 확장 시 검토.
 2. OpenRouter 기본/예비 모델: 가격보다 **Tool Calling과 근거 있는 금융 분석 품질**을 먼저 smoke test해서 결정.
 3. 지수 선물: MVP에서는 Bot 템플릿만 제공하고 실시간 데이터 도구는 비활성화.
 4. 블로그 레이아웃 `maxWidth: 768`을 금융 화면에서 우회할지(초기 단일 컬럼 vs 금융 전용 Layout).
