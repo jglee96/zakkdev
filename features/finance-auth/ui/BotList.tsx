@@ -43,9 +43,9 @@ export function BotList({ onRefresh }: { onRefresh: () => void }) {
 
   return (
     <Stack gap="md" w="100%" data-testid="bot-list-container">
-      <Group justify="space-between">
+      <Group justify="space-between" align="flex-end" wrap="wrap" gap="sm" w="100%" style={{ minWidth: 0 }}>
         <Title order={4}>봇 관리</Title>
-        <Group gap="xs">
+        <Group gap="xs" style={{ flexShrink: 0 }}>
           <Tooltip label="새로고침">
             <ActionIcon variant="subtle" onClick={onRefresh} data-testid="refresh-bots">
               <IconRefresh size={18} />

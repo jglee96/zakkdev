@@ -29,6 +29,28 @@ body {
 }
 
 /* 제품 엣지 스트라이프 — Braun 악센트 */
+.finance-chat-markdown {
+  font-size: var(--mantine-font-size-sm);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.finance-chat-markdown h2,
+.finance-chat-markdown h3 {
+  font-size: var(--mantine-font-size-md);
+  font-weight: 500;
+  margin: 0.75rem 0 0.35rem;
+}
+
+.finance-chat-markdown p,
+.finance-chat-markdown ul {
+  margin: 0.35rem 0;
+}
+
+.finance-chat-markdown ul {
+  padding-left: 1.25rem;
+}
+
 body::before {
   content: "";
   position: fixed;

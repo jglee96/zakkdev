@@ -19,6 +19,7 @@ import {
 } from "@mantine/core";
 import { IconRobot, IconSend, IconUser, IconAlertCircle, IconClock, IconCoin } from "@tabler/icons-react";
 import { useFinanceStore, type Message, type ChatResponse } from "../store/finance-store";
+import { ChatMessageContent } from "./chat-message-content";
 
 const MAIN_BOT_ID = "main-bot";
 
@@ -113,17 +114,20 @@ export function ChatPanel() {
 
   return (
     <Stack flex={1} mih={0} w="100%" gap="md" style={{ minHeight: "calc(100vh - 180px)" }} data-testid="chat-panel">
-      <Group justify="space-between" wrap="nowrap">
-        <Title order={4}>채팅</Title>
-        <Select
-          data-testid="bot-selector"
-          data={botOptions}
-          value={activeBotId}
-          onChange={(v) => setSelectedBotId(v)}
-          placeholder="봇 선택"
-          w={200}
-          size="sm"
-        />
+      <Group justify="space-between" align="flex-end" wrap="wrap" gap="sm" w="100%" style={{ minWidth: 0 }}>
+        <Title order={4} style={{ flex: "0 0 auto" }}>채팅</Title>
+        <Box style={{ flex: "1 1 180px", minWidth: 0, maxWidth: 280 }}>
+          <Select
+            data-testid="bot-selector"
+            data={botOptions}
+            value={activeBotId}
+            onChange={(v) => setSelectedBotId(v)}
+            placeholder="봇 선택"
+            w="100%"
+            size="sm"
+            comboboxProps={{ withinPortal: true }}
+          />
+        </Box>
       </Group>
 
       <Paper withBorder flex={1} style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
@@ -206,7 +210,7 @@ function MessageBubble({ message }: { message: Message }) {
   const isUser = message.role === "user";
 
   return (
-    <Group gap="sm" align="flex-start" wrap="nowrap">
+    <Group gap="sm" align="flex-start" wrap="nowrap" w="100%" style={{ minWidth: 0 }}>
       <ThemeIcon
         size="sm"
         radius="xl"
@@ -221,11 +225,15 @@ function MessageBubble({ message }: { message: Message }) {
         padding="sm"
         radius="md"
         bg={isUser ? "gray.1" : "blue.0"}
-        style={{ maxWidth: "80%" }}
+        style={{ maxWidth: "min(100%, 720px)", minWidth: 0, flex: 1 }}
       >
-        <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
-          {message.content}
-        </Text>
+        {isUser || !message.content ? (
+          <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
+            {message.content}
+          </Text>
+        ) : (
+          <ChatMessageContent content={message.content} />
+        )}
       </Card>
     </Group>
   );

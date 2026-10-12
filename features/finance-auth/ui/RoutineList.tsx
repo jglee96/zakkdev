@@ -101,9 +101,9 @@ export function RoutineList({ onRefresh }: { onRefresh: () => void }) {
 
   return (
     <Stack gap="md" w="100%" data-testid="routine-list-container">
-      <Group justify="space-between">
+      <Group justify="space-between" align="flex-end" wrap="wrap" gap="sm" w="100%" style={{ minWidth: 0 }}>
         <Title order={4}>정기 실행 (루틴)</Title>
-        <Group gap="xs">
+        <Group gap="xs" style={{ flexShrink: 0 }}>
           <Tooltip label="새로고침">
             <ActionIcon variant="subtle" onClick={onRefresh} data-testid="refresh-routines">
               <IconRefresh size={18} />

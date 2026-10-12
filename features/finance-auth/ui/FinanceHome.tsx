@@ -142,17 +142,20 @@ export function FinanceHome() {
     <AppShell
       header={{ height: 60 }}
       navbar={{ width: 220, breakpoint: "sm", collapsed: { mobile: !opened } }}
-      padding="md"
-      style={{ minHeight: "calc(100vh - 64px)", width: "100%" }}
+      padding={{ base: "xs", sm: "sm" }}
+      style={{ minHeight: "calc(100vh - 64px)", width: "100%", maxWidth: "100%", overflow: "hidden" }}
       styles={{
-        root: { width: "100%" },
+        root: { width: "100%", maxWidth: "100%", overflow: "hidden" },
         main: {
           flex: 1,
           width: "100%",
-          maxWidth: "none",
+          maxWidth: "100%",
+          minWidth: 0,
           alignItems: "stretch",
           display: "flex",
           flexDirection: "column",
+          paddingTop: "var(--mantine-spacing-xs)",
+          overflow: "hidden",
         },
       }}
     >
@@ -225,8 +228,18 @@ export function FinanceHome() {
           w="100%"
           maw={1100}
           mx="auto"
-          px="md"
-          style={{ flex: 1, width: "100%", display: "flex", flexDirection: "column", minHeight: 0, alignSelf: "stretch" }}
+          px={{ base: "sm", sm: "md" }}
+          style={{
+            flex: 1,
+            width: "100%",
+            maxWidth: "min(1100px, 100%)",
+            boxSizing: "border-box",
+            display: "flex",
+            flexDirection: "column",
+            minHeight: 0,
+            minWidth: 0,
+            alignSelf: "stretch",
+          }}
         >
           {logoutError && (
             <Alert color="red" mb="md" withCloseButton onClose={() => setLogoutError(null)}>
