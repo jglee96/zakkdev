@@ -38,6 +38,8 @@ const STATUS_BADGE: Record<RoutineStatus, { color: string; label: string }> = {
   deleted: { color: "red", label: "삭제됨" },
 };
 
+const DEFAULT_STATUS_BADGE = { color: "gray", label: "알 수 없음" };
+
 const TIMEZONE_OPTIONS = [
   { value: "Asia/Seoul", label: "서울 (KST)" },
   { value: "America/New_York", label: "뉴욕 (EST)" },
@@ -118,7 +120,7 @@ function RoutineCard({
   onSelect: () => void;
   onRefresh: () => void;
 }) {
-  const status = STATUS_BADGE[routine.status];
+  const status = STATUS_BADGE[routine.status] || DEFAULT_STATUS_BADGE;
   const [isToggling, setIsToggling] = useState(false);
 
   async function toggleStatus() {
