@@ -91,35 +91,23 @@ async function assertNoFinanceAppHeader(ctx: TestContext, label: string) {
 }
 
 async function assertChatChromeVisible(ctx: TestContext, label: string) {
-  const state = await ctx.page.evaluate(() => {
-    const vh = window.innerHeight;
-    const vw = window.innerWidth;
-    const visible = (el: Element | null) => {
-      if (!el) return false;
-      const rect = el.getBoundingClientRect();
-      return (
-        rect.width > 0 &&
-        rect.height > 0 &&
-        rect.bottom > 0 &&
-        rect.top < vh &&
-        rect.right > 0 &&
-        rect.left < vw
-      );
-    };
-    const title = document.querySelector('[data-testid="chat-page-title"]');
-    const selector = document.querySelector('[data-testid="bot-selector"]');
-    const header = document.querySelector('[data-testid="chat-page-header"]');
-    return {
-      title: visible(title),
-      selector: visible(selector),
-      header: visible(header),
-      titleText: title?.textContent?.trim(),
-    };
+  const titleOk = await ctx.page.$eval('[data-testid="chat-page-title"]', (el) => {
+    const rect = el.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < window.innerHeight;
   });
-  assert.ok(state.header, `${label}: chat page header should be visible`);
-  assert.ok(state.title, `${label}: chat title should be visible`);
-  assert.equal(state.titleText, "채팅", `${label}: chat title text`);
-  assert.ok(state.selector, `${label}: bot selector should be visible`);
+  const titleText = await ctx.page.$eval('[data-testid="chat-page-title"]', (el) => el.textContent?.trim() ?? "");
+  const headerOk = await ctx.page.$eval('[data-testid="chat-page-header"]', (el) => {
+    const rect = el.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < window.innerHeight;
+  });
+  const selectorOk = await ctx.page.$eval('[data-testid="bot-selector"]', (el) => {
+    const rect = el.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < window.innerHeight;
+  });
+  assert.ok(headerOk, `${label}: chat page header should be visible`);
+  assert.ok(titleOk, `${label}: chat title should be visible`);
+  assert.equal(titleText, "채팅", `${label}: chat title text`);
+  assert.ok(selectorOk, `${label}: bot selector should be visible`);
 }
 
 async function assertChatInputInViewport(ctx: TestContext, label: string) {
@@ -498,6 +486,7 @@ async function testLogin(ctx: TestContext) {
   
   await ctx.page.goto(`${ctx.origin}/finance/login`, { waitUntil: "networkidle2" });
   
+  await assertSingleThemeToggle(ctx, "01-login-desktop");
   await assertSiteNavVisible(ctx, "01-login-desktop");
   const { content: loginContent } = await takeScreenshot(ctx, "01-login-desktop-1440x900", { width: 1440, height: 900 });
   assert.ok(loginContent.includes("로그인") || loginContent.includes("비밀번호"), "Login page should show login form");
@@ -543,6 +532,8 @@ async function testLogin(ctx: TestContext) {
   
   await new Promise((resolve) => setTimeout(resolve, 1500));
   await assertSiteNavVisible(ctx, "finance-home-after-login");
+  await assertSingleThemeToggle(ctx, "finance-home-after-login");
+  await assertNoFinanceAppHeader(ctx, "finance-home-after-login");
 }
 
 async function injectMockMessages(ctx: TestContext) {
@@ -608,12 +599,18 @@ async function testChatWithSources(ctx: TestContext) {
   
   await new Promise((resolve) => setTimeout(resolve, 500));
   
+  await assertSingleThemeToggle(ctx, "02-chat-desktop");
+  await assertNoFinanceAppHeader(ctx, "02-chat-desktop");
   await assertSiteNavVisible(ctx, "02-chat-desktop");
+  await assertChatChromeVisible(ctx, "02-chat-desktop");
   await assertChatInputInViewport(ctx, "02-chat-desktop");
   const { content: chatContent } = await takeScreenshot(ctx, "02-chat-with-sources-desktop-1440x900", { width: 1440, height: 900 });
   await ctx.page.setViewport({ width: 390, height: 844 });
   await new Promise((resolve) => setTimeout(resolve, 500));
+  await assertSingleThemeToggle(ctx, "02-chat-mobile");
+  await assertNoFinanceAppHeader(ctx, "02-chat-mobile");
   await assertSiteNavVisible(ctx, "02-chat-mobile");
+  await assertChatChromeVisible(ctx, "02-chat-mobile");
   await assertChatInputInViewport(ctx, "02-chat-mobile");
   await takeScreenshot(ctx, "02-chat-with-sources-mobile-390x844", { width: 390, height: 844 });
   
