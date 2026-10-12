@@ -10,7 +10,6 @@ import {
   Collapse,
   Group,
   Loader,
-  Modal,
   Progress,
   Stack,
   Text,
@@ -32,6 +31,7 @@ import {
   IconX,
 } from "@tabler/icons-react";
 import { useFinanceStore, type AgentRun, type RunStatus } from "../store/finance-store";
+import { FinanceModal } from "./FinanceModal";
 
 const STATUS_CONFIG: Record<RunStatus, { color: string; label: string; icon: typeof IconCheck }> = {
   queued: { color: "blue", label: "대기중", icon: IconClock },
@@ -230,7 +230,7 @@ function RunDetailModal({ run, onClose }: { run: AgentRun | null; onClose: () =>
     : 0;
 
   return (
-    <Modal opened={!!run} onClose={onClose} title="실행 상세" size="lg">
+    <FinanceModal opened={!!run} onClose={onClose} title="실행 상세" size="lg" data-testid="run-detail-modal">
       <Stack gap="md">
         <Group justify="space-between">
           <Badge size="lg" color={status.color}>{status.label}</Badge>
@@ -338,6 +338,6 @@ function RunDetailModal({ run, onClose }: { run: AgentRun | null; onClose: () =>
           </Box>
         )}
       </Stack>
-    </Modal>
+    </FinanceModal>
   );
 }

@@ -10,7 +10,6 @@ import {
   Card,
   Group,
   Loader,
-  Modal,
   Select,
   Stack,
   Text,
@@ -30,6 +29,7 @@ import {
   IconEdit,
 } from "@tabler/icons-react";
 import { useFinanceStore, type Routine, type RoutineStatus } from "../store/finance-store";
+import { FinanceModal } from "./FinanceModal";
 
 const STATUS_BADGE: Record<RoutineStatus, { color: string; label: string }> = {
   pending: { color: "yellow", label: "대기" },
@@ -291,7 +291,7 @@ function CreateRoutineModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title="루틴 생성" size="lg" data-testid="create-routine-modal">
+    <FinanceModal opened={opened} onClose={onClose} title="루틴 생성" size="lg" data-testid="create-routine-modal">
       <Stack gap="md">
         <TextInput
           data-testid="routine-name-input"
@@ -346,7 +346,7 @@ function CreateRoutineModal({
           <Button onClick={handleCreate} loading={isCreating} data-testid="submit-create-routine">생성</Button>
         </Group>
       </Stack>
-    </Modal>
+    </FinanceModal>
   );
 }
 
@@ -441,7 +441,7 @@ function RoutineDetailModal({
   }
 
   return (
-    <Modal opened={!!routine} onClose={onClose} title="루틴 편집" size="lg">
+    <FinanceModal opened={!!routine} onClose={onClose} title="루틴 편집" size="lg" data-testid="edit-routine-modal">
       <Stack gap="md">
         <TextInput
           label="루틴 이름"
@@ -490,6 +490,6 @@ function RoutineDetailModal({
           </Group>
         </Group>
       </Stack>
-    </Modal>
+    </FinanceModal>
   );
 }

@@ -110,6 +110,51 @@ async function assertChatChromeVisible(ctx: TestContext, label: string) {
   assert.ok(selectorOk, `${label}: bot selector should be visible`);
 }
 
+async function assertFinanceModalLayout(ctx: TestContext, modalTestId: string, label: string) {
+  const state = await ctx.page.evaluate((testId) => {
+    const modalRoot = document.querySelector(`[data-testid="${testId}"]`);
+    const dialog =
+      modalRoot?.closest('[role="dialog"]') ??
+      document.querySelector('[role="dialog"][data-modal-content]') ??
+      modalRoot;
+    if (!dialog) return { ok: false, reason: "modal-missing" };
+    const rect = dialog.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+    const inViewport =
+      rect.top > 0 &&
+      rect.left >= 0 &&
+      rect.bottom <= vh &&
+      rect.right <= vw &&
+      rect.width > 0 &&
+      rect.height > 0;
+    const header = document.querySelector('[data-testid="site-app-shell-header"]');
+    let overlayCoversHeader = false;
+    if (header) {
+      const hr = header.getBoundingClientRect();
+      const cx = Math.min(Math.max(hr.left + hr.width / 2, 0), vw - 1);
+      const cy = Math.min(Math.max(hr.top + hr.height / 2, 0), vh - 1);
+      const topEl = document.elementFromPoint(cx, cy);
+      overlayCoversHeader = Boolean(
+        topEl &&
+          !topEl.closest('[data-testid="site-app-shell-header"]') &&
+          !topEl.closest('[data-testid="site-header"]'),
+      );
+    }
+    const overlay = document.querySelector('[data-testid="finance-modal-overlay"]');
+    return {
+      ok: inViewport && overlayCoversHeader && Boolean(overlay),
+      inViewport,
+      overlayCoversHeader,
+      hasOverlay: Boolean(overlay),
+      top: rect.top,
+      bottom: rect.bottom,
+      vh,
+    };
+  }, modalTestId);
+  assert.ok(state.ok, `${label}: finance modal layout (${JSON.stringify(state)})`);
+}
+
 async function closeMobileFinanceNav(ctx: TestContext) {
   await ctx.page.evaluate(() => {
     const burger = document.querySelector('[data-testid="finance-nav-burger"]');
@@ -754,8 +799,12 @@ async function testBotCreateModal(ctx: TestContext) {
     el.dispatchEvent(new Event("input", { bubbles: true }));
   }, "매일 아침 주요 종목 공시와 재무 변화를 요약하고, DART 원문 URL과 공시일을 반드시 포함합니다.");
   await new Promise((resolve) => setTimeout(resolve, 500));
-  
+  await assertFinanceModalLayout(ctx, "create-bot-modal", "04-bot-create-desktop");
   const { content: modalContent } = await takeScreenshot(ctx, "04-bot-create-modal-desktop-1440x900", { width: 1440, height: 900 });
+  await ctx.page.setViewport({ width: 390, height: 844 });
+  await closeMobileFinanceNav(ctx);
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  await assertFinanceModalLayout(ctx, "create-bot-modal", "04-bot-create-mobile");
   await takeScreenshot(ctx, "04-bot-create-modal-mobile-390x844", { width: 390, height: 844 });
   
   assert.ok(
@@ -794,7 +843,12 @@ async function testBotDetail(ctx: TestContext) {
       return input instanceof HTMLTextAreaElement ? input.value : "";
     });
     assert.ok(detailInstr.length > 0, "Bot detail modal should prefill instructions");
+    await assertFinanceModalLayout(ctx, "bot-detail-modal", "05-bot-detail-desktop");
     const { content: detailContent } = await takeScreenshot(ctx, "05-bot-detail-desktop-1440x900", { width: 1440, height: 900 });
+    await ctx.page.setViewport({ width: 390, height: 844 });
+    await closeMobileFinanceNav(ctx);
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    await assertFinanceModalLayout(ctx, "bot-detail-modal", "05-bot-detail-mobile");
     await takeScreenshot(ctx, "05-bot-detail-mobile-390x844", { width: 390, height: 844 });
     
     assert.ok(
@@ -849,7 +903,12 @@ async function testRoutineCreate(ctx: TestContext) {
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   
+  await assertFinanceModalLayout(ctx, "create-routine-modal", "07-routine-create-desktop");
   const { content: modalContent } = await takeScreenshot(ctx, "07-routine-create-modal-desktop-1440x900", { width: 1440, height: 900 });
+  await ctx.page.setViewport({ width: 390, height: 844 });
+  await closeMobileFinanceNav(ctx);
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  await assertFinanceModalLayout(ctx, "create-routine-modal", "07-routine-create-mobile");
   await takeScreenshot(ctx, "07-routine-create-modal-mobile-390x844", { width: 390, height: 844 });
   
   assert.ok(

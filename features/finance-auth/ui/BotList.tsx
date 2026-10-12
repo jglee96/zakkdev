@@ -10,7 +10,6 @@ import {
   Card,
   Group,
   Loader,
-  Modal,
   Select,
   Stack,
   Text,
@@ -23,6 +22,7 @@ import { useDisclosure } from "@mantine/hooks";
 import { IconPlus, IconRefresh, IconRobot, IconSettings, IconTrash } from "@tabler/icons-react";
 import { useFinanceStore, type Bot, type BotTemplate } from "../store/finance-store";
 import { getToolLabelKo, normalizeToolCode } from "./tool-labels";
+import { FinanceModal } from "./FinanceModal";
 
 const TEMPLATE_OPTIONS = [
   { value: "main", label: "메인 봇 - 종합 금융 분석" },
@@ -181,7 +181,7 @@ function CreateBotModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title="봇 생성" data-testid="create-bot-modal">
+    <FinanceModal opened={opened} onClose={onClose} title="봇 생성" data-testid="create-bot-modal">
       <Stack gap="md">
         <TextInput
           data-testid="bot-name-input"
@@ -214,7 +214,7 @@ function CreateBotModal({
           <Button onClick={handleCreate} loading={isCreating} data-testid="submit-create-bot">생성</Button>
         </Group>
       </Stack>
-    </Modal>
+    </FinanceModal>
   );
 }
 
@@ -282,7 +282,7 @@ function BotDetailModal({
   }
 
   return (
-    <Modal opened={!!bot} onClose={onClose} title="봇 설정" size="lg" data-testid="bot-detail-modal">
+    <FinanceModal opened={!!bot} onClose={onClose} title="봇 설정" size="lg" data-testid="bot-detail-modal">
       <Stack gap="md">
         <TextInput
           data-testid="bot-detail-name-input"
@@ -329,6 +329,6 @@ function BotDetailModal({
           <Button onClick={handleUpdate} loading={isUpdating}>저장</Button>
         </Group>
       </Stack>
-    </Modal>
+    </FinanceModal>
   );
 }
