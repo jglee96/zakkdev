@@ -234,10 +234,7 @@ export function FinanceHome() {
           }}
         >
           <Group gap="sm" wrap="nowrap">
-            <Burger opened={opened} onClick={toggle} size="sm" aria-label="금융 메뉴" data-testid="finance-nav-burger" />
-            <Text size="sm" fw={500} truncate>
-              {activeLabel}
-            </Text>
+            <Burger opened={opened} onClick={toggle} size="sm" aria-label={`금융 메뉴: ${activeLabel}`} data-testid="finance-nav-burger" />
           </Group>
         </Box>
 
