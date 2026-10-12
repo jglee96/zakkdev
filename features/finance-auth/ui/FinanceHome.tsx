@@ -143,7 +143,18 @@ export function FinanceHome() {
       header={{ height: 60 }}
       navbar={{ width: 220, breakpoint: "sm", collapsed: { mobile: !opened } }}
       padding="md"
-      style={{ minHeight: "calc(100vh - 64px)" }}
+      style={{ minHeight: "calc(100vh - 64px)", width: "100%" }}
+      styles={{
+        root: { width: "100%" },
+        main: {
+          flex: 1,
+          width: "100%",
+          maxWidth: "none",
+          alignItems: "stretch",
+          display: "flex",
+          flexDirection: "column",
+        },
+      }}
     >
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
@@ -209,13 +220,13 @@ export function FinanceHome() {
         </Stack>
       </AppShell.Navbar>
 
-      <AppShell.Main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+      <AppShell.Main>
         <Box
           w="100%"
           maw={1100}
           mx="auto"
           px="md"
-          style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}
+          style={{ flex: 1, width: "100%", display: "flex", flexDirection: "column", minHeight: 0, alignSelf: "stretch" }}
         >
           {logoutError && (
             <Alert color="red" mb="md" withCloseButton onClose={() => setLogoutError(null)}>
@@ -229,12 +240,12 @@ export function FinanceHome() {
               <Text c="dimmed" mt="md">로딩 중...</Text>
             </Box>
           ) : (
-            <>
+            <Box component="div" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, width: "100%" }}>
               {activeTab === "chat" && <ChatPanel />}
               {activeTab === "bots" && <BotList onRefresh={fetchBots} />}
               {activeTab === "routines" && <RoutineList onRefresh={fetchRoutines} />}
               {activeTab === "runs" && <RunList onRefresh={fetchRuns} />}
-            </>
+            </Box>
           )}
         </Box>
       </AppShell.Main>
