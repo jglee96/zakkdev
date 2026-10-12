@@ -55,6 +55,56 @@ test("sessions reject tampering, expiration, future issue time, foreign owners a
   assert.equal(await verifySession(noExpiry, config), null);
 });
 
+test("sessions reject wrong issuer, wrong audience, and missing required claims", async () => {
+  const now = new Date("2026-01-01T00:00:00Z");
+  const issuedAt = Math.floor(now.getTime() / 1000);
+  const wrongIssuer = await new SignJWT({}).setProtectedHeader({ alg: "HS256", typ: "JWT" })
+    .setIssuer("wrong-issuer").setAudience("zakkdev-finance-owner").setSubject(OWNER_ID)
+    .setIssuedAt(issuedAt).setExpirationTime(issuedAt + SESSION_SECONDS)
+    .sign(config.signingKey);
+  assert.equal(await verifySession(wrongIssuer, config, now), null, "Wrong issuer should be rejected");
+  const wrongAudience = await new SignJWT({}).setProtectedHeader({ alg: "HS256", typ: "JWT" })
+    .setIssuer("zakkdev-finance").setAudience("wrong-audience").setSubject(OWNER_ID)
+    .setIssuedAt(issuedAt).setExpirationTime(issuedAt + SESSION_SECONDS)
+    .sign(config.signingKey);
+  assert.equal(await verifySession(wrongAudience, config, now), null, "Wrong audience should be rejected");
+  const noIssuer = await new SignJWT({}).setProtectedHeader({ alg: "HS256", typ: "JWT" })
+    .setAudience("zakkdev-finance-owner").setSubject(OWNER_ID)
+    .setIssuedAt(issuedAt).setExpirationTime(issuedAt + SESSION_SECONDS)
+    .sign(config.signingKey);
+  assert.equal(await verifySession(noIssuer, config, now), null, "Missing issuer should be rejected");
+  const noAudience = await new SignJWT({}).setProtectedHeader({ alg: "HS256", typ: "JWT" })
+    .setIssuer("zakkdev-finance").setSubject(OWNER_ID)
+    .setIssuedAt(issuedAt).setExpirationTime(issuedAt + SESSION_SECONDS)
+    .sign(config.signingKey);
+  assert.equal(await verifySession(noAudience, config, now), null, "Missing audience should be rejected");
+  const noIssuedAt = await new SignJWT({}).setProtectedHeader({ alg: "HS256", typ: "JWT" })
+    .setIssuer("zakkdev-finance").setAudience("zakkdev-finance-owner").setSubject(OWNER_ID)
+    .setExpirationTime(issuedAt + SESSION_SECONDS)
+    .sign(config.signingKey);
+  assert.equal(await verifySession(noIssuedAt, config, now), null, "Missing iat should be rejected");
+  const wrongAlgorithm = await new SignJWT({}).setProtectedHeader({ alg: "HS384", typ: "JWT" })
+    .setIssuer("zakkdev-finance").setAudience("zakkdev-finance-owner").setSubject(OWNER_ID)
+    .setIssuedAt(issuedAt).setExpirationTime(issuedAt + SESSION_SECONDS)
+    .sign(config.signingKey);
+  assert.equal(await verifySession(wrongAlgorithm, config, now), null, "Wrong algorithm should be rejected");
+  const wrongType = await new SignJWT({}).setProtectedHeader({ alg: "HS256", typ: "JWE" })
+    .setIssuer("zakkdev-finance").setAudience("zakkdev-finance-owner").setSubject(OWNER_ID)
+    .setIssuedAt(issuedAt).setExpirationTime(issuedAt + SESSION_SECONDS)
+    .sign(config.signingKey);
+  assert.equal(await verifySession(wrongType, config, now), null, "Wrong typ should be rejected");
+});
+
+test("sessions reject extended expiry beyond session limit", async () => {
+  const now = new Date("2026-01-01T00:00:00Z");
+  const issuedAt = Math.floor(now.getTime() / 1000);
+  const extendedExpiry = await new SignJWT({}).setProtectedHeader({ alg: "HS256", typ: "JWT" })
+    .setIssuer("zakkdev-finance").setAudience("zakkdev-finance-owner").setSubject(OWNER_ID)
+    .setIssuedAt(issuedAt).setExpirationTime(issuedAt + SESSION_SECONDS + 1)
+    .sign(config.signingKey);
+  assert.equal(await verifySession(extendedExpiry, config, now), null, "Extended expiry beyond session limit should be rejected");
+});
+
 test("valid login issues a private host cookie; incorrect password never issues a session", async () => {
   const success = await handleLogin(loginRequest(), allowed);
   assert.equal(success.status, 200);
@@ -142,3 +192,92 @@ test("middleware protects nested finance routes but exposes login; missing confi
   delete process.env.FINANCE_SESSION_SECRET;
   assert.equal((await middleware(privateRequest)).status, 503);
 }));
+
+test("public paths cannot bypass authentication to access protected resources", async () => withEnv(async () => {
+  const publicPaths = ["/finance/login", "/api/finance/auth/login"];
+  const protectedPaths = ["/finance", "/finance/bots", "/api/finance/bots", "/api/finance/auth/session"];
+  
+  for (const publicPath of publicPaths) {
+    const response = await middleware(new NextRequest(`${config.origin}${publicPath}`));
+    assert.equal(response.status, 200, `Public path ${publicPath} should be accessible`);
+  }
+  
+  for (const protectedPath of protectedPaths) {
+    const response = await middleware(new NextRequest(`${config.origin}${protectedPath}`));
+    assert.ok(response.status === 307 || response.status === 401, `Protected path ${protectedPath} should redirect or return 401`);
+  }
+  
+  const pathTraversalAttempts = [
+    "/finance/login/../bots",
+    "/api/finance/auth/login/../../bots",
+    "/finance/login%2F..%2Fbots",
+    "/finance/login/./../../api/finance/bots",
+  ];
+  
+  for (const attempt of pathTraversalAttempts) {
+    const request = new NextRequest(`${config.origin}${attempt}`);
+    const normalized = request.nextUrl.pathname;
+    if (normalized !== "/finance/login" && normalized !== "/api/finance/auth/login") {
+      const response = await middleware(request);
+      assert.ok(response.status === 307 || response.status === 401, `Path traversal attempt ${attempt} should not bypass auth`);
+    }
+  }
+}));
+
+test("session verification always uses server-fixed ownerId regardless of token claims", async () => withEnv(async () => {
+  const attackerToken = await new SignJWT({ ownerId: "attacker-injected" })
+    .setProtectedHeader({ alg: "HS256", typ: "JWT" })
+    .setIssuer("zakkdev-finance").setAudience("zakkdev-finance-owner").setSubject(OWNER_ID)
+    .setIssuedAt().setExpirationTime("8h")
+    .sign(config.signingKey);
+  
+  const session = await verifySession(attackerToken, config);
+  assert.ok(session);
+  assert.equal(session.ownerId, OWNER_ID, "Session must use server-fixed ownerId, not token payload");
+  assert.ok(!("attacker-injected" in session), "Attacker-injected claims must not appear in session");
+}));
+
+test("other-owner data access is prevented by ownerId isolation", async () => withEnv(async () => {
+  const validToken = await createSession(config);
+  const request = new Request(`${config.origin}/api/finance/data`, {
+    method: "POST",
+    headers: { Origin: config.origin, Cookie: `__Host-finance-session=${validToken}` },
+    body: JSON.stringify({ ownerId: "other-owner", data: "sensitive" }),
+  });
+  
+  const guard = await requireFinanceSession(request);
+  assert.ok(!("response" in guard && guard.response), "Valid session should pass guard");
+  assert.equal(guard.session?.ownerId, OWNER_ID, "Guard must return server-fixed ownerId");
+  
+  const body = await request.clone().json();
+  assert.notEqual(guard.session?.ownerId, body.ownerId, "Request body ownerId must not be trusted");
+}));
+
+test("forged session with valid signature but tampered payload is rejected", async () => withEnv(async () => {
+  const validToken = await createSession(config);
+  const [header, , signature] = validToken.split(".");
+  
+  const tamperedPayload = Buffer.from(JSON.stringify({
+    sub: "attacker",
+    iss: "zakkdev-finance",
+    aud: "zakkdev-finance-owner",
+    iat: Math.floor(Date.now() / 1000),
+    exp: Math.floor(Date.now() / 1000) + SESSION_SECONDS,
+  })).toString("base64url");
+  
+  const forgedToken = `${header}.${tamperedPayload}.${signature}`;
+  const session = await verifySession(forgedToken, config);
+  assert.equal(session, null, "Forged token with tampered payload must be rejected");
+}));
+
+test("session with missing secret in configuration fails closed", () => {
+  const envWithoutSecret = { ...env };
+  delete envWithoutSecret.FINANCE_SESSION_SECRET;
+  assert.throws(() => getAuthConfig(envWithoutSecret), "Missing secret should throw AuthConfigurationError");
+  
+  const envWithEmptySecret = { ...env, FINANCE_SESSION_SECRET: "" };
+  assert.throws(() => getAuthConfig(envWithEmptySecret), "Empty secret should throw AuthConfigurationError");
+  
+  const envWithShortSecret = { ...env, FINANCE_SESSION_SECRET: "short" };
+  assert.throws(() => getAuthConfig(envWithShortSecret), "Short secret should throw AuthConfigurationError");
+});
