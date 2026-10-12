@@ -110,7 +110,17 @@ export default function RootLayout({
             >
               <SiteHeader />
             </AppShellHeader>
-            <AppShellMain style={{ overflowX: "clip", width: "100%", maxWidth: "100%" }}>
+            <AppShellMain
+              style={{
+                overflowX: "clip",
+                width: "100%",
+                maxWidth: "100%",
+                display: "flex",
+                flexDirection: "column",
+                minHeight: 0,
+                ["--site-app-shell-header-height" as string]: `${SITE_APP_SHELL_HEADER_HEIGHT_PX}px`,
+              }}
+            >
               {children}
             </AppShellMain>
           </AppShell>
