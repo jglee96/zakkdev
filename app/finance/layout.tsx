@@ -7,7 +7,7 @@ export default function FinanceLayout({ children }: { children: React.ReactNode 
       data-testid="finance-layout-bleed"
       w="100%"
       maw="100%"
-      pt={{ base: 8, sm: 12 }}
+      pt={{ base: 4, sm: 6 }}
       pb={{ base: 24, sm: 32 }}
       style={{ boxSizing: "border-box", overflowX: "clip", minWidth: 0 }}
     >

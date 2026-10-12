@@ -143,7 +143,7 @@ export function FinanceHome() {
       header={{ height: 60 }}
       navbar={{ width: 220, breakpoint: "sm", collapsed: { mobile: !opened } }}
       padding={{ base: "xs", sm: "sm" }}
-      style={{ minHeight: "calc(100vh - 64px)", width: "100%", maxWidth: "100%", overflow: "hidden" }}
+      style={{ minHeight: "calc(100dvh - 64px)", width: "100%", maxWidth: "100%", overflow: "hidden" }}
       styles={{
         root: { width: "100%", maxWidth: "100%", overflow: "hidden" },
         main: {
@@ -154,7 +154,7 @@ export function FinanceHome() {
           alignItems: "stretch",
           display: "flex",
           flexDirection: "column",
-          paddingTop: "var(--mantine-spacing-xs)",
+          paddingTop: 0,
           overflow: "hidden",
         },
       }}

@@ -108,7 +108,7 @@ export default function RootLayout({
             >
               <SiteHeader />
             </AppShellHeader>
-            <AppShellMain mx={{ sm: 80, md: 160, xl: 340 }} style={{ overflowX: "clip" }}>
+            <AppShellMain style={{ overflowX: "clip", width: "100%", maxWidth: "100%" }}>
               {children}
             </AppShellMain>
           </AppShell>
