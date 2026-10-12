@@ -316,7 +316,9 @@ export async function runAgent(
 
 function createDefaultToolExecutor(): ToolExecutor {
   const { createKRToolExecutor } = require("./kr-tools");
+  const { createRoutineToolExecutor } = require("./routine-tools");
   const krToolExecutor = createKRToolExecutor();
+  const routineToolExecutor = createRoutineToolExecutor();
 
   return async (name, args, context, runtime) => {
     switch (name) {
@@ -336,6 +338,12 @@ function createDefaultToolExecutor(): ToolExecutor {
       case "find_relevant_theses":
       case "save_insight":
         return krToolExecutor(name, args, context, runtime);
+      case "create_routine":
+      case "list_routines":
+      case "pause_routine":
+      case "resume_routine":
+      case "delete_routine":
+        return routineToolExecutor(name, args, context, runtime);
       case "search_sec_filings":
         return { message: "SEC EDGAR 연동은 후속 버전에서 구현됩니다.", args };
       default:

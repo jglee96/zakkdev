@@ -287,6 +287,112 @@ export const TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
     requiresAuth: true,
     mutates: true,
   },
+  create_routine: {
+    name: "create_routine",
+    description: "봇의 정기 실행 루틴을 생성합니다. 지정된 일정에 따라 봇이 자동으로 실행됩니다.",
+    parameters: {
+      type: "object",
+      properties: {
+        botId: {
+          type: "string",
+          description: "실행할 봇의 ID",
+        },
+        name: {
+          type: "string",
+          description: "루틴 이름 (예: '매일 아침 시장 분석')",
+        },
+        instruction: {
+          type: "string",
+          description: "봇에게 전달할 지시사항",
+        },
+        cronExpr: {
+          type: "string",
+          description: "Cron 표현식 (5필드): '분 시 일 월 요일' (예: '0 9 * * 1-5'는 평일 오전 9시)",
+        },
+        timezone: {
+          type: "string",
+          enum: ["Asia/Seoul", "America/New_York", "Europe/London", "Asia/Tokyo", "UTC"],
+          description: "시간대 (기본: Asia/Seoul)",
+        },
+      },
+      required: ["botId", "name", "instruction", "cronExpr"],
+      additionalProperties: false,
+    },
+    requiresAuth: true,
+    mutates: true,
+  },
+  list_routines: {
+    name: "list_routines",
+    description: "등록된 루틴 목록을 조회합니다.",
+    parameters: {
+      type: "object",
+      properties: {
+        status: {
+          type: "string",
+          enum: ["pending", "active", "paused", "deleted", "all"],
+          description: "필터링할 루틴 상태 (기본: all)",
+        },
+        botId: {
+          type: "string",
+          description: "특정 봇의 루틴만 조회 (선택)",
+        },
+      },
+      additionalProperties: false,
+    },
+    requiresAuth: true,
+    mutates: false,
+  },
+  pause_routine: {
+    name: "pause_routine",
+    description: "실행 중인 루틴을 일시정지합니다.",
+    parameters: {
+      type: "object",
+      properties: {
+        routineId: {
+          type: "string",
+          description: "일시정지할 루틴의 ID",
+        },
+      },
+      required: ["routineId"],
+      additionalProperties: false,
+    },
+    requiresAuth: true,
+    mutates: true,
+  },
+  resume_routine: {
+    name: "resume_routine",
+    description: "일시정지된 루틴을 재개합니다.",
+    parameters: {
+      type: "object",
+      properties: {
+        routineId: {
+          type: "string",
+          description: "재개할 루틴의 ID",
+        },
+      },
+      required: ["routineId"],
+      additionalProperties: false,
+    },
+    requiresAuth: true,
+    mutates: true,
+  },
+  delete_routine: {
+    name: "delete_routine",
+    description: "루틴을 삭제합니다. 삭제된 루틴은 더 이상 실행되지 않습니다.",
+    parameters: {
+      type: "object",
+      properties: {
+        routineId: {
+          type: "string",
+          description: "삭제할 루틴의 ID",
+        },
+      },
+      required: ["routineId"],
+      additionalProperties: false,
+    },
+    requiresAuth: true,
+    mutates: true,
+  },
 };
 
 export function getToolDefinition(name: string): ToolDefinition | undefined {

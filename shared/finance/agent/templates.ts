@@ -15,6 +15,11 @@ export const MAIN_BOT_TOOLS = [
   "update_bot",
   "invoke_bot",
   "list_reports",
+  "create_routine",
+  "list_routines",
+  "pause_routine",
+  "resume_routine",
+  "delete_routine",
 ] as const;
 
 export const KR_STOCK_TOOLS = [
