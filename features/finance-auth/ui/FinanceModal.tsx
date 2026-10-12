@@ -33,7 +33,7 @@ export function FinanceModal({ overlayProps, styles, ...props }: ModalProps) {
       zIndex={FINANCE_MODAL_Z_INDEX}
       overlayProps={{
         zIndex: FINANCE_MODAL_OVERLAY_Z_INDEX,
-        "data-testid": "finance-modal-overlay",
+        className: "finance-modal-overlay",
         ...overlayProps,
       }}
       styles={{
