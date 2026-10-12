@@ -42,6 +42,7 @@ export async function GET(request: Request) {
         template: bot.template,
         status: bot.status,
         allowedTools: bot.allowedTools,
+        instructions: bot.instructions,
         createdAt: bot.createdAt,
         updatedAt: bot.updatedAt,
       })),
