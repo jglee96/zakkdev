@@ -22,6 +22,7 @@ import { useMediaQuery } from "@mantine/hooks";
 import { IconRobot, IconSend, IconUser, IconAlertCircle, IconClock, IconCoin } from "@tabler/icons-react";
 import { useFinanceStore, type Message, type ChatResponse } from "../store/finance-store";
 import { ChatMessageContent } from "./chat-message-content";
+import { FINANCE_COMBOBOX_PORTAL_PROPS } from "@/shared/site-layout/modal-root";
 
 const MAIN_BOT_ID = "main-bot";
 
@@ -138,7 +139,7 @@ export function ChatPanel() {
             placeholder="봇 선택"
             w="100%"
             size="sm"
-            comboboxProps={{ withinPortal: true }}
+            comboboxProps={FINANCE_COMBOBOX_PORTAL_PROPS}
           />
         </Box>
       </Group>

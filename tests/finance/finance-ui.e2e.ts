@@ -142,11 +142,21 @@ async function assertFinanceModalLayout(ctx: TestContext, modalTestId: string, l
       );
     }
     const overlay = document.querySelector(".finance-modal-overlay");
+    const modalRoot = document.getElementById("modal-root");
+    const modalRootIsDirectBodyChild = modalRoot?.parentElement === document.body;
+    const modalInsideRoot = Boolean(modalRoot && dialog && modalRoot.contains(dialog as Node));
     return {
-      ok: inViewport && overlayCoversHeader && Boolean(overlay),
+      ok:
+        inViewport &&
+        overlayCoversHeader &&
+        Boolean(overlay) &&
+        modalRootIsDirectBodyChild &&
+        modalInsideRoot,
       inViewport,
       overlayCoversHeader,
       hasOverlay: Boolean(overlay),
+      modalRootIsDirectBodyChild,
+      modalInsideRoot,
       top: rect.top,
       bottom: rect.bottom,
       vh,

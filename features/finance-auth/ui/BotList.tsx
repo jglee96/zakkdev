@@ -23,6 +23,7 @@ import { IconPlus, IconRefresh, IconRobot, IconSettings, IconTrash } from "@tabl
 import { useFinanceStore, type Bot, type BotTemplate } from "../store/finance-store";
 import { getToolLabelKo, normalizeToolCode } from "./tool-labels";
 import { FinanceModal } from "./FinanceModal";
+import { FINANCE_COMBOBOX_PORTAL_PROPS } from "@/shared/site-layout/modal-root";
 
 const TEMPLATE_OPTIONS = [
   { value: "main", label: "메인 봇 - 종합 금융 분석" },
@@ -197,6 +198,7 @@ function CreateBotModal({
           data={TEMPLATE_OPTIONS}
           value={template}
           onChange={(v) => v && setTemplate(v)}
+          comboboxProps={FINANCE_COMBOBOX_PORTAL_PROPS}
         />
         <Textarea
           data-testid="bot-instructions-input"
@@ -299,6 +301,7 @@ function BotDetailModal({
           ]}
           value={status}
           onChange={(v) => v && setStatus(v)}
+          comboboxProps={FINANCE_COMBOBOX_PORTAL_PROPS}
         />
         <Textarea
           data-testid="bot-detail-instructions-input"

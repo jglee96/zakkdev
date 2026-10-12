@@ -30,6 +30,7 @@ import {
 } from "@tabler/icons-react";
 import { useFinanceStore, type Routine, type RoutineStatus } from "../store/finance-store";
 import { FinanceModal } from "./FinanceModal";
+import { FINANCE_COMBOBOX_PORTAL_PROPS } from "@/shared/site-layout/modal-root";
 
 const STATUS_BADGE: Record<RoutineStatus, { color: string; label: string }> = {
   pending: { color: "yellow", label: "대기" },
@@ -309,6 +310,7 @@ function CreateRoutineModal({
           onChange={setBotId}
           placeholder="봇을 선택하세요"
           required
+          comboboxProps={FINANCE_COMBOBOX_PORTAL_PROPS}
         />
         <Textarea
           data-testid="routine-instruction-input"
@@ -338,6 +340,7 @@ function CreateRoutineModal({
             value={timezone}
             onChange={(v) => v && setTimezone(v)}
             required
+            comboboxProps={FINANCE_COMBOBOX_PORTAL_PROPS}
           />
         </Group>
         {error && <Alert color="red" data-testid="create-routine-error">{error}</Alert>}
@@ -467,6 +470,7 @@ function RoutineDetailModal({
             data={TIMEZONE_OPTIONS}
             value={timezone}
             onChange={(v) => v && setTimezone(v)}
+            comboboxProps={FINANCE_COMBOBOX_PORTAL_PROPS}
           />
         </Group>
         <Text size="xs" c="dimmed">

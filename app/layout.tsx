@@ -14,6 +14,7 @@ import {
   MantineProvider,
 } from "@mantine/core";
 import { SiteHeader } from "@/widgets/site-header";
+import { ModalRoot } from "@/widgets/modal-root/ModalRoot";
 import { SITE_APP_SHELL_HEADER_HEIGHT_PX } from "@/shared/site-layout/constants";
 
 import "@mantine/core/styles.css";
@@ -125,6 +126,7 @@ export default function RootLayout({
             </AppShellMain>
           </AppShell>
         </MantineProvider>
+        <ModalRoot />
       </body>
     </html>
   );

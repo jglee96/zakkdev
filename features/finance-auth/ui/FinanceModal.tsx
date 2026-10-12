@@ -1,6 +1,7 @@
 "use client";
 
 import { Modal, type ModalProps } from "@mantine/core";
+import { MODAL_ROOT_SELECTOR } from "@/shared/site-layout/modal-root";
 
 /** Above site `AppShellHeader` (z-index 250). */
 export const FINANCE_MODAL_Z_INDEX = 320;
@@ -25,11 +26,12 @@ const defaultStyles: ModalProps["styles"] = {
   },
 };
 
-export function FinanceModal({ overlayProps, styles, ...props }: ModalProps) {
+export function FinanceModal({ overlayProps, styles, portalProps, ...props }: ModalProps) {
   return (
     <Modal
       centered
       withinPortal
+      portalProps={{ target: MODAL_ROOT_SELECTOR, ...portalProps }}
       zIndex={FINANCE_MODAL_Z_INDEX}
       overlayProps={{
         zIndex: FINANCE_MODAL_OVERLAY_Z_INDEX,
