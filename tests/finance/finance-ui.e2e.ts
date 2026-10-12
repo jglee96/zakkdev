@@ -15,15 +15,23 @@
 
 import assert from "node:assert/strict";
 import { execSync, spawn } from "node:child_process";
-import { mkdir, rm } from "node:fs/promises";
+import { mkdir, rm, writeFile } from "node:fs/promises";
 import { randomBytes, randomUUID } from "node:crypto";
 import path from "node:path";
 import { hash } from "@node-rs/argon2";
-import { CreateTableCommand, DeleteTableCommand, DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import {
+  CreateTableCommand,
+  DeleteTableCommand,
+  DescribeTableCommand,
+  DynamoDBClient,
+} from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import puppeteer, { type Browser, type Page } from "puppeteer-core";
+import { STACKING_CONTEXT_COLLECTOR } from "./stacking-context-collector";
 
 const DEBUG = process.env.DEBUG === "1";
+const COLLECT_MODAL_STACKING_LABEL = process.env.COLLECT_MODAL_STACKING_LABEL;
+const COLLECT_MODAL_STACKING_ONLY = process.env.COLLECT_MODAL_STACKING_ONLY === "1";
 const SCREENSHOT_DIR = "/opt/cursor/artifacts/screenshots";
 
 type TestContext = {
@@ -178,6 +186,32 @@ async function assertFinanceModalLayout(ctx: TestContext, modalTestId: string, l
   assert.ok(state.ok, `${label}: finance modal layout (${JSON.stringify(state)})`);
 }
 
+async function writeModalStackingArtifact(ctx: TestContext, label: string) {
+  const gitSha = execSync("git rev-parse HEAD", { encoding: "utf8" }).trim();
+  const data = await ctx.page.evaluate(
+    (source) => {
+      const fn = new Function(`${source}\nreturn collectModalStackingContext();`) as () => Record<string, unknown>;
+      return fn();
+    },
+    STACKING_CONTEXT_COLLECTOR,
+  );
+  const outPath =
+    process.env.COLLECT_MODAL_STACKING_OUT ??
+    `/opt/cursor/artifacts/modal-stacking-${label}.json`;
+  const payload = {
+    label,
+    gitSha,
+    collectedAt: new Date().toISOString(),
+    viewport: await ctx.page.viewport(),
+    collector: "stacking-context-collector (browser evaluate; Playwright runner uses same payload)",
+    ...data,
+  };
+  await mkdir("/opt/cursor/artifacts", { recursive: true });
+  await writeFile(outPath, JSON.stringify(payload, null, 2));
+  console.log(`\n📐 Modal stacking context written to ${outPath}\n`);
+  console.log(JSON.stringify(payload, null, 2));
+}
+
 async function closeMobileFinanceNav(ctx: TestContext) {
   await ctx.page.evaluate(() => {
     const burger = document.querySelector('[data-testid="finance-nav-burger"]');
@@ -298,6 +332,15 @@ function freeFinanceTestPort(port = 4203) {
   }
 }
 
+async function waitForTableActive(db: DynamoDBClient, tableName: string) {
+  for (let i = 0; i < 40; i++) {
+    const described = await db.send(new DescribeTableCommand({ TableName: tableName }));
+    if (described.Table?.TableStatus === "ACTIVE") return;
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error(`DynamoDB table not active: ${tableName}`);
+}
+
 async function createAuthTable(db: DynamoDBClient, tableName: string) {
   await db.send(new CreateTableCommand({
     TableName: tableName,
@@ -305,6 +348,7 @@ async function createAuthTable(db: DynamoDBClient, tableName: string) {
     AttributeDefinitions: [{ AttributeName: "pk", AttributeType: "S" }],
     BillingMode: "PAY_PER_REQUEST",
   }));
+  await waitForTableActive(db, tableName);
 }
 
 async function createDataTable(db: DynamoDBClient, tableName: string) {
@@ -342,6 +386,7 @@ async function createDataTable(db: DynamoDBClient, tableName: string) {
     ],
     BillingMode: "PAY_PER_REQUEST",
   }));
+  await waitForTableActive(db, tableName);
 }
 
 async function setupTestEnvironment(): Promise<TestContext> {
@@ -401,7 +446,7 @@ async function setupTestEnvironment(): Promise<TestContext> {
   const server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "-p", "4203"], {
     detached: true,
     stdio: ["ignore", "pipe", "pipe"],
-    env: { ...runtimeEnv, NODE_ENV: "test" },
+    env: { ...runtimeEnv, NODE_ENV: "development" },
   });
 
   let logs = "";
@@ -823,6 +868,9 @@ async function testBotCreateModal(ctx: TestContext) {
   }, "매일 아침 주요 종목 공시와 재무 변화를 요약하고, DART 원문 URL과 공시일을 반드시 포함합니다.");
   await new Promise((resolve) => setTimeout(resolve, 500));
   await assertFinanceModalLayout(ctx, "create-bot-modal", "04-bot-create-desktop");
+  if (COLLECT_MODAL_STACKING_LABEL) {
+    await writeModalStackingArtifact(ctx, COLLECT_MODAL_STACKING_LABEL);
+  }
   const { content: modalContent } = await takeScreenshot(ctx, "04-bot-create-modal-desktop-1440x900", { width: 1440, height: 900 });
   await ctx.page.setViewport({ width: 390, height: 844 });
   await closeMobileFinanceNav(ctx);
@@ -1061,6 +1109,10 @@ async function main() {
     await testChatWithSources(ctx);
     await testBotList(ctx);
     await testBotCreateModal(ctx);
+    if (COLLECT_MODAL_STACKING_ONLY) {
+      console.log("\n✓ Stacking collection only — exiting after bot create modal\n");
+      return;
+    }
     await testBotDetail(ctx);
     await testRoutineList(ctx);
     await testRoutineCreate(ctx);

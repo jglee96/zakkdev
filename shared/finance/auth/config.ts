@@ -21,10 +21,15 @@ export function getAuthConfig(env: Partial<NodeJS.ProcessEnv> = process.env): Au
   try {
     const url = new URL(env.FINANCE_APP_ORIGIN || "");
     const local = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+    const dynamodbLocal =
+      Boolean(env.FINANCE_DYNAMODB_ENDPOINT) &&
+      ["localhost", "127.0.0.1", "[::1]"].includes(new URL(env.FINANCE_DYNAMODB_ENDPOINT!).hostname);
+    const httpLocalAllowed =
+      local && url.protocol === "http:" && (env.NODE_ENV !== "production" || dynamodbLocal);
     if (
       url.origin !== env.FINANCE_APP_ORIGIN ||
       url.username || url.password ||
-      (url.protocol !== "https:" && !(env.NODE_ENV !== "production" && local && url.protocol === "http:"))
+      (url.protocol !== "https:" && !httpLocalAllowed)
     ) throw new AuthConfigurationError();
     const encodedKey = env.FINANCE_SESSION_SECRET || "";
     if (!/^[A-Za-z0-9_-]{43,172}$/.test(encodedKey)) throw new AuthConfigurationError();

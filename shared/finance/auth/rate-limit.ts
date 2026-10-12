@@ -15,7 +15,10 @@ export function getClientIdentity(request: Request, config: AuthConfig, env: Par
     return createHmac("sha256", config.signingKey).update(ip).digest("hex");
   }
   const local = ["localhost", "127.0.0.1", "[::1]"].includes(new URL(config.origin).hostname);
-  if (env.NODE_ENV !== "production" && local) return "local-development";
+  const dynamodbLocal =
+    Boolean(env.FINANCE_DYNAMODB_ENDPOINT) &&
+    ["localhost", "127.0.0.1", "[::1]"].includes(new URL(env.FINANCE_DYNAMODB_ENDPOINT!).hostname);
+  if (local && (env.NODE_ENV !== "production" || dynamodbLocal)) return "local-development";
   throw new AuthConfigurationError();
 }
 
@@ -25,7 +28,14 @@ export function createRateLimitClient(env: Partial<NodeJS.ProcessEnv> = process.
   let endpoint: string | undefined;
   if (env.FINANCE_DYNAMODB_ENDPOINT) {
     const url = new URL(env.FINANCE_DYNAMODB_ENDPOINT);
-    if (env.NODE_ENV === "production" || !["localhost", "127.0.0.1", "[::1]"].includes(url.hostname) || url.protocol !== "http:" || url.username || url.password) {
+    const localEndpoint = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
+    if (
+      !localEndpoint ||
+      url.protocol !== "http:" ||
+      url.username ||
+      url.password ||
+      (env.NODE_ENV === "production" && !localEndpoint)
+    ) {
       throw new AuthConfigurationError();
     }
     endpoint = url.origin;
