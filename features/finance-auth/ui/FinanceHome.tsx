@@ -143,6 +143,7 @@ export function FinanceHome() {
       header={{ height: 60 }}
       navbar={{ width: 220, breakpoint: "sm", collapsed: { mobile: !opened } }}
       padding="md"
+      style={{ minHeight: "calc(100vh - 64px)" }}
     >
       <AppShell.Header>
         <Group h="100%" px="md" justify="space-between">
@@ -208,26 +209,34 @@ export function FinanceHome() {
         </Stack>
       </AppShell.Navbar>
 
-      <AppShell.Main>
-        {logoutError && (
-          <Alert color="red" mb="md" withCloseButton onClose={() => setLogoutError(null)}>
-            {logoutError}
-          </Alert>
-        )}
+      <AppShell.Main style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <Box
+          w="100%"
+          maw={1100}
+          mx="auto"
+          px="md"
+          style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}
+        >
+          {logoutError && (
+            <Alert color="red" mb="md" withCloseButton onClose={() => setLogoutError(null)}>
+              {logoutError}
+            </Alert>
+          )}
 
-        {isLoadingBots && activeTab === "chat" ? (
-          <Box ta="center" py="xl">
-            <Loader size="lg" />
-            <Text c="dimmed" mt="md">로딩 중...</Text>
-          </Box>
-        ) : (
-          <>
-            {activeTab === "chat" && <ChatPanel />}
-            {activeTab === "bots" && <BotList onRefresh={fetchBots} />}
-            {activeTab === "routines" && <RoutineList onRefresh={fetchRoutines} />}
-            {activeTab === "runs" && <RunList onRefresh={fetchRuns} />}
-          </>
-        )}
+          {isLoadingBots && activeTab === "chat" ? (
+            <Box ta="center" py="xl">
+              <Loader size="lg" />
+              <Text c="dimmed" mt="md">로딩 중...</Text>
+            </Box>
+          ) : (
+            <>
+              {activeTab === "chat" && <ChatPanel />}
+              {activeTab === "bots" && <BotList onRefresh={fetchBots} />}
+              {activeTab === "routines" && <RoutineList onRefresh={fetchRoutines} />}
+              {activeTab === "runs" && <RunList onRefresh={fetchRuns} />}
+            </>
+          )}
+        </Box>
       </AppShell.Main>
     </AppShell>
   );

@@ -149,13 +149,15 @@ export async function listRoutinesByOwner(
   ownerId: string,
   statusFilter: RoutineStatus | "all" = "all"
 ): Promise<Routine[]> {
-  let filterExpression: string | undefined;
-  let expressionAttributeValues: Record<string, unknown> | undefined;
-  let expressionAttributeNames: Record<string, string> | undefined;
+  const filterParts: string[] = ["begins_with(pk, :pkPrefix)"];
+  const expressionAttributeValues: Record<string, unknown> = {
+    ":ownerId": ownerId,
+    ":pkPrefix": "routine#",
+  };
 
   if (statusFilter !== "all") {
-    filterExpression = "begins_with(statusCreatedAt, :status)";
-    expressionAttributeValues = { ":status": statusFilter };
+    filterParts.push("begins_with(statusCreatedAt, :status)");
+    expressionAttributeValues[":status"] = statusFilter;
   }
 
   const result = await config.client.send(
@@ -163,12 +165,8 @@ export async function listRoutinesByOwner(
       TableName: config.tableName,
       IndexName: "ByOwnerStatus",
       KeyConditionExpression: "ownerId = :ownerId",
-      FilterExpression: filterExpression,
-      ExpressionAttributeValues: {
-        ":ownerId": ownerId,
-        ...expressionAttributeValues,
-      },
-      ExpressionAttributeNames: expressionAttributeNames,
+      FilterExpression: filterParts.join(" AND "),
+      ExpressionAttributeValues: expressionAttributeValues,
     })
   );
 

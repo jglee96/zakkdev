@@ -163,11 +163,13 @@ export async function listRunsByOwner(
   statusFilter?: AgentRunStatus,
   limit = 50
 ): Promise<AgentRun[]> {
-  let keyConditionExpression = "ownerId = :ownerId";
+  const filterParts: string[] = ["begins_with(pk, :pkPrefix)"];
   const expressionAttributeValues: Record<string, unknown> = {
     ":ownerId": ownerId,
+    ":pkPrefix": "run#",
   };
 
+  let keyConditionExpression = "ownerId = :ownerId";
   if (statusFilter) {
     keyConditionExpression += " AND begins_with(statusCreatedAt, :status)";
     expressionAttributeValues[":status"] = statusFilter;
@@ -178,6 +180,7 @@ export async function listRunsByOwner(
       TableName: config.tableName,
       IndexName: "ByOwnerStatus",
       KeyConditionExpression: keyConditionExpression,
+      FilterExpression: filterParts.join(" AND "),
       ExpressionAttributeValues: expressionAttributeValues,
       Limit: limit,
       ScanIndexForward: false,

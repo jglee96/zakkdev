@@ -112,7 +112,7 @@ export function ChatPanel() {
   ];
 
   return (
-    <Stack h="calc(100vh - 120px)" gap="md" data-testid="chat-panel">
+    <Stack flex={1} mih={0} w="100%" gap="md" style={{ minHeight: "calc(100vh - 180px)" }} data-testid="chat-panel">
       <Group justify="space-between" wrap="nowrap">
         <Title order={4}>채팅</Title>
         <Select

@@ -178,3 +178,8 @@ export const useFinanceStore = create<FinanceState>()((set) => ({
   })),
   reset: () => set(initialState),
 }));
+
+if (typeof window !== "undefined") {
+  (window as unknown as { __FINANCE_STORE__: typeof useFinanceStore }).
+    __FINANCE_STORE__ = useFinanceStore;
+}

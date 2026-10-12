@@ -57,7 +57,7 @@ export function RunList({ onRefresh }: { onRefresh: () => void }) {
   const runningCount = runs.filter((r) => r.status === "running" || r.status === "queued").length;
 
   return (
-    <Stack gap="md" data-testid="run-list-container">
+    <Stack gap="md" w="100%" data-testid="run-list-container">
       <Group justify="space-between">
         <Group gap="xs">
           <Title order={4}>실행 기록</Title>
@@ -117,7 +117,7 @@ function RunCard({
   onSelect: () => void;
 }) {
   const [expanded, { toggle }] = useDisclosure(false);
-  const status = STATUS_CONFIG[run.status];
+  const status = STATUS_CONFIG[run.status] ?? { color: "gray", label: run.status || "알 수 없음", icon: IconActivity };
   const StatusIcon = status.icon;
   const isActive = run.status === "running" || run.status === "queued";
 
@@ -222,7 +222,7 @@ function RunCard({
 function RunDetailModal({ run, onClose }: { run: AgentRun | null; onClose: () => void }) {
   if (!run) return null;
 
-  const status = STATUS_CONFIG[run.status];
+  const status = STATUS_CONFIG[run.status] ?? { color: "gray", label: run.status || "알 수 없음", icon: IconActivity };
   const durationMs = run.finishedAt && run.startedAt
     ? run.finishedAt - run.startedAt
     : run.startedAt

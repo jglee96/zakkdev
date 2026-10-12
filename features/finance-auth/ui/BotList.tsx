@@ -42,7 +42,7 @@ export function BotList({ onRefresh }: { onRefresh: () => void }) {
   const [selectedBot, setSelectedBot] = useState<Bot | null>(null);
 
   return (
-    <Stack gap="md" data-testid="bot-list-container">
+    <Stack gap="md" w="100%" data-testid="bot-list-container">
       <Group justify="space-between">
         <Title order={4}>봇 관리</Title>
         <Group gap="xs">
