@@ -112,11 +112,11 @@ async function assertChatChromeVisible(ctx: TestContext, label: string) {
 
 async function assertFinanceModalLayout(ctx: TestContext, modalTestId: string, label: string) {
   const state = await ctx.page.evaluate((testId) => {
-    const modalRoot = document.querySelector(`[data-testid="${testId}"]`);
+    const modalMark = document.querySelector(`[data-testid="${testId}"]`);
     const dialog =
-      modalRoot?.closest('[role="dialog"]') ??
-      document.querySelector('[role="dialog"][data-modal-content]') ??
-      modalRoot;
+      modalMark?.closest('[role="dialog"]') ??
+      document.querySelector('[role="dialog"]') ??
+      modalMark;
     if (!dialog) return { ok: false, reason: "modal-missing" };
     const rect = dialog.getBoundingClientRect();
     const vh = window.innerHeight;
@@ -142,9 +142,9 @@ async function assertFinanceModalLayout(ctx: TestContext, modalTestId: string, l
       );
     }
     const overlay = document.querySelector(".finance-modal-overlay");
-    const modalRoot = document.getElementById("modal-root");
-    const modalRootIsDirectBodyChild = modalRoot?.parentElement === document.body;
-    const modalInsideRoot = Boolean(modalRoot && dialog && modalRoot.contains(dialog as Node));
+    const portalRoot = document.getElementById("modal-root");
+    const modalRootIsDirectBodyChild = portalRoot?.parentElement === document.body;
+    const modalInsideRoot = Boolean(portalRoot && dialog && portalRoot.contains(dialog as Node));
     return {
       ok:
         inViewport &&
