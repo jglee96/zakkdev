@@ -68,8 +68,10 @@ export {
 export {
   type AgentRuntimeConfig,
   type ToolExecutor,
+  type WorkerAgentResult,
   createAgentRuntimeConfig,
   runAgent,
+  runAgentForWorker,
 } from "./runtime";
 
 export {

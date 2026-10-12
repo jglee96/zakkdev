@@ -481,3 +481,250 @@ async function executeInvokeBot(
     return { error: error instanceof Error ? error.message : "봇 호출에 실패했습니다." };
   }
 }
+
+export type WorkerAgentResult = AgentRunResult & {
+  checkpoint?: {
+    stepIndex: number;
+    messagesSnapshot: string;
+    budgetReservationId?: string;
+  };
+};
+
+export async function runAgentForWorker(
+  bot: Bot,
+  instruction: string,
+  runtime: AgentRuntimeConfig,
+  deadlineAt: number,
+  checkpoint?: {
+    stepIndex: number;
+    messagesSnapshot: string;
+    budgetReservationId?: string;
+  }
+): Promise<WorkerAgentResult> {
+  const runId = randomUUID();
+  const startedAt = Date.now();
+  const WORKER_CALL_TIMEOUT_MS = 40000;
+
+  const context: AgentRunContext = {
+    runId,
+    ownerId: bot.ownerId,
+    botId: bot.id,
+    depth: 0,
+    startedAt,
+    deadlineAt,
+  };
+
+  const model = findAllowedModel(runtime.costConfig, runtime.llmConfig.model);
+  if (!model) {
+    return {
+      runId,
+      botId: bot.id,
+      status: "error",
+      error: `Model ${runtime.llmConfig.model} is not allowed`,
+      usage: { steps: 0, calls: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 },
+      durationMs: Date.now() - startedAt,
+    };
+  }
+
+  let reservationId: string;
+  if (checkpoint?.budgetReservationId) {
+    reservationId = checkpoint.budgetReservationId;
+  } else {
+    const reservationResult = await reserveBudget(
+      runtime.budgetClient,
+      runtime.costConfig,
+      bot.ownerId,
+      runId,
+      runtime.costConfig.runLimits.maxCostUsd
+    );
+
+    if (!reservationResult.success) {
+      return {
+        runId,
+        botId: bot.id,
+        status: "budget_exceeded",
+        error: reservationResult.reason === "budget_exceeded"
+          ? `Daily budget exceeded. Available: $${reservationResult.available.toFixed(4)}`
+          : "Budget reservation failed",
+        usage: { steps: 0, calls: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 },
+        durationMs: Date.now() - startedAt,
+      };
+    }
+    reservationId = reservationResult.reservation.reservationId;
+  }
+
+  let tracker = createRunTracker(runId, bot.ownerId, runtime.costConfig, undefined, startedAt);
+  let totalInputTokens = 0;
+  let totalOutputTokens = 0;
+
+  try {
+    const templateDef = getTemplateDefinition(bot.template);
+    const systemPrompt = `${templateDef.defaultInstructions}\n\n${bot.instructions}`;
+
+    let messages: ChatCompletionMessageParam[];
+    let startStep = 0;
+
+    if (checkpoint?.messagesSnapshot) {
+      try {
+        messages = JSON.parse(checkpoint.messagesSnapshot);
+        startStep = checkpoint.stepIndex;
+      } catch {
+        messages = [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: instruction },
+        ];
+      }
+    } else {
+      messages = [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: instruction },
+      ];
+    }
+
+    const tools = getToolsForBot(bot.allowedTools);
+    const executor = createDefaultToolExecutor();
+
+    for (let step = startStep; step < runtime.costConfig.runLimits.maxSteps; step++) {
+      const now = Date.now();
+      const timeRemaining = deadlineAt - now;
+
+      if (timeRemaining < 5000) {
+        const checkpointData = {
+          stepIndex: step,
+          messagesSnapshot: JSON.stringify(messages),
+          budgetReservationId: reservationId,
+        };
+        return {
+          runId,
+          botId: bot.id,
+          status: "timeout",
+          error: "Worker deadline approaching, checkpoint saved",
+          usage: { steps: tracker.usage.steps, calls: tracker.usage.calls, inputTokens: totalInputTokens, outputTokens: totalOutputTokens, costUsd: tracker.usage.costUsd },
+          durationMs: now - startedAt,
+          checkpoint: checkpointData,
+        };
+      }
+
+      const estimatedInputTokens = JSON.stringify(messages).length / 4;
+      const limitCheck = checkAllLimits(tracker, runtime.llmConfig.model, estimatedInputTokens, model.pricing.maxOutputTokens, now);
+      if (!limitCheck.allowed) {
+        await settleBudget(runtime.budgetClient, runtime.costConfig, reservationId, tracker.usage.costUsd);
+        return {
+          runId,
+          botId: bot.id,
+          status: "budget_exceeded",
+          error: `Limit exceeded: ${limitCheck.reason}`,
+          usage: { steps: tracker.usage.steps, calls: tracker.usage.calls, inputTokens: totalInputTokens, outputTokens: totalOutputTokens, costUsd: tracker.usage.costUsd },
+          durationMs: now - startedAt,
+        };
+      }
+
+      tracker = recordStep(tracker);
+
+      let response: LLMResponse;
+      try {
+        const timeoutMs = Math.min(WORKER_CALL_TIMEOUT_MS, timeRemaining - 5000);
+        if (timeoutMs <= 0) {
+          throw new LLMProviderError("Insufficient time for LLM call", "timeout");
+        }
+
+        response = await runtime.callLLMFn(runtime.llmClient, { ...runtime.llmConfig, timeoutMs }, {
+          messages,
+          tools: tools.length > 0 ? tools : undefined,
+          maxTokens: model.pricing.maxOutputTokens,
+        });
+      } catch (error) {
+        if (error instanceof LLMProviderError && error.code === "timeout") {
+          const checkpointData = {
+            stepIndex: step,
+            messagesSnapshot: JSON.stringify(messages),
+            budgetReservationId: reservationId,
+          };
+          return {
+            runId,
+            botId: bot.id,
+            status: "timeout",
+            error: "LLM call timed out",
+            usage: { steps: tracker.usage.steps, calls: tracker.usage.calls, inputTokens: totalInputTokens, outputTokens: totalOutputTokens, costUsd: tracker.usage.costUsd },
+            durationMs: Date.now() - startedAt,
+            checkpoint: checkpointData,
+          };
+        }
+        throw error;
+      }
+
+      tracker = recordCall(tracker, model, response.usage.inputTokens, response.usage.outputTokens);
+      totalInputTokens += response.usage.inputTokens;
+      totalOutputTokens += response.usage.outputTokens;
+
+      messages.push({
+        role: "assistant",
+        content: response.content,
+        tool_calls: response.toolCalls.length > 0 ? response.toolCalls.map((tc) => ({
+          id: tc.id,
+          type: "function" as const,
+          function: { name: tc.name, arguments: tc.arguments },
+        })) : undefined,
+      });
+
+      if (response.toolCalls.length === 0) {
+        await settleBudget(runtime.budgetClient, runtime.costConfig, reservationId, tracker.usage.costUsd);
+        return {
+          runId,
+          botId: bot.id,
+          status: "completed",
+          response: response.content || "",
+          usage: { steps: tracker.usage.steps, calls: tracker.usage.calls, inputTokens: totalInputTokens, outputTokens: totalOutputTokens, costUsd: tracker.usage.costUsd },
+          durationMs: Date.now() - startedAt,
+        };
+      }
+
+      for (const toolCall of response.toolCalls) {
+        if (!isToolAllowed(toolCall.name, bot.allowedTools)) {
+          messages.push({
+            role: "tool",
+            tool_call_id: toolCall.id,
+            content: JSON.stringify({ error: `Tool ${toolCall.name} is not allowed for this bot` }),
+          });
+          continue;
+        }
+
+        const args = parseToolArguments(toolCall.arguments);
+        let result: unknown;
+
+        try {
+          result = await executor(toolCall.name, args, context, runtime);
+        } catch (error) {
+          result = { error: error instanceof Error ? error.message : "Tool execution failed" };
+        }
+
+        const resultStr = JSON.stringify(result);
+        messages.push({
+          role: "tool",
+          tool_call_id: toolCall.id,
+          content: resultStr,
+        });
+      }
+    }
+
+    await settleBudget(runtime.budgetClient, runtime.costConfig, reservationId, tracker.usage.costUsd);
+    return {
+      runId,
+      botId: bot.id,
+      status: "budget_exceeded",
+      error: "Maximum steps exceeded",
+      usage: { steps: tracker.usage.steps, calls: tracker.usage.calls, inputTokens: totalInputTokens, outputTokens: totalOutputTokens, costUsd: tracker.usage.costUsd },
+      durationMs: Date.now() - startedAt,
+    };
+  } catch (error) {
+    await keepReservation(runtime.budgetClient, runtime.costConfig, reservationId, "error");
+    return {
+      runId,
+      botId: bot.id,
+      status: "error",
+      error: error instanceof Error ? error.message : "Unknown error",
+      usage: { steps: tracker.usage.steps, calls: tracker.usage.calls, inputTokens: totalInputTokens, outputTokens: totalOutputTokens, costUsd: tracker.usage.costUsd },
+      durationMs: Date.now() - startedAt,
+    };
+  }
+}
