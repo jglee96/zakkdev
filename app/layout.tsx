@@ -108,15 +108,8 @@ export default function RootLayout({
             >
               <SiteHeader />
             </AppShellHeader>
-            <AppShellMain mx={{ sm: 80, md: 160, xl: 340 }}>
-              <Box
-                px={{ base: 20, sm: 0 }}
-                pt={{ base: 28, sm: 40 }}
-                pb={{ base: 40, sm: 60 }}
-                style={{ maxWidth: 768, marginLeft: "auto", marginRight: "auto" }}
-              >
-                {children}
-              </Box>
+            <AppShellMain mx={{ sm: 80, md: 160, xl: 340 }} style={{ overflowX: "clip" }}>
+              {children}
             </AppShellMain>
           </AppShell>
         </MantineProvider>

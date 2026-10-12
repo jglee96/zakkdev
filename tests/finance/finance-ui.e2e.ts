@@ -41,9 +41,21 @@ type TestContext = {
   ownerId: string;
 };
 
+async function assertNoHorizontalOverflow(ctx: TestContext, label: string) {
+  const metrics = await ctx.page.evaluate(() => ({
+    scrollWidth: document.documentElement.scrollWidth,
+    innerWidth: window.innerWidth,
+  }));
+  assert.ok(
+    metrics.scrollWidth <= metrics.innerWidth,
+    `${label}: horizontal overflow (${metrics.scrollWidth}px > ${metrics.innerWidth}px viewport)`,
+  );
+}
+
 async function takeScreenshot(ctx: TestContext, name: string, viewport: { width: number; height: number }) {
   await ctx.page.setViewport(viewport);
   await new Promise((resolve) => setTimeout(resolve, 800));
+  await assertNoHorizontalOverflow(ctx, name);
   const filename = `${name}.png`;
   const filepath = path.join(SCREENSHOT_DIR, filename);
   await ctx.page.screenshot({ path: filepath, fullPage: false });
@@ -500,6 +512,14 @@ async function testChatWithSources(ctx: TestContext) {
     chatContent.includes("채팅") || chatContent.includes("삼성") || chatContent.includes("금융"),
     "Chat panel should be visible"
   );
+  assert.ok(!chatContent.includes("## "), "Chat should render markdown headings, not raw ## markers");
+  const sourceCardCount = await ctx.page.$$eval(
+    '[data-testid="source-citation-list"] [data-testid^="source-citation-"]',
+    (els) => els.length,
+  );
+  assert.ok(sourceCardCount >= 2, `Expected source citation cards, found ${sourceCardCount}`);
+  const dateBadge = await ctx.page.$('[data-testid="date-precision-badge"]');
+  assert.ok(dateBadge, "Date precision badge should be visible");
   console.log("  ✓ Chat panel with sources displayed");
 }
 
