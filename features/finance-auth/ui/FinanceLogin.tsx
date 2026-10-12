@@ -36,18 +36,26 @@ export function FinanceLogin() {
   }
 
   return (
-    <Stack maw={360} mx="auto" gap="lg">
+    <Stack maw={360} mx="auto" gap="lg" data-testid="login-container">
       <div>
-        <Title order={1} size="h2">금융 리서치 로그인</Title>
+        <Title order={1} size="h2" data-testid="login-title">금융 리서치 로그인</Title>
         <Text c="dimmed" mt="xs">소유자만 사용할 수 있는 개인 공간입니다.</Text>
       </div>
-      <form onSubmit={login}>
+      <form onSubmit={login} data-testid="login-form">
         <Stack>
-          <PasswordInput label="비밀번호" name="password" autoComplete="current-password"
-            required value={password} onChange={(event) => setPassword(event.currentTarget.value)}
-            disabled={pending} maxLength={1024} />
-          {error && <Alert color="red" role="alert">{error}</Alert>}
-          <Button type="submit" loading={pending}>로그인</Button>
+          <PasswordInput
+            data-testid="password-input"
+            label="비밀번호"
+            name="password"
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(event) => setPassword(event.currentTarget.value)}
+            disabled={pending}
+            maxLength={1024}
+          />
+          {error && <Alert color="red" role="alert" data-testid="login-error">{error}</Alert>}
+          <Button type="submit" loading={pending} data-testid="login-submit">로그인</Button>
         </Stack>
       </form>
     </Stack>

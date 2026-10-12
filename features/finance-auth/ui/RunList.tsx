@@ -57,29 +57,29 @@ export function RunList({ onRefresh }: { onRefresh: () => void }) {
   const runningCount = runs.filter((r) => r.status === "running" || r.status === "queued").length;
 
   return (
-    <Stack gap="md">
+    <Stack gap="md" data-testid="run-list-container">
       <Group justify="space-between">
         <Group gap="xs">
           <Title order={4}>실행 기록</Title>
           {runningCount > 0 && (
-            <Badge color="cyan" variant="light">
+            <Badge color="cyan" variant="light" data-testid="running-count-badge">
               {runningCount}개 실행중
             </Badge>
           )}
         </Group>
         <Tooltip label="새로고침">
-          <ActionIcon variant="subtle" onClick={onRefresh}>
+          <ActionIcon variant="subtle" onClick={onRefresh} data-testid="refresh-runs">
             <IconRefresh size={18} />
           </ActionIcon>
         </Tooltip>
       </Group>
 
-      {runsError && <Alert color="red">{runsError}</Alert>}
+      {runsError && <Alert color="red" data-testid="runs-error">{runsError}</Alert>}
 
       {isLoadingRuns && runs.length === 0 ? (
-        <Box ta="center" py="xl"><Loader /></Box>
+        <Box ta="center" py="xl" data-testid="runs-loading"><Loader /></Box>
       ) : runs.length === 0 ? (
-        <Card withBorder p="xl" ta="center">
+        <Card withBorder p="xl" ta="center" data-testid="runs-empty">
           <IconActivity size={48} color="gray" style={{ margin: "0 auto", marginBottom: 16 }} />
           <Text c="dimmed">아직 실행 기록이 없습니다.</Text>
           <Text size="sm" c="dimmed" mt="xs">
@@ -87,7 +87,7 @@ export function RunList({ onRefresh }: { onRefresh: () => void }) {
           </Text>
         </Card>
       ) : (
-        <Stack gap="sm">
+        <Stack gap="sm" data-testid="runs-list">
           {runs.map((run) => (
             <RunCard
               key={run.id}
@@ -128,7 +128,7 @@ function RunCard({
     : 0;
 
   return (
-    <Card withBorder padding="sm">
+    <Card withBorder padding="sm" data-testid={`run-card-${run.id}`}>
       <Group justify="space-between" wrap="nowrap">
         <Group gap="sm" wrap="nowrap" style={{ flex: 1, cursor: "pointer" }} onClick={onSelect}>
           <StatusIcon size={18} color={`var(--mantine-color-${status.color}-6)`} />
@@ -148,24 +148,24 @@ function RunCard({
           </Box>
         </Group>
         <Group gap="xs">
-          <Badge size="sm" color={status.color}>
+          <Badge size="sm" color={status.color} data-testid={`run-status-${run.id}`}>
             {status.label}
           </Badge>
           {run.attempt > 1 && (
             <Tooltip label={`시도: ${run.attempt}/${run.maxAttempts}`}>
-              <Badge size="xs" variant="light" color="gray" leftSection={<IconRepeat size={10} />}>
+              <Badge size="xs" variant="light" color="gray" leftSection={<IconRepeat size={10} />} data-testid={`run-retry-${run.id}`}>
                 {run.attempt}
               </Badge>
             </Tooltip>
           )}
-          <ActionIcon variant="subtle" size="sm" onClick={toggle}>
+          <ActionIcon variant="subtle" size="sm" onClick={toggle} data-testid={`run-expand-${run.id}`}>
             {expanded ? <IconChevronDown size={14} /> : <IconChevronRight size={14} />}
           </ActionIcon>
         </Group>
       </Group>
 
       {isActive && (
-        <Progress value={100} animated mt="sm" size="xs" color={status.color} />
+        <Progress value={100} animated mt="sm" size="xs" color={status.color} data-testid={`run-progress-${run.id}`} />
       )}
 
       <Collapse in={expanded}>

@@ -54,27 +54,32 @@ export function RoutineList({ onRefresh }: { onRefresh: () => void }) {
   const activeRoutines = routines.filter((r) => r.status !== "deleted");
 
   return (
-    <Stack gap="md">
+    <Stack gap="md" data-testid="routine-list-container">
       <Group justify="space-between">
         <Title order={4}>정기 실행 (루틴)</Title>
         <Group gap="xs">
           <Tooltip label="새로고침">
-            <ActionIcon variant="subtle" onClick={onRefresh}>
+            <ActionIcon variant="subtle" onClick={onRefresh} data-testid="refresh-routines">
               <IconRefresh size={18} />
             </ActionIcon>
           </Tooltip>
-          <Button leftSection={<IconPlus size={16} />} size="sm" onClick={openCreate}>
+          <Button
+            leftSection={<IconPlus size={16} />}
+            size="sm"
+            onClick={openCreate}
+            data-testid="create-routine-btn"
+          >
             루틴 생성
           </Button>
         </Group>
       </Group>
 
-      {routinesError && <Alert color="red">{routinesError}</Alert>}
+      {routinesError && <Alert color="red" data-testid="routines-error">{routinesError}</Alert>}
 
       {isLoadingRoutines ? (
-        <Box ta="center" py="xl"><Loader /></Box>
+        <Box ta="center" py="xl" data-testid="routines-loading"><Loader /></Box>
       ) : activeRoutines.length === 0 ? (
-        <Card withBorder p="xl" ta="center">
+        <Card withBorder p="xl" ta="center" data-testid="routines-empty">
           <IconCalendarTime size={48} color="gray" style={{ margin: "0 auto", marginBottom: 16 }} />
           <Text c="dimmed">아직 생성된 루틴이 없습니다.</Text>
           <Text size="sm" c="dimmed" mt="xs">
@@ -83,7 +88,7 @@ export function RoutineList({ onRefresh }: { onRefresh: () => void }) {
           <Button mt="md" onClick={openCreate}>첫 루틴 만들기</Button>
         </Card>
       ) : (
-        <Stack gap="sm">
+        <Stack gap="sm" data-testid="routines-list">
           {activeRoutines.map((routine) => (
             <RoutineCard
               key={routine.id}
@@ -133,7 +138,7 @@ function RoutineCard({
   }
 
   return (
-    <Card withBorder padding="sm">
+    <Card withBorder padding="sm" data-testid={`routine-card-${routine.name}`}>
       <Group justify="space-between" wrap="nowrap">
         <Box style={{ cursor: "pointer", flex: 1 }} onClick={onSelect}>
           <Group gap="sm" wrap="nowrap">
@@ -147,7 +152,9 @@ function RoutineCard({
           </Group>
         </Box>
         <Group gap="xs">
-          <Badge size="sm" color={status.color}>{status.label}</Badge>
+          <Badge size="sm" color={status.color} data-testid={`routine-status-${routine.id}`}>
+            {status.label}
+          </Badge>
           {routine.status !== "deleted" && (
             <Tooltip label={routine.status === "active" ? "일시정지" : "활성화"}>
               <ActionIcon
@@ -155,13 +162,14 @@ function RoutineCard({
                 size="sm"
                 onClick={toggleStatus}
                 loading={isToggling}
+                data-testid={`routine-toggle-${routine.id}`}
               >
                 {routine.status === "active" ? <IconPlayerPause size={14} /> : <IconPlayerPlay size={14} />}
               </ActionIcon>
             </Tooltip>
           )}
           <Tooltip label="편집">
-            <ActionIcon variant="subtle" size="sm" onClick={onSelect}>
+            <ActionIcon variant="subtle" size="sm" onClick={onSelect} data-testid={`routine-edit-${routine.id}`}>
               <IconEdit size={14} />
             </ActionIcon>
           </Tooltip>
@@ -237,9 +245,10 @@ function CreateRoutineModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title="루틴 생성" size="lg">
+    <Modal opened={opened} onClose={onClose} title="루틴 생성" size="lg" data-testid="create-routine-modal">
       <Stack gap="md">
         <TextInput
+          data-testid="routine-name-input"
           label="루틴 이름"
           placeholder="예: 매일 아침 시장 분석"
           value={name}
@@ -247,6 +256,7 @@ function CreateRoutineModal({
           required
         />
         <Select
+          data-testid="routine-bot-select"
           label="실행할 봇"
           data={botOptions}
           value={botId}
@@ -255,6 +265,7 @@ function CreateRoutineModal({
           required
         />
         <Textarea
+          data-testid="routine-instruction-input"
           label="실행 지시사항"
           placeholder="봇에게 전달할 지시사항을 입력하세요..."
           value={instruction}
@@ -266,6 +277,7 @@ function CreateRoutineModal({
         />
         <Group grow>
           <TextInput
+            data-testid="routine-cron-input"
             label="Cron 표현식"
             placeholder="0 9 * * 1-5"
             value={cronExpr}
@@ -274,6 +286,7 @@ function CreateRoutineModal({
             required
           />
           <Select
+            data-testid="routine-timezone-select"
             label="시간대"
             data={TIMEZONE_OPTIONS}
             value={timezone}
@@ -281,10 +294,10 @@ function CreateRoutineModal({
             required
           />
         </Group>
-        {error && <Alert color="red">{error}</Alert>}
+        {error && <Alert color="red" data-testid="create-routine-error">{error}</Alert>}
         <Group justify="flex-end">
           <Button variant="subtle" onClick={onClose}>취소</Button>
-          <Button onClick={handleCreate} loading={isCreating}>생성</Button>
+          <Button onClick={handleCreate} loading={isCreating} data-testid="submit-create-routine">생성</Button>
         </Group>
       </Stack>
     </Modal>

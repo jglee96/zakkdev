@@ -35,7 +35,7 @@ async function main() {
     assert.equal(redirect.status, 307);
     assert.equal(new URL(redirect.headers.get("location")!, origin).pathname, "/finance/login");
     assert.equal((await fetch(`${origin}/api/finance/auth/login`, { method: "POST", headers: { "Content-Type": "application/json", Origin: "https://attacker.example" }, body: JSON.stringify({ password }) })).status, 403);
-    browser = await puppeteer.launch({ executablePath: process.env.CHROME_BIN || "/usr/bin/chromium", headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
+    browser = await puppeteer.launch({ executablePath: process.env.CHROME_BIN || "/usr/local/bin/google-chrome", headless: true, args: ["--no-sandbox", "--disable-dev-shm-usage"] });
     const page = await browser.newPage();
     const errors: string[] = [];
     page.on("pageerror", (error) => { errors.push(String(error)); });

@@ -112,10 +112,11 @@ export function ChatPanel() {
   ];
 
   return (
-    <Stack h="calc(100vh - 120px)" gap="md">
+    <Stack h="calc(100vh - 120px)" gap="md" data-testid="chat-panel">
       <Group justify="space-between" wrap="nowrap">
         <Title order={4}>채팅</Title>
         <Select
+          data-testid="bot-selector"
           data={botOptions}
           value={activeBotId}
           onChange={(v) => setSelectedBotId(v)}
@@ -126,9 +127,9 @@ export function ChatPanel() {
       </Group>
 
       <Paper withBorder flex={1} style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <ScrollArea flex={1} viewportRef={viewportRef} p="md">
+        <ScrollArea flex={1} viewportRef={viewportRef} p="md" data-testid="chat-messages">
           {botMessages.length === 0 ? (
-            <Box ta="center" py="xl">
+            <Box ta="center" py="xl" data-testid="chat-empty">
               <ThemeIcon size={48} radius="xl" variant="light" color="blue" mb="md">
                 <IconRobot size={28} />
               </ThemeIcon>
@@ -143,7 +144,7 @@ export function ChatPanel() {
                 <MessageBubble key={msg.id} message={msg} />
               ))}
               {isSendingMessage && (
-                <Group gap="xs">
+                <Group gap="xs" data-testid="chat-loading">
                   <ThemeIcon size="sm" radius="xl" variant="light" color="blue">
                     <IconRobot size={14} />
                   </ThemeIcon>
@@ -155,7 +156,7 @@ export function ChatPanel() {
         </ScrollArea>
 
         {chatError && (
-          <Alert color="red" icon={<IconAlertCircle size={16} />} m="md" mt={0}>
+          <Alert color="red" icon={<IconAlertCircle size={16} />} m="md" mt={0} data-testid="chat-error">
             {chatError}
           </Alert>
         )}
@@ -165,10 +166,11 @@ export function ChatPanel() {
         )}
 
         <Box p="md" pt={0}>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} data-testid="chat-form">
             <Group gap="sm" align="flex-end">
               <Textarea
                 flex={1}
+                data-testid="chat-input"
                 placeholder="메시지를 입력하세요..."
                 value={input}
                 onChange={(e) => setInput(e.currentTarget.value)}
@@ -185,6 +187,7 @@ export function ChatPanel() {
               />
               <Button
                 type="submit"
+                data-testid="chat-send"
                 loading={isSendingMessage}
                 disabled={!input.trim()}
                 leftSection={<IconSend size={16} />}

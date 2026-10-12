@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { before, after, test, describe } from "node:test";
 import { randomUUID } from "node:crypto";
+import type { SQSEvent } from "aws-lambda";
 import { CreateTableCommand, DeleteTableCommand, DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
 import {
@@ -1104,7 +1105,12 @@ describe("SQS partial batch failure and DLQ redrive", () => {
             scheduledAt: new Date().toISOString(),
           }),
           receiptHandle: "receipt-1",
-          attributes: {},
+          attributes: {
+            ApproximateReceiveCount: "1",
+            SentTimestamp: String(Date.now()),
+            SenderId: "test-sender",
+            ApproximateFirstReceiveTimestamp: String(Date.now()),
+          },
           messageAttributes: {},
           md5OfBody: "",
           eventSource: "aws:sqs",
@@ -1120,7 +1126,12 @@ describe("SQS partial batch failure and DLQ redrive", () => {
             scheduledAt: new Date().toISOString(),
           }),
           receiptHandle: "receipt-2",
-          attributes: {},
+          attributes: {
+            ApproximateReceiveCount: "1",
+            SentTimestamp: String(Date.now()),
+            SenderId: "test-sender",
+            ApproximateFirstReceiveTimestamp: String(Date.now()),
+          },
           messageAttributes: {},
           md5OfBody: "",
           eventSource: "aws:sqs",
@@ -1128,9 +1139,9 @@ describe("SQS partial batch failure and DLQ redrive", () => {
           awsRegion: "us-east-1",
         },
       ],
-    };
+    } as const;
 
-    const response = await handleSQSEvent(event, workerConfig);
+    const response = await handleSQSEvent(event as unknown as SQSEvent, workerConfig as unknown as Parameters<typeof handleSQSEvent>[1]);
 
     assert.ok(response.batchItemFailures !== undefined);
     assert.equal(agentCallCount, 1, "Only successful routine should run agent");

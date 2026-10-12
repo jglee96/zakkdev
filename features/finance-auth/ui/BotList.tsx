@@ -42,37 +42,42 @@ export function BotList({ onRefresh }: { onRefresh: () => void }) {
   const [selectedBot, setSelectedBot] = useState<Bot | null>(null);
 
   return (
-    <Stack gap="md">
+    <Stack gap="md" data-testid="bot-list-container">
       <Group justify="space-between">
         <Title order={4}>봇 관리</Title>
         <Group gap="xs">
           <Tooltip label="새로고침">
-            <ActionIcon variant="subtle" onClick={onRefresh}>
+            <ActionIcon variant="subtle" onClick={onRefresh} data-testid="refresh-bots">
               <IconRefresh size={18} />
             </ActionIcon>
           </Tooltip>
-          <Button leftSection={<IconPlus size={16} />} size="sm" onClick={openCreate}>
+          <Button
+            leftSection={<IconPlus size={16} />}
+            size="sm"
+            onClick={openCreate}
+            data-testid="create-bot-btn"
+          >
             봇 생성
           </Button>
         </Group>
       </Group>
 
       {botsError && (
-        <Alert color="red">{botsError}</Alert>
+        <Alert color="red" data-testid="bots-error">{botsError}</Alert>
       )}
 
       {isLoadingBots ? (
-        <Box ta="center" py="xl">
+        <Box ta="center" py="xl" data-testid="bots-loading">
           <Loader />
         </Box>
       ) : bots.length === 0 ? (
-        <Card withBorder p="xl" ta="center">
+        <Card withBorder p="xl" ta="center" data-testid="bots-empty">
           <IconRobot size={48} color="gray" style={{ margin: "0 auto", marginBottom: 16 }} />
           <Text c="dimmed">아직 생성된 봇이 없습니다.</Text>
           <Button mt="md" onClick={openCreate}>첫 봇 만들기</Button>
         </Card>
       ) : (
-        <Stack gap="sm">
+        <Stack gap="sm" data-testid="bots-list">
           {bots.map((bot) => (
             <BotCard key={bot.id} bot={bot} onSelect={() => setSelectedBot(bot)} />
           ))}
@@ -89,7 +94,13 @@ function BotCard({ bot, onSelect }: { bot: Bot; onSelect: () => void }) {
   const status = STATUS_BADGE[bot.status];
 
   return (
-    <Card withBorder padding="sm" style={{ cursor: "pointer" }} onClick={onSelect}>
+    <Card
+      withBorder
+      padding="sm"
+      style={{ cursor: "pointer" }}
+      onClick={onSelect}
+      data-testid={`bot-card-${bot.name}`}
+    >
       <Group justify="space-between" wrap="nowrap">
         <Group gap="sm" wrap="nowrap">
           <IconRobot size={20} />
@@ -101,7 +112,9 @@ function BotCard({ bot, onSelect }: { bot: Bot; onSelect: () => void }) {
           </Box>
         </Group>
         <Group gap="xs">
-          <Badge size="sm" color={status.color}>{status.label}</Badge>
+          <Badge size="sm" color={status.color} data-testid={`bot-status-${bot.id}`}>
+            {status.label}
+          </Badge>
           <ActionIcon variant="subtle" size="sm">
             <IconSettings size={14} />
           </ActionIcon>
@@ -167,9 +180,10 @@ function CreateBotModal({
   }
 
   return (
-    <Modal opened={opened} onClose={onClose} title="봇 생성">
+    <Modal opened={opened} onClose={onClose} title="봇 생성" data-testid="create-bot-modal">
       <Stack gap="md">
         <TextInput
+          data-testid="bot-name-input"
           label="봇 이름"
           placeholder="예: 내 분석 봇"
           value={name}
@@ -177,12 +191,14 @@ function CreateBotModal({
           required
         />
         <Select
+          data-testid="bot-template-select"
           label="템플릿"
           data={TEMPLATE_OPTIONS}
           value={template}
           onChange={(v) => v && setTemplate(v)}
         />
         <Textarea
+          data-testid="bot-instructions-input"
           label="커스텀 지시사항 (선택)"
           placeholder="봇에게 추가 지시사항을 입력하세요..."
           value={instructions}
@@ -191,10 +207,10 @@ function CreateBotModal({
           minRows={3}
           maxRows={6}
         />
-        {error && <Alert color="red">{error}</Alert>}
+        {error && <Alert color="red" data-testid="create-bot-error">{error}</Alert>}
         <Group justify="flex-end">
           <Button variant="subtle" onClick={onClose}>취소</Button>
-          <Button onClick={handleCreate} loading={isCreating}>생성</Button>
+          <Button onClick={handleCreate} loading={isCreating} data-testid="submit-create-bot">생성</Button>
         </Group>
       </Stack>
     </Modal>

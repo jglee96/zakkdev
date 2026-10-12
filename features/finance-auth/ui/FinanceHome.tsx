@@ -188,11 +188,12 @@ export function FinanceHome() {
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p="md">
+      <AppShell.Navbar p="md" data-testid="finance-navbar">
         <Stack gap="xs">
           {navItems.map((item) => (
             <NavLink
               key={item.tab}
+              data-testid={`nav-${item.tab}`}
               label={item.label}
               leftSection={<item.icon size={18} />}
               rightSection={item.badge && <Badge size="xs" variant="light">{item.badge}</Badge>}
