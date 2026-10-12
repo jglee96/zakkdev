@@ -141,7 +141,7 @@ async function assertFinanceModalLayout(ctx: TestContext, modalTestId: string, l
           !topEl.closest('[data-testid="site-header"]'),
       );
     }
-    const overlay = document.querySelector('[data-testid="finance-modal-overlay"]');
+    const overlay = document.querySelector(".finance-modal-overlay");
     return {
       ok: inViewport && overlayCoversHeader && Boolean(overlay),
       inViewport,
