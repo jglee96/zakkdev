@@ -388,7 +388,7 @@ async function insertMockData(ctx: TestContext) {
     name: "한국 주식 분석봇",
     template: "kr-stock",
     status: "active",
-    allowedTools: ["search_disclosure", "analyze_financials", "memory_store", "memory_recall"],
+    allowedTools: ["search_dart_filings", "get_filing_detail", "get_financials", "find_relevant_theses", "save_insight"],
     instructions: "한국 시장 공시 분석에 특화된 봇입니다.",
     createdAt: now - 86400000,
     updatedAt: now,
@@ -739,11 +739,27 @@ async function testBotCreateModal(ctx: TestContext) {
   
   await new Promise((resolve) => setTimeout(resolve, 800));
   
-  const inputVisible = await ctx.page.$('[data-testid="bot-name-input"]');
-  if (inputVisible) {
-    await ctx.page.type('[data-testid="bot-name-input"]', 'E2E 테스트 봇');
-    await new Promise((resolve) => setTimeout(resolve, 500));
-  }
+  await ctx.page.evaluate(() => {
+    function setNativeValue(el: HTMLInputElement | HTMLTextAreaElement, value: string) {
+      const setter = Object.getOwnPropertyDescriptor(
+        el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype,
+        "value",
+      )?.set;
+      setter?.call(el, value);
+      el.dispatchEvent(new Event("input", { bubbles: true }));
+      el.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+    const nameEl = document.querySelector('[data-testid="bot-name-input"]') as HTMLInputElement | null;
+    const instrEl = document.querySelector('[data-testid="bot-instructions-input"]') as HTMLTextAreaElement | null;
+    if (nameEl) setNativeValue(nameEl, "한국 시장 모니터링 봇");
+    if (instrEl) {
+      setNativeValue(
+        instrEl,
+        "매일 아침 주요 종목 공시와 재무 변화를 요약하고, DART 원문 URL과 공시일을 반드시 포함합니다.",
+      );
+    }
+  });
+  await new Promise((resolve) => setTimeout(resolve, 500));
   
   const { content: modalContent } = await takeScreenshot(ctx, "04-bot-create-modal-desktop-1440x900", { width: 1440, height: 900 });
   await takeScreenshot(ctx, "04-bot-create-modal-mobile-390x844", { width: 390, height: 844 });
@@ -774,7 +790,16 @@ async function testBotDetail(ctx: TestContext) {
   
   if (clicked) {
     await new Promise((resolve) => setTimeout(resolve, 800));
-    
+    const detailName = await ctx.page.$eval('[data-testid="bot-detail-name-input"]', (el) => {
+      const input = el instanceof HTMLInputElement ? el : el.querySelector("input");
+      return input instanceof HTMLInputElement ? input.value : "";
+    });
+    assert.ok(detailName.includes("한국 주식"), "Bot detail modal should prefill name from selected bot");
+    const detailInstr = await ctx.page.$eval('[data-testid="bot-detail-instructions-input"]', (el) => {
+      const input = el instanceof HTMLTextAreaElement ? el : el.querySelector("textarea");
+      return input instanceof HTMLTextAreaElement ? input.value : "";
+    });
+    assert.ok(detailInstr.length > 0, "Bot detail modal should prefill instructions");
     const { content: detailContent } = await takeScreenshot(ctx, "05-bot-detail-desktop-1440x900", { width: 1440, height: 900 });
     await takeScreenshot(ctx, "05-bot-detail-mobile-390x844", { width: 390, height: 844 });
     

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActionIcon,
   Alert,
@@ -22,6 +22,7 @@ import {
 import { useDisclosure } from "@mantine/hooks";
 import { IconPlus, IconRefresh, IconRobot, IconSettings, IconTrash } from "@tabler/icons-react";
 import { useFinanceStore, type Bot, type BotTemplate } from "../store/finance-store";
+import { getToolLabelKo, normalizeToolCode } from "./tool-labels";
 
 const TEMPLATE_OPTIONS = [
   { value: "main", label: "메인 봇 - 종합 금융 분석" },
@@ -134,7 +135,7 @@ function CreateBotModal({
   onCreated: () => void;
 }) {
   const [name, setName] = useState("");
-  const [template, setTemplate] = useState<string>("main");
+  const [template, setTemplate] = useState<string>("kr-stock");
   const [instructions, setInstructions] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -168,7 +169,7 @@ function CreateBotModal({
       }
 
       setName("");
-      setTemplate("main");
+      setTemplate("kr-stock");
       setInstructions("");
       onCreated();
       onClose();
@@ -232,13 +233,17 @@ function BotDetailModal({
   const [isUpdating, setIsUpdating] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useState(() => {
-    if (bot) {
-      setName(bot.name);
-      setInstructions(bot.instructions || "");
-      setStatus(bot.status);
+  useEffect(() => {
+    if (!bot) {
+      setName("");
+      setInstructions("");
+      setStatus("active");
+      return;
     }
-  });
+    setName(bot.name);
+    setInstructions(bot.instructions || "");
+    setStatus(bot.status);
+  }, [bot]);
 
   if (!bot) return null;
 
@@ -277,9 +282,10 @@ function BotDetailModal({
   }
 
   return (
-    <Modal opened={!!bot} onClose={onClose} title="봇 설정" size="lg">
+    <Modal opened={!!bot} onClose={onClose} title="봇 설정" size="lg" data-testid="bot-detail-modal">
       <Stack gap="md">
         <TextInput
+          data-testid="bot-detail-name-input"
           label="봇 이름"
           value={name}
           onChange={(e) => setName(e.currentTarget.value)}
@@ -295,6 +301,7 @@ function BotDetailModal({
           onChange={(v) => v && setStatus(v)}
         />
         <Textarea
+          data-testid="bot-detail-instructions-input"
           label="지시사항"
           value={instructions}
           onChange={(e) => setInstructions(e.currentTarget.value)}
@@ -302,10 +309,14 @@ function BotDetailModal({
           minRows={3}
           maxRows={8}
         />
-        <Group gap="xs" wrap="wrap">
+        <Group gap="xs" wrap="wrap" data-testid="bot-detail-tools">
           <Text size="sm" fw={500}>사용 가능 도구:</Text>
           {bot.allowedTools.map((tool) => (
-            <Badge key={tool} size="sm" variant="outline">{tool}</Badge>
+            <Tooltip key={tool} label={normalizeToolCode(tool)} withArrow>
+              <Badge size="sm" variant="outline" data-testid={`bot-tool-chip-${normalizeToolCode(tool)}`}>
+                {getToolLabelKo(tool)}
+              </Badge>
+            </Tooltip>
           ))}
         </Group>
         <Text size="xs" c="dimmed">

@@ -130,7 +130,7 @@ export function FinanceHome() {
 
   const navItems = [
     { icon: IconMessage, label: "채팅", tab: "chat" as const, badge: null },
-    { icon: IconRobot, label: "봇", tab: "bots" as const, badge: bots.length > 0 ? bots.length : null },
+    { icon: IconRobot, label: "봇", tab: "bots" as const, badge: null },
     { icon: IconCalendarTime, label: "루틴", tab: "routines" as const, badge: null },
     { icon: IconActivity, label: "실행", tab: "runs" as const, badge: null },
   ];
