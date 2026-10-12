@@ -122,7 +122,7 @@ async function closeMobileFinanceNav(ctx: TestContext) {
 
 async function assertMobileChatComposerLayout(ctx: TestContext, label: string) {
   const metrics = await ctx.page.evaluate(() => {
-    const textarea = document.querySelector('[data-testid="chat-composer"] textarea');
+    const textarea = document.querySelector('[data-testid="chat-input-textarea"]');
     const send = document.querySelector('[data-testid="chat-send"]');
     if (!textarea || !send) return null;
     const tr = textarea.getBoundingClientRect();
@@ -167,7 +167,7 @@ async function assertNoDuplicateMobileSectionTitle(ctx: TestContext, label: stri
 
 async function assertChatInputInViewport(ctx: TestContext, label: string) {
   const inView = await ctx.page.evaluate(() => {
-    const el = document.querySelector('[data-testid="chat-composer"] textarea');
+    const el = document.querySelector('[data-testid="chat-input-textarea"]');
     if (!el) return { ok: false, reason: "missing" };
     const rect = el.getBoundingClientRect();
     const vh = window.innerHeight;

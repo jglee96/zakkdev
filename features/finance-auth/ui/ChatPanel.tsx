@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, type FormEvent } from "react";
+import TextareaAutosize from "react-textarea-autosize";
 import {
   Alert,
   Badge,
@@ -13,7 +14,6 @@ import {
   Select,
   Stack,
   Text,
-  Textarea,
   ThemeIcon,
   Title,
 } from "@mantine/core";
@@ -194,26 +194,15 @@ export function ChatPanel() {
           <form onSubmit={handleSubmit} data-testid="chat-form">
             <Group gap="xs" align="center" wrap="nowrap" w="100%" style={{ minWidth: 0 }}>
               <Box style={{ flex: 1, minWidth: 0, alignSelf: "center" }}>
-                <Textarea
-                  data-testid="chat-input-root"
+                <TextareaAutosize
+                  data-testid="chat-input-textarea"
+                  className="finance-chat-textarea"
                   placeholder="메시지를 입력하세요..."
                   value={input}
                   onChange={(e) => setInput(e.currentTarget.value)}
                   disabled={isSendingMessage}
-                  autosize
                   minRows={1}
                   maxRows={4}
-                  rows={1}
-                  size="sm"
-                  resize="none"
-                  w="100%"
-                  styles={{
-                    root: { width: "100%" },
-                    input: {
-                      lineHeight: "20px",
-                      minHeight: 36,
-                    },
-                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();

@@ -51,18 +51,35 @@ body {
   padding-left: 1.25rem;
 }
 
-/* Chat composer: single-line empty height; autosize grows up to maxRows */
-.finance-chat-composer textarea {
-  line-height: 20px !important;
-  min-height: 36px !important;
-  padding-top: 8px !important;
-  padding-bottom: 8px !important;
+.finance-chat-textarea {
+  width: 100%;
+  display: block;
+  box-sizing: border-box;
   resize: none;
+  font-family: var(--mantine-font-family);
+  font-size: var(--mantine-font-size-sm);
+  line-height: 20px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border-radius: var(--mantine-radius-default);
+  border: calc(0.0625rem * var(--mantine-scale)) solid var(--mantine-color-gray-4);
+  background-color: var(--mantine-color-white);
+  color: var(--mantine-color-text);
 }
 
-.finance-chat-composer .mantine-Input-wrapper {
-  margin: 0;
-  align-items: center;
+[data-mantine-color-scheme="dark"] .finance-chat-textarea {
+  border-color: var(--mantine-color-dark-4);
+  background-color: var(--mantine-color-dark-6);
+}
+
+.finance-chat-textarea:focus {
+  outline: none;
+  border-color: var(--mantine-primary-color-filled);
+}
+
+.finance-chat-textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 body::before {
