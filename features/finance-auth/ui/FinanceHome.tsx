@@ -226,16 +226,20 @@ export function FinanceHome() {
         <Box
           hiddenFrom="sm"
           data-testid="finance-mobile-nav-bar"
-          py={6}
-          px="sm"
+          py={4}
+          px="xs"
           style={{
             flexShrink: 0,
             borderBottom: "1px solid var(--app-shell-border-color, var(--mantine-color-gray-3))",
           }}
         >
-          <Group gap="sm" wrap="nowrap">
-            <Burger opened={opened} onClick={toggle} size="sm" aria-label={`금융 메뉴: ${activeLabel}`} data-testid="finance-nav-burger" />
-          </Group>
+          <Burger
+            opened={opened}
+            onClick={toggle}
+            size="sm"
+            aria-label={`금융 메뉴: ${activeLabel}`}
+            data-testid="finance-nav-burger"
+          />
         </Box>
 
         <Box

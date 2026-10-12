@@ -110,9 +110,64 @@ async function assertChatChromeVisible(ctx: TestContext, label: string) {
   assert.ok(selectorOk, `${label}: bot selector should be visible`);
 }
 
+async function closeMobileFinanceNav(ctx: TestContext) {
+  await ctx.page.evaluate(() => {
+    const burger = document.querySelector('[data-testid="finance-nav-burger"]');
+    if (burger?.getAttribute("aria-expanded") === "true") {
+      (burger as HTMLElement).click();
+    }
+  });
+  await new Promise((resolve) => setTimeout(resolve, 300));
+}
+
+async function assertMobileChatComposerLayout(ctx: TestContext, label: string) {
+  const metrics = await ctx.page.evaluate(() => {
+    const textarea = document.querySelector('[data-testid="chat-composer"] textarea');
+    const send = document.querySelector('[data-testid="chat-send"]');
+    if (!textarea || !send) return null;
+    const tr = textarea.getBoundingClientRect();
+    const sr = send.getBoundingClientRect();
+    const inputCenterY = tr.top + tr.height / 2;
+    const sendCenterY = sr.top + sr.height / 2;
+    return {
+      height: tr.height,
+      deltaY: Math.abs(inputCenterY - sendCenterY),
+      value: (textarea as HTMLTextAreaElement).value,
+    };
+  });
+  assert.ok(metrics, `${label}: chat textarea and send button should exist`);
+  assert.equal(metrics.value, "", `${label}: textarea should be empty for height check`);
+  assert.ok(metrics.height < 48, `${label}: empty textarea height < 48px (got ${metrics.height})`);
+  assert.ok(metrics.deltaY <= 4, `${label}: vertical center delta <= 4px (got ${metrics.deltaY})`);
+}
+
+async function assertNoDuplicateMobileSectionTitle(ctx: TestContext, label: string) {
+  const state = await ctx.page.evaluate(() => {
+    const bar = document.querySelector('[data-testid="finance-mobile-nav-bar"]');
+    const barText = bar?.textContent?.replace(/\s+/g, "").trim() ?? "";
+    const pageTitles = Array.from(document.querySelectorAll('[data-testid="chat-page-title"]')).map(
+      (el) => el.textContent?.trim(),
+    );
+    const visibleChatLabels = Array.from(document.querySelectorAll("h1, h2, h3, h4, h5, h6, [data-testid='finance-mobile-nav-bar']"))
+      .filter((el) => {
+        const rect = el.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < window.innerHeight;
+      })
+      .map((el) => el.textContent?.trim())
+      .filter((t) => t === "채팅");
+    return { barText, pageTitles, visibleChatLabels };
+  });
+  assert.ok(!state.barText.includes("채팅"), `${label}: mobile nav bar should not show '채팅' label`);
+  assert.equal(state.pageTitles.length, 1, `${label}: expected one chat page title`);
+  assert.ok(
+    state.visibleChatLabels.length <= 1,
+    `${label}: '채팅' should not appear twice in visible headings (got ${state.visibleChatLabels.length})`,
+  );
+}
+
 async function assertChatInputInViewport(ctx: TestContext, label: string) {
   const inView = await ctx.page.evaluate(() => {
-    const el = document.querySelector('[data-testid="chat-input"]');
+    const el = document.querySelector('[data-testid="chat-composer"] textarea');
     if (!el) return { ok: false, reason: "missing" };
     const rect = el.getBoundingClientRect();
     const vh = window.innerHeight;
@@ -142,6 +197,9 @@ async function assertNoHorizontalOverflow(ctx: TestContext, label: string) {
 
 async function takeScreenshot(ctx: TestContext, name: string, viewport: { width: number; height: number }) {
   await ctx.page.setViewport(viewport);
+  if (viewport.width < 768) {
+    await closeMobileFinanceNav(ctx);
+  }
   await new Promise((resolve) => setTimeout(resolve, 800));
   await assertNoHorizontalOverflow(ctx, name);
   const filename = `${name}.png`;
@@ -606,12 +664,15 @@ async function testChatWithSources(ctx: TestContext) {
   await assertChatInputInViewport(ctx, "02-chat-desktop");
   const { content: chatContent } = await takeScreenshot(ctx, "02-chat-with-sources-desktop-1440x900", { width: 1440, height: 900 });
   await ctx.page.setViewport({ width: 390, height: 844 });
+  await closeMobileFinanceNav(ctx);
   await new Promise((resolve) => setTimeout(resolve, 500));
   await assertSingleThemeToggle(ctx, "02-chat-mobile");
   await assertNoFinanceAppHeader(ctx, "02-chat-mobile");
   await assertSiteNavVisible(ctx, "02-chat-mobile");
   await assertChatChromeVisible(ctx, "02-chat-mobile");
+  await assertNoDuplicateMobileSectionTitle(ctx, "02-chat-mobile");
   await assertChatInputInViewport(ctx, "02-chat-mobile");
+  await assertMobileChatComposerLayout(ctx, "02-chat-mobile");
   await takeScreenshot(ctx, "02-chat-with-sources-mobile-390x844", { width: 390, height: 844 });
   
   assert.ok(

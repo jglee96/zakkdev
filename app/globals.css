@@ -51,6 +51,20 @@ body {
   padding-left: 1.25rem;
 }
 
+/* Chat composer: single-line empty height; autosize grows up to maxRows */
+.finance-chat-composer textarea {
+  line-height: 20px !important;
+  min-height: 36px !important;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
+  resize: none;
+}
+
+.finance-chat-composer .mantine-Input-wrapper {
+  margin: 0;
+  align-items: center;
+}
+
 body::before {
   content: "";
   position: fixed;

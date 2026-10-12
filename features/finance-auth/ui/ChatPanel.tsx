@@ -184,35 +184,44 @@ export function ChatPanel() {
           <ResponseStats response={lastChatResponse} />
         )}
 
-        <Box p="md" pt={0} style={{ flexShrink: 0 }} data-testid="chat-composer">
+        <Box
+          p="md"
+          pt={0}
+          className="finance-chat-composer"
+          style={{ flexShrink: 0 }}
+          data-testid="chat-composer"
+        >
           <form onSubmit={handleSubmit} data-testid="chat-form">
             <Group gap="xs" align="center" wrap="nowrap" w="100%" style={{ minWidth: 0 }}>
-              <Textarea
-                data-testid="chat-input"
-                placeholder="메시지를 입력하세요..."
-                value={input}
-                onChange={(e) => setInput(e.currentTarget.value)}
-                disabled={isSendingMessage}
-                autosize
-                minRows={1}
-                maxRows={4}
-                size="sm"
-                style={{ flex: 1, minWidth: 0 }}
-                styles={{
-                  input: {
-                    minHeight: 36,
-                    lineHeight: "20px",
-                    paddingTop: 8,
-                    paddingBottom: 8,
-                  },
-                }}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit(e);
-                  }
-                }}
-              />
+              <Box style={{ flex: 1, minWidth: 0, alignSelf: "center" }}>
+                <Textarea
+                  data-testid="chat-input-root"
+                  placeholder="메시지를 입력하세요..."
+                  value={input}
+                  onChange={(e) => setInput(e.currentTarget.value)}
+                  disabled={isSendingMessage}
+                  autosize
+                  minRows={1}
+                  maxRows={4}
+                  rows={1}
+                  size="sm"
+                  resize="none"
+                  w="100%"
+                  styles={{
+                    root: { width: "100%" },
+                    input: {
+                      lineHeight: "20px",
+                      minHeight: 36,
+                    },
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit(e);
+                    }
+                  }}
+                />
+              </Box>
               <Button
                 type="submit"
                 data-testid="chat-send"
@@ -220,7 +229,7 @@ export function ChatPanel() {
                 loading={isSendingMessage}
                 disabled={!input.trim()}
                 leftSection={<IconSend size={16} />}
-                style={{ flexShrink: 0 }}
+                style={{ flexShrink: 0, alignSelf: "center" }}
               >
                 전송
               </Button>
