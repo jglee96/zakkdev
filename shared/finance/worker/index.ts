@@ -7,6 +7,7 @@ export {
   type LeaseRenewalResult,
   type CommitResult,
   type RunCheckpoint,
+  type RunReportData,
   LEASE_DURATION_MS,
   HEARTBEAT_INTERVAL_MS,
   WORKER_DEADLINE_MS,

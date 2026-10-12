@@ -33,6 +33,7 @@ export type AgentRun = {
   readonly error?: string;
   readonly errorCode?: string;
   readonly checkpoint?: RunCheckpoint;
+  readonly reportData?: RunReportData;
   readonly startedAt?: number;
   readonly finishedAt?: number;
   readonly createdAt: number;
@@ -49,6 +50,17 @@ export type RunCheckpoint = {
   }>;
   readonly messagesSnapshot?: string;
   readonly budgetReservationId?: string;
+};
+
+export type RunReportData = {
+  readonly response?: string;
+  readonly reportId?: string;
+  readonly memorySnapshot?: string;
+  readonly sources?: ReadonlyArray<{
+    type: string;
+    reference: string;
+    title?: string;
+  }>;
 };
 
 export type CreateRunInput = {

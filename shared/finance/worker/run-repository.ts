@@ -17,6 +17,7 @@ import {
   type LeaseRenewalResult,
   type CommitResult,
   type RunCheckpoint,
+  type RunReportData,
   generateIdempotencyKey,
   LEASE_DURATION_MS,
   MAX_ATTEMPTS,
@@ -162,13 +163,13 @@ export async function listRunsByOwner(
   statusFilter?: AgentRunStatus,
   limit = 50
 ): Promise<AgentRun[]> {
-  let filterExpression: string | undefined;
-  let expressionAttributeValues: Record<string, unknown> = {
+  let keyConditionExpression = "ownerId = :ownerId";
+  const expressionAttributeValues: Record<string, unknown> = {
     ":ownerId": ownerId,
   };
 
   if (statusFilter) {
-    filterExpression = "begins_with(statusCreatedAt, :status)";
+    keyConditionExpression += " AND begins_with(statusCreatedAt, :status)";
     expressionAttributeValues[":status"] = statusFilter;
   }
 
@@ -176,8 +177,7 @@ export async function listRunsByOwner(
     new QueryCommand({
       TableName: config.tableName,
       IndexName: "ByOwnerStatus",
-      KeyConditionExpression: "ownerId = :ownerId",
-      FilterExpression: filterExpression,
+      KeyConditionExpression: keyConditionExpression,
       ExpressionAttributeValues: expressionAttributeValues,
       Limit: limit,
       ScanIndexForward: false,
@@ -342,7 +342,8 @@ export async function commitRunCompletion(
   status: "completed" | "failed" | "timeout",
   usage?: AgentRun["usage"],
   error?: string,
-  errorCode?: string
+  errorCode?: string,
+  reportData?: RunReportData
 ): Promise<CommitResult> {
   const now = Date.now();
   const pk = `run#${ownerId}#${runId}`;
@@ -361,7 +362,7 @@ export async function commitRunCompletion(
               TableName: config.tableName,
               Key: { pk, sk: "meta" },
               UpdateExpression:
-                "SET #status = :status, #finishedAt = :now, #updatedAt = :now, #usage = :usage, #error = :error, #errorCode = :errorCode, #statusCreatedAt = :statusCreatedAt REMOVE #leaseOwner, #leaseExpiresAt",
+                "SET #status = :status, #finishedAt = :now, #updatedAt = :now, #usage = :usage, #error = :error, #errorCode = :errorCode, #reportData = :reportData, #statusCreatedAt = :statusCreatedAt REMOVE #leaseOwner, #leaseExpiresAt",
               ConditionExpression:
                 "#leaseOwner = :workerId AND #fencingToken = :fencingToken AND #status = :running",
               ExpressionAttributeNames: {
@@ -371,6 +372,7 @@ export async function commitRunCompletion(
                 "#usage": "usage",
                 "#error": "error",
                 "#errorCode": "errorCode",
+                "#reportData": "reportData",
                 "#statusCreatedAt": "statusCreatedAt",
                 "#leaseOwner": "leaseOwner",
                 "#leaseExpiresAt": "leaseExpiresAt",
@@ -382,6 +384,7 @@ export async function commitRunCompletion(
                 ":usage": usage || null,
                 ":error": error || null,
                 ":errorCode": errorCode || null,
+                ":reportData": reportData || null,
                 ":statusCreatedAt": `${status}#${run.createdAt}`,
                 ":workerId": workerId,
                 ":fencingToken": fencingToken,
@@ -555,6 +558,7 @@ function itemToRun(item: Record<string, unknown>): AgentRun {
     error: item.error as string | undefined,
     errorCode: item.errorCode as string | undefined,
     checkpoint: item.checkpoint as RunCheckpoint | undefined,
+    reportData: item.reportData as RunReportData | undefined,
     startedAt: item.startedAt as number | undefined,
     finishedAt: item.finishedAt as number | undefined,
     createdAt: item.createdAt as number,
