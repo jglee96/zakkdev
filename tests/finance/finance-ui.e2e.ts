@@ -739,26 +739,20 @@ async function testBotCreateModal(ctx: TestContext) {
   
   await new Promise((resolve) => setTimeout(resolve, 800));
   
-  await ctx.page.evaluate(() => {
-    function setNativeValue(el: HTMLInputElement | HTMLTextAreaElement, value: string) {
-      const setter = Object.getOwnPropertyDescriptor(
-        el instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype,
-        "value",
-      )?.set;
-      setter?.call(el, value);
-      el.dispatchEvent(new Event("input", { bubbles: true }));
-      el.dispatchEvent(new Event("change", { bubbles: true }));
-    }
-    const nameEl = document.querySelector('[data-testid="bot-name-input"]') as HTMLInputElement | null;
-    const instrEl = document.querySelector('[data-testid="bot-instructions-input"]') as HTMLTextAreaElement | null;
-    if (nameEl) setNativeValue(nameEl, "한국 시장 모니터링 봇");
-    if (instrEl) {
-      setNativeValue(
-        instrEl,
-        "매일 아침 주요 종목 공시와 재무 변화를 요약하고, DART 원문 URL과 공시일을 반드시 포함합니다.",
-      );
-    }
-  });
+  await ctx.page.$eval('[data-testid="bot-name-input"]', (root, value) => {
+    const el = root instanceof HTMLInputElement ? root : root.querySelector("input");
+    if (!el || !(el instanceof HTMLInputElement)) return;
+    const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
+    setter?.call(el, value as string);
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  }, "한국 시장 모니터링 봇");
+  await ctx.page.$eval('[data-testid="bot-instructions-input"]', (root, value) => {
+    const el = root instanceof HTMLTextAreaElement ? root : root.querySelector("textarea");
+    if (!el || !(el instanceof HTMLTextAreaElement)) return;
+    const setter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, "value")?.set;
+    setter?.call(el, value as string);
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+  }, "매일 아침 주요 종목 공시와 재무 변화를 요약하고, DART 원문 URL과 공시일을 반드시 포함합니다.");
   await new Promise((resolve) => setTimeout(resolve, 500));
   
   const { content: modalContent } = await takeScreenshot(ctx, "04-bot-create-modal-desktop-1440x900", { width: 1440, height: 900 });
