@@ -122,21 +122,27 @@ async function closeMobileFinanceNav(ctx: TestContext) {
 
 async function assertMobileChatComposerLayout(ctx: TestContext, label: string) {
   const metrics = await ctx.page.evaluate(() => {
-    const textarea = document.querySelector('[data-testid="chat-input-textarea"]');
+    const field = document.querySelector('[data-testid="chat-input-textarea"]');
+    const input =
+      field?.tagName === "TEXTAREA" || field?.tagName === "INPUT"
+        ? field
+        : field?.querySelector("input, textarea");
     const send = document.querySelector('[data-testid="chat-send"]');
-    if (!textarea || !send) return null;
-    const tr = textarea.getBoundingClientRect();
+    if (!input || !send) return null;
+    const tr = input.getBoundingClientRect();
     const sr = send.getBoundingClientRect();
     const inputCenterY = tr.top + tr.height / 2;
     const sendCenterY = sr.top + sr.height / 2;
+    const value =
+      input instanceof HTMLTextAreaElement || input instanceof HTMLInputElement ? input.value : "";
     return {
       height: tr.height,
       deltaY: Math.abs(inputCenterY - sendCenterY),
-      value: (textarea as HTMLTextAreaElement).value,
+      value,
     };
   });
-  assert.ok(metrics, `${label}: chat textarea and send button should exist`);
-  assert.equal(metrics.value, "", `${label}: textarea should be empty for height check`);
+  assert.ok(metrics, `${label}: chat input and send button should exist`);
+  assert.equal(metrics.value, "", `${label}: input should be empty for height check`);
   assert.ok(metrics.height < 48, `${label}: empty textarea height < 48px (got ${metrics.height})`);
   assert.ok(metrics.deltaY <= 4, `${label}: vertical center delta <= 4px (got ${metrics.deltaY})`);
 }
@@ -167,7 +173,11 @@ async function assertNoDuplicateMobileSectionTitle(ctx: TestContext, label: stri
 
 async function assertChatInputInViewport(ctx: TestContext, label: string) {
   const inView = await ctx.page.evaluate(() => {
-    const el = document.querySelector('[data-testid="chat-input-textarea"]');
+    const field = document.querySelector('[data-testid="chat-input-textarea"]');
+    const el =
+      field?.tagName === "TEXTAREA" || field?.tagName === "INPUT"
+        ? field
+        : field?.querySelector("input, textarea");
     if (!el) return { ok: false, reason: "missing" };
     const rect = el.getBoundingClientRect();
     const vh = window.innerHeight;

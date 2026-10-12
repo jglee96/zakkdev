@@ -14,9 +14,11 @@ import {
   Select,
   Stack,
   Text,
+  TextInput,
   ThemeIcon,
   Title,
 } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
 import { IconRobot, IconSend, IconUser, IconAlertCircle, IconClock, IconCoin } from "@tabler/icons-react";
 import { useFinanceStore, type Message, type ChatResponse } from "../store/finance-store";
 import { ChatMessageContent } from "./chat-message-content";
@@ -26,6 +28,7 @@ const MAIN_BOT_ID = "main-bot";
 export function ChatPanel() {
   const [input, setInput] = useState("");
   const viewportRef = useRef<HTMLDivElement>(null);
+  const isMobile = useMediaQuery("(max-width: 768px)");
 
   const {
     bots,
@@ -194,22 +197,39 @@ export function ChatPanel() {
           <form onSubmit={handleSubmit} data-testid="chat-form">
             <Group gap="xs" align="center" wrap="nowrap" w="100%" style={{ minWidth: 0 }}>
               <Box style={{ flex: 1, minWidth: 0, alignSelf: "center" }}>
-                <TextareaAutosize
-                  data-testid="chat-input-textarea"
-                  className="finance-chat-textarea"
-                  placeholder="메시지를 입력하세요..."
-                  value={input}
-                  onChange={(e) => setInput(e.currentTarget.value)}
-                  disabled={isSendingMessage}
-                  minRows={1}
-                  maxRows={4}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSubmit(e);
-                    }
-                  }}
-                />
+                {isMobile ? (
+                  <TextInput
+                    data-testid="chat-input-textarea"
+                    placeholder="메시지를 입력하세요..."
+                    value={input}
+                    onChange={(e) => setInput(e.currentTarget.value)}
+                    disabled={isSendingMessage}
+                    size="sm"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSubmit(e);
+                      }
+                    }}
+                  />
+                ) : (
+                  <TextareaAutosize
+                    data-testid="chat-input-textarea"
+                    className="finance-chat-textarea"
+                    placeholder="메시지를 입력하세요..."
+                    value={input}
+                    onChange={(e) => setInput(e.currentTarget.value)}
+                    disabled={isSendingMessage}
+                    minRows={1}
+                    maxRows={4}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSubmit(e);
+                      }
+                    }}
+                  />
+                )}
               </Box>
               <Button
                 type="submit"
