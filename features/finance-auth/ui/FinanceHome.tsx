@@ -3,24 +3,18 @@
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import {
-  ActionIcon,
   Alert,
   AppShell,
   Badge,
   Box,
   Burger,
-  Button,
-  Card,
+  Divider,
   Group,
   Loader,
-  Menu,
   NavLink,
   ScrollArea,
   Stack,
   Text,
-  Title,
-  Tooltip,
-  useMantineColorScheme,
 } from "@mantine/core";
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import {
@@ -29,9 +23,6 @@ import {
   IconCalendarTime,
   IconActivity,
   IconLogout,
-  IconMoon,
-  IconSun,
-  IconDotsVertical,
   IconRefresh,
 } from "@tabler/icons-react";
 import { useFinanceStore } from "../store/finance-store";
@@ -39,18 +30,13 @@ import { ChatPanel } from "./ChatPanel";
 import { BotList } from "./BotList";
 import { RoutineList } from "./RoutineList";
 import { RunList } from "./RunList";
-import {
-  FINANCE_APP_SHELL_HEADER_HEIGHT_PX,
-  FINANCE_STACKED_HEADER_TOP_PX,
-  SITE_APP_SHELL_HEADER_HEIGHT_PX,
-} from "@/shared/site-layout/constants";
+import { FINANCE_NAVBAR_TOP_PX, SITE_APP_SHELL_HEADER_HEIGHT_PX } from "@/shared/site-layout/constants";
 
 export function FinanceHome() {
   const router = useRouter();
   const [opened, { toggle, close }] = useDisclosure();
   const [logoutPending, setLogoutPending] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
-  const { colorScheme, toggleColorScheme } = useMantineColorScheme();
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   const {
@@ -136,6 +122,12 @@ export function FinanceHome() {
     }
   }
 
+  function refreshAll() {
+    fetchBots();
+    fetchRoutines();
+    fetchRuns();
+  }
+
   const navItems = [
     { icon: IconMessage, label: "채팅", tab: "chat" as const, badge: null },
     { icon: IconRobot, label: "봇", tab: "bots" as const, badge: bots.length > 0 ? bots.length : null },
@@ -143,12 +135,12 @@ export function FinanceHome() {
     { icon: IconActivity, label: "실행", tab: "runs" as const, badge: null },
   ];
 
+  const activeLabel = navItems.find((item) => item.tab === activeTab)?.label ?? "금융";
   const financeViewportHeight = `calc(100dvh - ${SITE_APP_SHELL_HEADER_HEIGHT_PX}px)`;
 
   return (
     <AppShell
       data-testid="finance-app-shell"
-      header={{ height: FINANCE_APP_SHELL_HEADER_HEIGHT_PX }}
       navbar={{ width: 220, breakpoint: "sm", collapsed: { mobile: !opened } }}
       padding={{ base: "xs", sm: "sm" }}
       style={{
@@ -166,13 +158,9 @@ export function FinanceHome() {
           display: "flex",
           flexDirection: "column",
         },
-        header: {
-          top: SITE_APP_SHELL_HEADER_HEIGHT_PX,
-          zIndex: 200,
-        },
         navbar: {
-          top: FINANCE_STACKED_HEADER_TOP_PX,
-          height: `calc(100dvh - ${FINANCE_STACKED_HEADER_TOP_PX}px - var(--app-shell-footer-offset, 0rem))`,
+          top: FINANCE_NAVBAR_TOP_PX,
+          height: `calc(100dvh - ${FINANCE_NAVBAR_TOP_PX}px - var(--app-shell-footer-offset, 0rem))`,
           zIndex: 199,
         },
         main: {
@@ -189,76 +177,76 @@ export function FinanceHome() {
         },
       }}
     >
-      <AppShell.Header>
-        <Group h="100%" px="md" justify="space-between">
-          <Group>
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <Title order={3} size="h4">금융 리서치</Title>
-          </Group>
-          <Group gap="xs">
-            <Tooltip label={colorScheme === "dark" ? "라이트 모드" : "다크 모드"}>
-              <ActionIcon variant="subtle" onClick={() => toggleColorScheme()}>
-                {colorScheme === "dark" ? <IconSun size={18} /> : <IconMoon size={18} />}
-              </ActionIcon>
-            </Tooltip>
-            <Menu shadow="md" width={200}>
-              <Menu.Target>
-                <ActionIcon variant="subtle">
-                  <IconDotsVertical size={18} />
-                </ActionIcon>
-              </Menu.Target>
-              <Menu.Dropdown>
-                <Menu.Item
-                  leftSection={<IconRefresh size={14} />}
-                  onClick={() => {
-                    fetchBots();
-                    fetchRoutines();
-                    fetchRuns();
-                  }}
-                >
-                  새로고침
-                </Menu.Item>
-                <Menu.Divider />
-                <Menu.Item
-                  leftSection={<IconLogout size={14} />}
-                  onClick={handleLogout}
-                  disabled={logoutPending}
-                  c="red"
-                >
-                  로그아웃
-                </Menu.Item>
-              </Menu.Dropdown>
-            </Menu>
-          </Group>
-        </Group>
-      </AppShell.Header>
-
       <AppShell.Navbar p="md" data-testid="finance-navbar">
-        <Stack gap="xs">
-          {navItems.map((item) => (
+        <Stack gap="xs" h="100%" justify="space-between">
+          <Stack gap="xs">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.tab}
+                data-testid={`nav-${item.tab}`}
+                label={item.label}
+                leftSection={<item.icon size={18} />}
+                rightSection={item.badge ? <Badge size="xs" variant="light">{item.badge}</Badge> : undefined}
+                active={activeTab === item.tab}
+                onClick={() => {
+                  setActiveTab(item.tab);
+                  if (isMobile) close();
+                }}
+                style={{ borderRadius: 8 }}
+              />
+            ))}
+          </Stack>
+          <Stack gap="xs">
+            <Divider />
             <NavLink
-              key={item.tab}
-              data-testid={`nav-${item.tab}`}
-              label={item.label}
-              leftSection={<item.icon size={18} />}
-              rightSection={item.badge && <Badge size="xs" variant="light">{item.badge}</Badge>}
-              active={activeTab === item.tab}
+              data-testid="nav-refresh"
+              label="새로고침"
+              leftSection={<IconRefresh size={18} />}
               onClick={() => {
-                setActiveTab(item.tab);
+                refreshAll();
                 if (isMobile) close();
               }}
-              style={{ borderRadius: 8 }}
             />
-          ))}
+            <NavLink
+              data-testid="nav-logout"
+              label="로그아웃"
+              leftSection={<IconLogout size={18} />}
+              c="red"
+              disabled={logoutPending}
+              onClick={() => {
+                handleLogout();
+                if (isMobile) close();
+              }}
+            />
+          </Stack>
         </Stack>
       </AppShell.Navbar>
 
       <AppShell.Main>
         <Box
+          hiddenFrom="sm"
+          data-testid="finance-mobile-nav-bar"
+          py={6}
+          px="sm"
+          style={{
+            flexShrink: 0,
+            borderBottom: "1px solid var(--app-shell-border-color, var(--mantine-color-gray-3))",
+          }}
+        >
+          <Group gap="sm" wrap="nowrap">
+            <Burger opened={opened} onClick={toggle} size="sm" aria-label="금융 메뉴" data-testid="finance-nav-burger" />
+            <Text size="sm" fw={500} truncate>
+              {activeLabel}
+            </Text>
+          </Group>
+        </Box>
+
+        <Box
           w="100%"
           maw={1100}
           mx="auto"
           px={{ base: "sm", sm: "md" }}
+          py={{ base: "xs", sm: "sm" }}
           style={{
             flex: 1,
             width: "100%",

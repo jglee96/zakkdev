@@ -66,6 +66,62 @@ async function assertSiteNavVisible(ctx: TestContext, label: string) {
   }
 }
 
+async function assertSingleThemeToggle(ctx: TestContext, label: string) {
+  const counts = await ctx.page.evaluate(() => {
+    const site = document.querySelectorAll('[data-testid="site-theme-toggle"]').length;
+    const finance = document.querySelectorAll('[data-testid="finance-theme-toggle"]').length;
+    const aria = document.querySelectorAll('[aria-label="Toggle color scheme"]').length;
+    return { site, finance, aria };
+  });
+  assert.equal(counts.site, 1, `${label}: expected exactly one site theme toggle, got ${counts.site}`);
+  assert.equal(counts.finance, 0, `${label}: finance theme toggle should be absent`);
+  assert.equal(counts.aria, 1, `${label}: expected one theme toggle control, got ${counts.aria}`);
+}
+
+async function assertNoFinanceAppHeader(ctx: TestContext, label: string) {
+  const state = await ctx.page.evaluate(() => {
+    const shellHeader = document.querySelector('[data-testid="finance-shell-header"]');
+    const legacyTitle = Array.from(document.querySelectorAll("h3, h4")).some(
+      (el) => el.textContent?.trim() === "금융 리서치",
+    );
+    return { hasShellHeader: Boolean(shellHeader), legacyTitle };
+  });
+  assert.ok(!state.hasShellHeader, `${label}: finance AppShell header should be removed`);
+  assert.ok(!state.legacyTitle, `${label}: '금융 리서치' finance header bar should not be present`);
+}
+
+async function assertChatChromeVisible(ctx: TestContext, label: string) {
+  const state = await ctx.page.evaluate(() => {
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+    const visible = (el: Element | null) => {
+      if (!el) return false;
+      const rect = el.getBoundingClientRect();
+      return (
+        rect.width > 0 &&
+        rect.height > 0 &&
+        rect.bottom > 0 &&
+        rect.top < vh &&
+        rect.right > 0 &&
+        rect.left < vw
+      );
+    };
+    const title = document.querySelector('[data-testid="chat-page-title"]');
+    const selector = document.querySelector('[data-testid="bot-selector"]');
+    const header = document.querySelector('[data-testid="chat-page-header"]');
+    return {
+      title: visible(title),
+      selector: visible(selector),
+      header: visible(header),
+      titleText: title?.textContent?.trim(),
+    };
+  });
+  assert.ok(state.header, `${label}: chat page header should be visible`);
+  assert.ok(state.title, `${label}: chat title should be visible`);
+  assert.equal(state.titleText, "채팅", `${label}: chat title text`);
+  assert.ok(state.selector, `${label}: bot selector should be visible`);
+}
+
 async function assertChatInputInViewport(ctx: TestContext, label: string) {
   const inView = await ctx.page.evaluate(() => {
     const el = document.querySelector('[data-testid="chat-input"]');

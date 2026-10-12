@@ -74,6 +74,7 @@ export function SiteHeader() {
           )
         )}
         <ActionIcon
+          data-testid="site-theme-toggle"
           onClick={() =>
             setColorScheme(computedColorScheme === "light" ? "dark" : "light")
           }
