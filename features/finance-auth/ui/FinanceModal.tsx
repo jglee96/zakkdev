@@ -3,10 +3,6 @@
 import { Modal, type ModalProps } from "@mantine/core";
 import { MODAL_ROOT_SELECTOR } from "@/shared/site-layout/modal-root";
 
-/** Above site `AppShellHeader` (z-index 250). */
-export const FINANCE_MODAL_Z_INDEX = 320;
-export const FINANCE_MODAL_OVERLAY_Z_INDEX = 300;
-
 const defaultStyles: ModalProps["styles"] = {
   inner: {
     paddingTop: "var(--mantine-spacing-md)",
@@ -26,15 +22,14 @@ const defaultStyles: ModalProps["styles"] = {
   },
 };
 
+/** Portals to `#modal-root` (sibling of isolated `#app-root`); uses Mantine default z-index. */
 export function FinanceModal({ overlayProps, styles, portalProps, ...props }: ModalProps) {
   return (
     <Modal
       centered
       withinPortal
       portalProps={{ target: MODAL_ROOT_SELECTOR, ...portalProps }}
-      zIndex={FINANCE_MODAL_Z_INDEX}
       overlayProps={{
-        zIndex: FINANCE_MODAL_OVERLAY_Z_INDEX,
         className: "finance-modal-overlay",
         ...overlayProps,
       }}

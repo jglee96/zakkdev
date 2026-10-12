@@ -3,7 +3,7 @@ export const MODAL_ROOT_ID = "modal-root";
 
 export const MODAL_ROOT_SELECTOR = `#${MODAL_ROOT_ID}`;
 
-/** Mantine Select/Combobox dropdowns above site header, same portal as modals. */
+/** Mantine Select/Combobox dropdowns in `#modal-root` (above isolated `#app-root`). */
 export const FINANCE_COMBOBOX_PORTAL_PROPS = {
   withinPortal: true as const,
   portalProps: { target: MODAL_ROOT_SELECTOR },

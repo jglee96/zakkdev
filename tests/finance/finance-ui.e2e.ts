@@ -143,7 +143,14 @@ async function assertFinanceModalLayout(ctx: TestContext, modalTestId: string, l
     }
     const overlay = document.querySelector(".finance-modal-overlay");
     const portalRoot = document.getElementById("modal-root");
+    const appRoot = document.getElementById("app-root");
     const modalRootIsDirectBodyChild = portalRoot?.parentElement === document.body;
+    const appRootIsDirectBodyChild = appRoot?.parentElement === document.body;
+    const appRootBeforeModalRoot =
+      Boolean(appRoot && portalRoot) &&
+      appRoot!.compareDocumentPosition(portalRoot!) & Node.DOCUMENT_POSITION_FOLLOWING;
+    const appRootIsolated =
+      appRoot && getComputedStyle(appRoot).isolation === "isolate";
     const modalInsideRoot = Boolean(portalRoot && dialog && portalRoot.contains(dialog as Node));
     return {
       ok:
@@ -151,11 +158,17 @@ async function assertFinanceModalLayout(ctx: TestContext, modalTestId: string, l
         overlayCoversHeader &&
         Boolean(overlay) &&
         modalRootIsDirectBodyChild &&
+        appRootIsDirectBodyChild &&
+        appRootBeforeModalRoot &&
+        appRootIsolated &&
         modalInsideRoot,
       inViewport,
       overlayCoversHeader,
       hasOverlay: Boolean(overlay),
       modalRootIsDirectBodyChild,
+      appRootIsDirectBodyChild,
+      appRootBeforeModalRoot,
+      appRootIsolated,
       modalInsideRoot,
       top: rect.top,
       bottom: rect.bottom,
