@@ -269,9 +269,7 @@ test("Demo Step 3: 투자 가설 저장 (지지 증거)", { skip: !isIntegration
   console.log(`[Demo] 가설 저장 완료: id=${savedThesis.id}, evidence=${savedThesis.evidence.length}개 (${result.durationMs}ms)`);
 });
 
-test("Demo Step 4: 추가 공시로 가설 업데이트 (반박 증거)", { skip: true }, async () => {
-  // Note: This test has a budget tracking issue that needs investigation.
-  // Steps 1-3 demonstrate the core flow successfully.
+test("Demo Step 4: 추가 공시로 가설 업데이트 (반박 증거)", { skip: !isIntegration }, async () => {
   assert.ok(krBot, "Bot must be created first");
   assert.ok(runtime, "Runtime must be configured first");
 

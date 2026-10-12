@@ -86,55 +86,60 @@ export async function reserveBudget(
   const timestamp = now.getTime();
   const expiresAt = getExpiresAt(budgetDate);
 
-  try {
-    const result = await client.send(
-      new GetCommand({
-        TableName: config.tableName,
-        Key: { pk: dailyKey },
-        ProjectionExpression: "spent, reserved",
-        ConsistentRead: true,
-      })
-    );
+  const maxRetries = 3;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const attemptReservationId = attempt === 0 ? reservationId : randomUUID();
+    try {
+      const result = await client.send(
+        new GetCommand({
+          TableName: config.tableName,
+          Key: { pk: dailyKey },
+          ProjectionExpression: "spent, reserved, version",
+          ConsistentRead: true,
+        })
+      );
 
-    const currentSpent = (result.Item?.spent as number) || 0;
-    const currentReserved = (result.Item?.reserved as number) || 0;
-    const available = config.dailyBudgetUsd - currentSpent - currentReserved;
+      const currentSpent = (result.Item?.spent as number) || 0;
+      const currentReserved = (result.Item?.reserved as number) || 0;
+      const currentVersion = (result.Item?.version as number) || 0;
+      const available = config.dailyBudgetUsd - currentSpent - currentReserved;
 
-    if (requestedUsd > available) {
-      return { success: false, reason: "budget_exceeded", available, requested: requestedUsd };
-    }
+      if (requestedUsd > available) {
+        return { success: false, reason: "budget_exceeded", available, requested: requestedUsd };
+      }
 
-    await client.send(
-      new TransactWriteCommand({
-        ClientRequestToken: reservationId,
-        TransactItems: [
-          {
-            Update: {
-              TableName: config.tableName,
-              Key: { pk: dailyKey },
-              UpdateExpression:
-                "SET #spent = if_not_exists(#spent, :zero), #reserved = if_not_exists(#reserved, :zero) + :amount, #expiresAt = :ttl",
-              ConditionExpression:
-                "(attribute_not_exists(#spent) OR #spent = :currentSpent) AND (attribute_not_exists(#reserved) OR #reserved = :currentReserved)",
-              ExpressionAttributeNames: {
-                "#spent": "spent",
-                "#reserved": "reserved",
-                "#expiresAt": "expiresAt",
-              },
-              ExpressionAttributeValues: {
-                ":zero": 0,
-                ":amount": requestedUsd,
-                ":ttl": expiresAt,
-                ":currentSpent": currentSpent,
-                ":currentReserved": currentReserved,
+      await client.send(
+        new TransactWriteCommand({
+          ClientRequestToken: attemptReservationId,
+          TransactItems: [
+            {
+              Update: {
+                TableName: config.tableName,
+                Key: { pk: dailyKey },
+                UpdateExpression:
+                  "SET #spent = if_not_exists(#spent, :zero), #reserved = if_not_exists(#reserved, :zero) + :amount, #expiresAt = :ttl, #version = :newVersion",
+                ConditionExpression:
+                  "attribute_not_exists(#version) OR #version = :currentVersion",
+                ExpressionAttributeNames: {
+                  "#spent": "spent",
+                  "#reserved": "reserved",
+                  "#expiresAt": "expiresAt",
+                  "#version": "version",
+                },
+                ExpressionAttributeValues: {
+                  ":zero": 0,
+                  ":amount": requestedUsd,
+                  ":ttl": expiresAt,
+                  ":currentVersion": currentVersion,
+                  ":newVersion": currentVersion + 1,
+                },
               },
             },
-          },
           {
             Put: {
               TableName: config.tableName,
               Item: {
-                pk: `reservation#${reservationId}`,
+                pk: `reservation#${attemptReservationId}`,
                 ownerId,
                 runId,
                 budgetDate,
@@ -154,7 +159,7 @@ export async function reserveBudget(
     return {
       success: true,
       reservation: {
-        reservationId,
+        reservationId: attemptReservationId,
         ownerId,
         runId,
         budgetDate,
@@ -164,15 +169,22 @@ export async function reserveBudget(
         updatedAt: timestamp,
       },
     };
-  } catch (error) {
-    if (error instanceof TransactionCanceledException) {
-      const reasons = error.CancellationReasons || [];
-      if (reasons.some((r) => r.Code === "ConditionalCheckFailed")) {
-        return { success: false, reason: "budget_exceeded", available: 0, requested: requestedUsd };
+    } catch (error) {
+      if (error instanceof TransactionCanceledException) {
+        const reasons = error.CancellationReasons || [];
+        if (reasons.some((r) => r.Code === "ConditionalCheckFailed")) {
+          if (attempt < maxRetries - 1) {
+            continue;
+          }
+          const freshUsage = await getOwnerDailyUsage(client, config, ownerId, now);
+          const actualAvailable = freshUsage?.available ?? 0;
+          return { success: false, reason: "budget_exceeded", available: actualAvailable, requested: requestedUsd };
+        }
       }
+      return { success: false, reason: "storage_error" };
     }
-    return { success: false, reason: "storage_error" };
   }
+  return { success: false, reason: "storage_error" };
 }
 
 export async function settleBudget(
@@ -213,6 +225,16 @@ export async function settleBudget(
     const dailyKey = `budget#${ownerId}#${budgetDate}`;
     const expiresAt = getExpiresAt(budgetDate);
 
+    const dailyResult = await client.send(
+      new GetCommand({
+        TableName: config.tableName,
+        Key: { pk: dailyKey },
+        ProjectionExpression: "version",
+        ConsistentRead: true,
+      })
+    );
+    const currentVersion = (dailyResult.Item?.version as number) || 0;
+
     await client.send(
       new TransactWriteCommand({
         TransactItems: [
@@ -220,18 +242,21 @@ export async function settleBudget(
             Update: {
               TableName: config.tableName,
               Key: { pk: dailyKey },
-              UpdateExpression: "SET #spent = if_not_exists(#spent, :zero) + :cost, #reserved = if_not_exists(#reserved, :zero) - :reservedAmt, #expiresAt = :ttl",
-              ConditionExpression: "attribute_not_exists(#reserved) OR #reserved >= :reservedAmt",
+              UpdateExpression: "SET #spent = if_not_exists(#spent, :zero) + :cost, #reserved = if_not_exists(#reserved, :zero) - :reservedAmt, #expiresAt = :ttl, #version = :newVersion",
+              ConditionExpression: "(attribute_not_exists(#reserved) OR #reserved >= :reservedAmt) AND (attribute_not_exists(#version) OR #version = :currentVersion)",
               ExpressionAttributeNames: {
                 "#spent": "spent",
                 "#reserved": "reserved",
                 "#expiresAt": "expiresAt",
+                "#version": "version",
               },
               ExpressionAttributeValues: {
                 ":zero": 0,
                 ":cost": actualCostUsd,
                 ":reservedAmt": reservedUsd,
                 ":ttl": expiresAt,
+                ":currentVersion": currentVersion,
+                ":newVersion": currentVersion + 1,
               },
             },
           },

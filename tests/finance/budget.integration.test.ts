@@ -201,3 +201,74 @@ test("different days have separate budgets", async () => {
   assert.equal(usage1.reserved, 8.0);
   assert.equal(usage2.reserved, 8.0);
 });
+
+test("multiple sequential reserve/settle cycles on same owner", async () => {
+  const ownerId = `owner-${randomUUID()}`;
+  const now = new Date("2026-01-24T10:00:00Z");
+
+  const res1 = await reserveBudget(client, config, ownerId, "run-1", 5.0, now);
+  assert.ok(res1.success, "First reservation should succeed");
+  
+  const usage1 = await getOwnerDailyUsage(client, config, ownerId, now);
+  assert.ok(usage1);
+  assert.equal(usage1.reserved, 5.0);
+  assert.equal(usage1.spent, 0);
+  assert.equal(usage1.available, 5.0);
+
+  const settle1 = await settleBudget(client, config, res1.reservation.reservationId, 0.001, now);
+  assert.ok(settle1.success, "First settlement should succeed");
+  
+  const usageAfter1 = await getOwnerDailyUsage(client, config, ownerId, now);
+  assert.ok(usageAfter1);
+  assert.equal(usageAfter1.reserved, 0);
+  assert.ok(Math.abs(usageAfter1.spent - 0.001) < 0.0001);
+  assert.ok(usageAfter1.available > 9.9);
+
+  const res2 = await reserveBudget(client, config, ownerId, "run-2", 5.0, now);
+  assert.ok(res2.success, "Second reservation should succeed");
+  
+  const settle2 = await settleBudget(client, config, res2.reservation.reservationId, 0.001, now);
+  assert.ok(settle2.success, "Second settlement should succeed");
+  
+  const usageAfter2 = await getOwnerDailyUsage(client, config, ownerId, now);
+  assert.ok(usageAfter2);
+  assert.equal(usageAfter2.reserved, 0);
+  assert.ok(Math.abs(usageAfter2.spent - 0.002) < 0.0001);
+  assert.ok(usageAfter2.available > 9.9);
+
+  const res3 = await reserveBudget(client, config, ownerId, "run-3", 5.0, now);
+  assert.ok(res3.success, `Third reservation should succeed, but got: available=${res3.success ? "N/A" : (res3 as any).available}`);
+  
+  const settle3 = await settleBudget(client, config, res3.reservation.reservationId, 0.001, now);
+  assert.ok(settle3.success, "Third settlement should succeed");
+
+  const usageAfter3 = await getOwnerDailyUsage(client, config, ownerId, now);
+  assert.ok(usageAfter3);
+  assert.equal(usageAfter3.reserved, 0);
+  assert.ok(Math.abs(usageAfter3.spent - 0.003) < 0.0001);
+  assert.ok(usageAfter3.available > 9.9);
+});
+
+test("regression: floating point precision does not break sequential reservations", async () => {
+  const ownerId = `owner-fp-${randomUUID()}`;
+  const now = new Date("2026-01-25T10:00:00Z");
+
+  for (let i = 0; i < 5; i++) {
+    const reserveResult = await reserveBudget(client, config, ownerId, `run-${i}`, 5.0, now);
+    assert.ok(reserveResult.success, `Reservation ${i} should succeed`);
+
+    const actualCost = 0.000221 * (i + 1);
+    const settleResult = await settleBudget(client, config, reserveResult.reservation.reservationId, actualCost, now);
+    assert.ok(settleResult.success, `Settlement ${i} should succeed`);
+
+    const usage = await getOwnerDailyUsage(client, config, ownerId, now);
+    assert.ok(usage, `Usage check ${i} should return data`);
+    assert.ok(usage.available > 0, `Available budget should be positive after cycle ${i}, got ${usage.available}`);
+  }
+
+  const finalUsage = await getOwnerDailyUsage(client, config, ownerId, now);
+  assert.ok(finalUsage);
+  assert.equal(finalUsage.reserved, 0);
+  assert.ok(finalUsage.spent > 0);
+  assert.ok(finalUsage.available > 9.0);
+});
