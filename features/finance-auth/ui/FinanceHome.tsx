@@ -39,6 +39,11 @@ import { ChatPanel } from "./ChatPanel";
 import { BotList } from "./BotList";
 import { RoutineList } from "./RoutineList";
 import { RunList } from "./RunList";
+import {
+  FINANCE_APP_SHELL_HEADER_HEIGHT_PX,
+  FINANCE_STACKED_HEADER_TOP_PX,
+  SITE_APP_SHELL_HEADER_HEIGHT_PX,
+} from "@/shared/site-layout/constants";
 
 export function FinanceHome() {
   const router = useRouter();
@@ -138,19 +143,38 @@ export function FinanceHome() {
     { icon: IconActivity, label: "실행", tab: "runs" as const, badge: null },
   ];
 
+  const financeViewportHeight = `calc(100dvh - ${SITE_APP_SHELL_HEADER_HEIGHT_PX}px)`;
+
   return (
     <AppShell
-      header={{ height: 60 }}
+      data-testid="finance-app-shell"
+      header={{ height: FINANCE_APP_SHELL_HEADER_HEIGHT_PX }}
       navbar={{ width: 220, breakpoint: "sm", collapsed: { mobile: !opened } }}
       padding={{ base: "xs", sm: "sm" }}
-      style={{ minHeight: "calc(100dvh - 64px)", width: "100%", maxWidth: "100%", overflow: "hidden" }}
+      style={{
+        minHeight: financeViewportHeight,
+        height: financeViewportHeight,
+        width: "100%",
+        maxWidth: "100%",
+        overflow: "hidden",
+      }}
       styles={{
         root: { width: "100%", maxWidth: "100%", overflow: "hidden" },
+        header: {
+          top: SITE_APP_SHELL_HEADER_HEIGHT_PX,
+          zIndex: 200,
+        },
+        navbar: {
+          top: FINANCE_STACKED_HEADER_TOP_PX,
+          height: `calc(100dvh - ${FINANCE_STACKED_HEADER_TOP_PX}px - var(--app-shell-footer-offset, 0rem))`,
+          zIndex: 199,
+        },
         main: {
           flex: 1,
           width: "100%",
           maxWidth: "100%",
           minWidth: 0,
+          minHeight: `calc(100dvh - ${FINANCE_STACKED_HEADER_TOP_PX}px)`,
           alignItems: "stretch",
           display: "flex",
           flexDirection: "column",

@@ -113,7 +113,7 @@ export function ChatPanel() {
   ];
 
   return (
-    <Stack flex={1} mih={0} w="100%" gap="md" style={{ minHeight: "calc(100vh - 180px)" }} data-testid="chat-panel">
+    <Stack flex={1} mih={0} mah="100%" w="100%" gap="md" style={{ flex: 1, minHeight: 0 }} data-testid="chat-panel">
       <Group justify="space-between" align="flex-end" wrap="wrap" gap="sm" w="100%" style={{ minWidth: 0 }}>
         <Title order={4} style={{ flex: "0 0 auto" }}>채팅</Title>
         <Box style={{ flex: "1 1 180px", minWidth: 0, maxWidth: 280 }}>
@@ -130,8 +130,13 @@ export function ChatPanel() {
         </Box>
       </Group>
 
-      <Paper withBorder flex={1} style={{ display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <ScrollArea flex={1} viewportRef={viewportRef} p="md" data-testid="chat-messages">
+      <Paper
+        withBorder
+        flex={1}
+        mih={0}
+        style={{ display: "flex", flexDirection: "column", overflow: "hidden", flex: 1, minHeight: 0 }}
+      >
+        <ScrollArea flex={1} mih={0} viewportRef={viewportRef} p="md" data-testid="chat-messages">
           {botMessages.length === 0 ? (
             <Box ta="center" py="xl" data-testid="chat-empty">
               <ThemeIcon size={48} radius="xl" variant="light" color="blue" mb="md">
@@ -169,7 +174,7 @@ export function ChatPanel() {
           <ResponseStats response={lastChatResponse} />
         )}
 
-        <Box p="md" pt={0}>
+        <Box p="md" pt={0} style={{ flexShrink: 0 }} data-testid="chat-composer">
           <form onSubmit={handleSubmit} data-testid="chat-form">
             <Group gap="sm" align="flex-end">
               <Textarea

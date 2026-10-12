@@ -28,7 +28,7 @@ export function SiteHeader() {
   });
 
   return (
-    <Flex justify="space-between" align="center" h="100%">
+    <Flex justify="space-between" align="center" h="100%" data-testid="site-header">
       <Text
         component={Link}
         href="/"
@@ -36,10 +36,11 @@ export function SiteHeader() {
         fz="md"
         style={{ textDecoration: "none", letterSpacing: "0" }}
         c="var(--mantine-color-text)"
+        data-testid="site-nav-home"
       >
         zakklee
       </Text>
-      <Group gap={24} className={classes.nav}>
+      <Group gap={24} className={classes.nav} data-testid="site-nav">
         {navItems.map((item) =>
           item.external ? (
             <Text
@@ -52,6 +53,7 @@ export function SiteHeader() {
               tt="uppercase"
               lts="0.1em"
               className={classes.navLink}
+              data-testid={`site-nav-${item.label.toLowerCase()}`}
             >
               {item.label}
             </Text>
@@ -65,6 +67,7 @@ export function SiteHeader() {
               tt="uppercase"
               lts="0.1em"
               className={classes.navLink}
+              data-testid={`site-nav-${item.label.toLowerCase()}`}
             >
               {item.label}
             </Text>

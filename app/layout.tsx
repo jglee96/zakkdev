@@ -14,6 +14,7 @@ import {
   MantineProvider,
 } from "@mantine/core";
 import { SiteHeader } from "@/widgets/site-header";
+import { SITE_APP_SHELL_HEADER_HEIGHT_PX } from "@/shared/site-layout/constants";
 
 import "@mantine/core/styles.css";
 import "./globals.css";
@@ -101,10 +102,11 @@ export default function RootLayout({
         <Analytics />
         <SpeedInsights />
         <MantineProvider theme={theme}>
-          <AppShell header={{ height: 64 }} padding={0}>
+          <AppShell header={{ height: SITE_APP_SHELL_HEADER_HEIGHT_PX }} padding={0}>
             <AppShellHeader
               px={{ base: 20, sm: 80, md: 160, xl: 340 }}
-              style={{ borderBottom: "1px solid #DDD8D2" }}
+              style={{ borderBottom: "1px solid #DDD8D2", zIndex: 250 }}
+              data-testid="site-app-shell-header"
             >
               <SiteHeader />
             </AppShellHeader>

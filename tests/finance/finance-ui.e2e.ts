@@ -41,6 +41,50 @@ type TestContext = {
   ownerId: string;
 };
 
+async function assertSiteNavVisible(ctx: TestContext, label: string) {
+  const siteHeader = await ctx.page.$('[data-testid="site-header"]');
+  assert.ok(siteHeader, `${label}: site header should exist`);
+  const checks = await ctx.page.evaluate(() => {
+    const ids = ["site-nav-home", "site-nav-projects", "site-nav-blog", "site-nav-ai", "site-nav-about"];
+    const vh = window.innerHeight;
+    return ids.map((id) => {
+      const el = document.querySelector(`[data-testid="${id}"]`);
+      if (!el) return { id, ok: false, reason: "missing" };
+      const rect = el.getBoundingClientRect();
+      const visible =
+        rect.width > 0 &&
+        rect.height > 0 &&
+        rect.bottom > 0 &&
+        rect.top < vh &&
+        rect.right > 0 &&
+        rect.left < window.innerWidth;
+      return { id, ok: visible, top: rect.top, bottom: rect.bottom };
+    });
+  });
+  for (const check of checks) {
+    assert.ok(check.ok, `${label}: ${check.id} should be visible in viewport (top=${check.top})`);
+  }
+}
+
+async function assertChatInputInViewport(ctx: TestContext, label: string) {
+  const inView = await ctx.page.evaluate(() => {
+    const el = document.querySelector('[data-testid="chat-input"]');
+    if (!el) return { ok: false, reason: "missing" };
+    const rect = el.getBoundingClientRect();
+    const vh = window.innerHeight;
+    const vw = window.innerWidth;
+    const ok =
+      rect.width > 0 &&
+      rect.height > 0 &&
+      rect.top >= 0 &&
+      rect.left >= 0 &&
+      rect.bottom <= vh &&
+      rect.right <= vw;
+    return { ok, top: rect.top, bottom: rect.bottom, vh };
+  });
+  assert.ok(inView.ok, `${label}: chat input in viewport (${JSON.stringify(inView)})`);
+}
+
 async function assertNoHorizontalOverflow(ctx: TestContext, label: string) {
   const metrics = await ctx.page.evaluate(() => ({
     scrollWidth: document.documentElement.scrollWidth,
@@ -398,9 +442,11 @@ async function testLogin(ctx: TestContext) {
   
   await ctx.page.goto(`${ctx.origin}/finance/login`, { waitUntil: "networkidle2" });
   
+  await assertSiteNavVisible(ctx, "01-login-desktop");
   const { content: loginContent } = await takeScreenshot(ctx, "01-login-desktop-1440x900", { width: 1440, height: 900 });
   assert.ok(loginContent.includes("로그인") || loginContent.includes("비밀번호"), "Login page should show login form");
   
+  await assertSiteNavVisible(ctx, "01-login-mobile");
   await takeScreenshot(ctx, "01-login-mobile-390x844", { width: 390, height: 844 });
   
   await ctx.page.setViewport({ width: 1440, height: 900 });
@@ -440,6 +486,7 @@ async function testLogin(ctx: TestContext) {
   }
   
   await new Promise((resolve) => setTimeout(resolve, 1500));
+  await assertSiteNavVisible(ctx, "finance-home-after-login");
 }
 
 async function injectMockMessages(ctx: TestContext) {
@@ -505,7 +552,13 @@ async function testChatWithSources(ctx: TestContext) {
   
   await new Promise((resolve) => setTimeout(resolve, 500));
   
+  await assertSiteNavVisible(ctx, "02-chat-desktop");
+  await assertChatInputInViewport(ctx, "02-chat-desktop");
   const { content: chatContent } = await takeScreenshot(ctx, "02-chat-with-sources-desktop-1440x900", { width: 1440, height: 900 });
+  await ctx.page.setViewport({ width: 390, height: 844 });
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  await assertSiteNavVisible(ctx, "02-chat-mobile");
+  await assertChatInputInViewport(ctx, "02-chat-mobile");
   await takeScreenshot(ctx, "02-chat-with-sources-mobile-390x844", { width: 390, height: 844 });
   
   assert.ok(
