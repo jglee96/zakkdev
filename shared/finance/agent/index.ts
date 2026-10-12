@@ -71,3 +71,16 @@ export {
   createAgentRuntimeConfig,
   runAgent,
 } from "./runtime";
+
+export {
+  type KRToolsConfig,
+  setMockDartClient,
+  getMockDartClient,
+  executeSearchDartFilings,
+  executeGetFilingDetail,
+  executeGetFinancials,
+  executeFindRelevantTheses,
+  executeSaveInsight,
+  createKRToolExecutor,
+  buildAnalysisReport,
+} from "./kr-tools";

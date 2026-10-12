@@ -315,6 +315,9 @@ export async function runAgent(
 }
 
 function createDefaultToolExecutor(): ToolExecutor {
+  const { createKRToolExecutor } = require("./kr-tools");
+  const krToolExecutor = createKRToolExecutor();
+
   return async (name, args, context, runtime) => {
     switch (name) {
       case "create_bot":
@@ -326,16 +329,15 @@ function createDefaultToolExecutor(): ToolExecutor {
       case "invoke_bot":
         return executeInvokeBot(args, context, runtime);
       case "list_reports":
-        return { reports: [], message: "보고서 기능은 P2에서 구현됩니다." };
+        return { reports: [], message: "보고서 기능은 P3에서 구현됩니다." };
       case "search_dart_filings":
       case "get_filing_detail":
       case "get_financials":
-        return { message: "OpenDART 연동은 P2에서 구현됩니다.", args };
-      case "search_sec_filings":
-        return { message: "SEC EDGAR 연동은 후속 버전에서 구현됩니다.", args };
       case "find_relevant_theses":
       case "save_insight":
-        return { message: "투자 가설 기능은 P2에서 구현됩니다.", args };
+        return krToolExecutor(name, args, context, runtime);
+      case "search_sec_filings":
+        return { message: "SEC EDGAR 연동은 후속 버전에서 구현됩니다.", args };
       default:
         return { error: `Unknown tool: ${name}` };
     }
