@@ -214,12 +214,17 @@ async function writeModalStackingArtifact(ctx: TestContext, label: string) {
 
 async function closeMobileFinanceNav(ctx: TestContext) {
   await ctx.page.evaluate(() => {
+    const overlay = document.querySelector('[data-testid="finance-mobile-nav-overlay"]');
+    if (overlay instanceof HTMLElement) {
+      overlay.click();
+      return;
+    }
     const burger = document.querySelector('[data-testid="finance-nav-burger"]');
     if (burger?.getAttribute("aria-expanded") === "true") {
       (burger as HTMLElement).click();
     }
   });
-  await new Promise((resolve) => setTimeout(resolve, 300));
+  await new Promise((resolve) => setTimeout(resolve, 400));
 }
 
 async function assertMobileChatComposerLayout(ctx: TestContext, label: string) {
@@ -308,15 +313,39 @@ async function assertNoHorizontalOverflow(ctx: TestContext, label: string) {
 }
 
 async function takeScreenshot(ctx: TestContext, name: string, viewport: { width: number; height: number }) {
+  if (DEBUG) console.log(`  [screenshot] ${name}: setViewport`);
   await ctx.page.setViewport(viewport);
   if (viewport.width < 768) {
+    if (DEBUG) console.log(`  [screenshot] ${name}: closeMobileFinanceNav`);
     await closeMobileFinanceNav(ctx);
   }
   await new Promise((resolve) => setTimeout(resolve, 800));
+  if (DEBUG) console.log(`  [screenshot] ${name}: assertNoHorizontalOverflow`);
   await assertNoHorizontalOverflow(ctx, name);
   const filename = `${name}.png`;
   const filepath = path.join(SCREENSHOT_DIR, filename);
-  await ctx.page.screenshot({ path: filepath, fullPage: false });
+  let shot: Buffer | Uint8Array | undefined;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      if (DEBUG) console.log(`  [screenshot] ${name}: capture attempt ${attempt}`);
+      shot = await ctx.page.screenshot({
+        fullPage: false,
+        captureBeyondViewport: false,
+      });
+      await writeFile(filepath, shot);
+      break;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (attempt < 3 && message.includes("EAGAIN")) {
+        await new Promise((resolve) => setTimeout(resolve, 500 * attempt));
+        continue;
+      }
+      throw error;
+    }
+  }
+  if (!shot?.length) {
+    throw new Error(`Screenshot empty: ${filename}`);
+  }
   ctx.screenshots.push(filename);
   
   const pageContent = await ctx.page.evaluate(() => document.body.innerText.slice(0, 200));
@@ -324,11 +353,74 @@ async function takeScreenshot(ctx: TestContext, name: string, viewport: { width:
   return { filepath, content: pageContent };
 }
 
+function pidsOnPort(port: number): number[] {
+  try {
+    const raw = execSync(`lsof -ti:${port} -sTCP:LISTEN 2>/dev/null || true`, { encoding: "utf8" }).trim();
+    return raw
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((pid) => Number(pid))
+      .filter((pid) => Number.isFinite(pid) && pid > 0);
+  } catch {
+    return [];
+  }
+}
+
+async function waitForPortFree(port: number, timeoutMs = 15_000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    try {
+      execSync(`fuser -k ${port}/tcp 2>/dev/null || true`, { stdio: "ignore" });
+    } catch {
+      /* ignore */
+    }
+    for (const pid of pidsOnPort(port)) {
+      try {
+        process.kill(pid, "SIGKILL");
+      } catch {
+        /* ignore */
+      }
+    }
+    if (pidsOnPort(port).length === 0) {
+      return;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+  }
+  throw new Error(`Port ${port} still in use after cleanup: ${pidsOnPort(port).join(", ")}`);
+}
+
 function freeFinanceTestPort(port = 4203) {
   try {
+    execSync(`pkill -f 'next start -p ${port}' 2>/dev/null || true`, { stdio: "ignore" });
     execSync(`fuser -k ${port}/tcp 2>/dev/null || true`, { stdio: "ignore" });
+    for (const pid of pidsOnPort(port)) {
+      try {
+        process.kill(pid, "SIGKILL");
+      } catch {
+        /* ignore */
+      }
+    }
   } catch {
     /* Port may already be free. */
+  }
+}
+
+function killStrayTestBrowsers() {
+  try {
+    execSync("pkill -f 'google-chrome.*--headless' 2>/dev/null || true", { stdio: "ignore" });
+    execSync("pkill -f 'chromium.*--headless' 2>/dev/null || true", { stdio: "ignore" });
+  } catch {
+    /* ignore */
+  }
+}
+
+function killStrayFinanceServers(port = 4203) {
+  try {
+    execSync(`pkill -f 'next-server.*${port}' 2>/dev/null || true`, { stdio: "ignore" });
+    execSync(`pkill -f 'next start -p ${port}' 2>/dev/null || true`, { stdio: "ignore" });
+    execSync(`pkill -f 'next dev.*-p ${port}' 2>/dev/null || true`, { stdio: "ignore" });
+  } catch {
+    /* ignore */
   }
 }
 
@@ -412,7 +504,7 @@ async function setupTestEnvironment(): Promise<TestContext> {
   await createAuthTable(db, authTable);
   await createDataTable(db, dataTable);
 
-  const passwordHash = await hash(password);
+  const passwordHash = await hash(password, { memoryCost: 19456, timeCost: 2, parallelism: 1, outputLen: 32 });
   
   const runtimeEnv: NodeJS.ProcessEnv = {
     ...process.env,
@@ -426,9 +518,17 @@ async function setupTestEnvironment(): Promise<TestContext> {
     FINANCE_DYNAMODB_ENDPOINT: process.env.FINANCE_DYNAMODB_ENDPOINT || "http://127.0.0.1:8000",
   };
 
+  killStrayTestBrowsers();
+  killStrayFinanceServers(4203);
   freeFinanceTestPort(4203);
-  await rm(path.join(process.cwd(), ".next"), { recursive: true, force: true });
+  await waitForPortFree(4203);
+  if (process.env.FINANCE_E2E_SKIP_BUILD !== "1") {
+    await rm(path.join(process.cwd(), ".next"), { recursive: true, force: true });
+  }
 
+  if (process.env.FINANCE_E2E_SKIP_BUILD === "1") {
+    console.log("  Skipping build (FINANCE_E2E_SKIP_BUILD=1)");
+  } else {
   console.log("  Building production bundle...");
   const buildProcess = spawn("npm", ["run", "build"], {
     stdio: ["ignore", "pipe", "pipe"],
@@ -442,11 +542,18 @@ async function setupTestEnvironment(): Promise<TestContext> {
     });
   });
   console.log("  ✓ Build complete");
+  }
 
+  let serverExited: Error | undefined;
   const server = spawn(process.execPath, ["node_modules/next/dist/bin/next", "start", "-p", "4203"], {
     detached: true,
     stdio: ["ignore", "pipe", "pipe"],
     env: { ...runtimeEnv, NODE_ENV: "development" },
+  });
+  server.on("exit", (code, signal) => {
+    if (code !== 0 && code !== null) {
+      serverExited = new Error(`Next server exited (code=${code}, signal=${signal})`);
+    }
   });
 
   let logs = "";
@@ -455,7 +562,10 @@ async function setupTestEnvironment(): Promise<TestContext> {
 
   let ready = false;
   for (let i = 0; i < 60; i++) {
-    if (server.exitCode !== null) throw new Error("Server exited before readiness");
+    if (serverExited) throw serverExited;
+    if (server.exitCode !== null) {
+      throw new Error(`Server exited before readiness (code=${server.exitCode}). Logs:\n${logs.slice(-2000)}`);
+    }
     try {
       const resp = await fetch(`${origin}/finance/login`, { signal: AbortSignal.timeout(2000) });
       ready = resp.status === 200;
@@ -464,25 +574,80 @@ async function setupTestEnvironment(): Promise<TestContext> {
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   assert.ok(ready, "Production server did not become ready");
+  const loginProbe = await fetch(`${origin}/api/finance/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Origin: origin },
+    body: JSON.stringify({ password }),
+  });
+  assert.equal(
+    loginProbe.status,
+    200,
+    `Auth probe failed before UI tests (${loginProbe.status}): ${await loginProbe.text()}`,
+  );
 
   const browser = await puppeteer.launch({
     executablePath: process.env.CHROME_BIN || "/usr/local/bin/google-chrome",
-    headless: !DEBUG,
-    args: ["--no-sandbox", "--disable-dev-shm-usage"],
+    headless: DEBUG ? false : true,
+    pipe: true,
+    args: [
+      "--no-sandbox",
+      "--disable-dev-shm-usage",
+      "--disable-gpu",
+      "--no-zygote",
+      "--disable-extensions",
+    ],
   });
 
   const page = await browser.newPage();
+  await page.setCacheEnabled(false);
   page.on("pageerror", (error) => console.error("Page error:", error));
 
   return { origin, authTable, dataTable, password, db, docClient, server, browser, page, logs, screenshots: [], ownerId };
 }
 
 async function cleanup(ctx: TestContext) {
-  await ctx.browser?.close();
-  if (ctx.server?.pid) {
-    try { process.kill(-ctx.server.pid, "SIGTERM"); } catch { /* Already stopped. */ }
+  try {
+    if (!ctx.page.isClosed()) {
+      await ctx.page.close({ runBeforeUnload: false });
+    }
+  } catch {
+    /* Page may already be closed. */
   }
+  try {
+    const pages = await ctx.browser?.pages();
+    for (const p of pages ?? []) {
+      if (!p.isClosed()) await p.close({ runBeforeUnload: false }).catch(() => undefined);
+    }
+  } catch {
+    /* ignore */
+  }
+  try {
+    await ctx.browser?.close();
+  } catch (error) {
+    try {
+      await ctx.browser?.disconnect();
+    } catch {
+      /* ignore */
+    }
+    if (DEBUG) console.error("Browser close error:", error);
+  }
+  if (ctx.server?.pid) {
+    try {
+      process.kill(-ctx.server.pid, "SIGTERM");
+    } catch {
+      /* Already stopped. */
+    }
+    await new Promise((resolve) => setTimeout(resolve, 300));
+    try {
+      process.kill(-ctx.server.pid, "SIGKILL");
+    } catch {
+      /* Already stopped. */
+    }
+  }
+  killStrayFinanceServers(4203);
   freeFinanceTestPort(4203);
+  await waitForPortFree(4203).catch(() => undefined);
+  killStrayTestBrowsers();
   await ctx.db.send(new DeleteTableCommand({ TableName: ctx.authTable })).catch(() => undefined);
   await ctx.db.send(new DeleteTableCommand({ TableName: ctx.dataTable })).catch(() => undefined);
   ctx.db.destroy();
@@ -665,10 +830,14 @@ async function insertMockData(ctx: TestContext) {
 async function testLogin(ctx: TestContext) {
   console.log("\n📋 Test: Login flow");
   
-  await ctx.page.goto(`${ctx.origin}/finance/login`, { waitUntil: "networkidle2" });
-  
+  await ctx.page.goto(`${ctx.origin}/finance/login`, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await ctx.page.waitForSelector('[data-testid="site-header"]', { timeout: 30000 });
+  console.log("  ✓ login page loaded");
+
   await assertSingleThemeToggle(ctx, "01-login-desktop");
+  console.log("  ✓ theme toggle ok");
   await assertSiteNavVisible(ctx, "01-login-desktop");
+  console.log("  ✓ site nav ok");
   const { content: loginContent } = await takeScreenshot(ctx, "01-login-desktop-1440x900", { width: 1440, height: 900 });
   assert.ok(loginContent.includes("로그인") || loginContent.includes("비밀번호"), "Login page should show login form");
   
@@ -1149,7 +1318,13 @@ async function main() {
     }
     process.exitCode = 1;
   } finally {
-    if (ctx) await cleanup(ctx);
+    if (ctx) {
+      try {
+        await cleanup(ctx);
+      } catch (cleanupError) {
+        console.error("Cleanup error (ignored):", cleanupError instanceof Error ? cleanupError.message : cleanupError);
+      }
+    }
   }
 }
 
