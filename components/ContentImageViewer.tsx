@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Modal } from "@mantine/core";
+import { MODAL_ROOT_SELECTOR } from "@/shared/site-layout/modal-root";
 
 export function ContentImageViewer({ children }: { children: React.ReactNode }) {
   const [src, setSrc] = useState<string | null>(null);
@@ -21,6 +22,8 @@ export function ContentImageViewer({ children }: { children: React.ReactNode }) 
         onClose={() => setSrc(null)}
         size="auto"
         centered
+        withinPortal
+        portalProps={{ target: MODAL_ROOT_SELECTOR }}
         radius={0}
         padding={0}
         withCloseButton={false}

@@ -12,7 +12,7 @@ import {
   Group,
   Loader,
   NavLink,
-  ScrollArea,
+  Portal,
   Stack,
   Text,
 } from "@mantine/core";
@@ -31,6 +31,7 @@ import { BotList } from "./BotList";
 import { RoutineList } from "./RoutineList";
 import { RunList } from "./RunList";
 import { FINANCE_NAVBAR_TOP_PX, SITE_APP_SHELL_HEADER_HEIGHT_PX } from "@/shared/site-layout/constants";
+import { MODAL_ROOT_SELECTOR } from "@/shared/site-layout/modal-root";
 
 export function FinanceHome() {
   const router = useRouter();
@@ -138,10 +139,55 @@ export function FinanceHome() {
   const activeLabel = navItems.find((item) => item.tab === activeTab)?.label ?? "금융";
   const financeViewportHeight = `calc(100dvh - ${SITE_APP_SHELL_HEADER_HEIGHT_PX}px)`;
 
+  const navPanel = (
+    <Stack gap="xs" h="100%" justify="space-between" p="md">
+      <Stack gap="xs">
+        {navItems.map((item) => (
+          <NavLink
+            key={item.tab}
+            data-testid={`nav-${item.tab}`}
+            label={item.label}
+            leftSection={<item.icon size={18} />}
+            rightSection={item.badge ? <Badge size="xs" variant="light">{item.badge}</Badge> : undefined}
+            active={activeTab === item.tab}
+            onClick={() => {
+              setActiveTab(item.tab);
+              if (isMobile) close();
+            }}
+            style={{ borderRadius: 8 }}
+          />
+        ))}
+      </Stack>
+      <Stack gap="xs">
+        <Divider />
+        <NavLink
+          data-testid="nav-refresh"
+          label="새로고침"
+          leftSection={<IconRefresh size={18} />}
+          onClick={() => {
+            refreshAll();
+            if (isMobile) close();
+          }}
+        />
+        <NavLink
+          data-testid="nav-logout"
+          label="로그아웃"
+          leftSection={<IconLogout size={18} />}
+          c="red"
+          disabled={logoutPending}
+          onClick={() => {
+            handleLogout();
+            if (isMobile) close();
+          }}
+        />
+      </Stack>
+    </Stack>
+  );
+
   return (
     <AppShell
       data-testid="finance-app-shell"
-      navbar={{ width: 220, breakpoint: "sm", collapsed: { mobile: !opened } }}
+      navbar={{ width: 220, breakpoint: "sm", collapsed: { mobile: true, desktop: false } }}
       padding={{ base: "xs", sm: "sm" }}
       style={{
         minHeight: financeViewportHeight,
@@ -177,49 +223,40 @@ export function FinanceHome() {
         },
       }}
     >
-      <AppShell.Navbar p="md" data-testid="finance-navbar">
-        <Stack gap="xs" h="100%" justify="space-between">
-          <Stack gap="xs">
-            {navItems.map((item) => (
-              <NavLink
-                key={item.tab}
-                data-testid={`nav-${item.tab}`}
-                label={item.label}
-                leftSection={<item.icon size={18} />}
-                rightSection={item.badge ? <Badge size="xs" variant="light">{item.badge}</Badge> : undefined}
-                active={activeTab === item.tab}
-                onClick={() => {
-                  setActiveTab(item.tab);
-                  if (isMobile) close();
-                }}
-                style={{ borderRadius: 8 }}
-              />
-            ))}
-          </Stack>
-          <Stack gap="xs">
-            <Divider />
-            <NavLink
-              data-testid="nav-refresh"
-              label="새로고침"
-              leftSection={<IconRefresh size={18} />}
-              onClick={() => {
-                refreshAll();
-                if (isMobile) close();
-              }}
-            />
-            <NavLink
-              data-testid="nav-logout"
-              label="로그아웃"
-              leftSection={<IconLogout size={18} />}
-              c="red"
-              disabled={logoutPending}
-              onClick={() => {
-                handleLogout();
-                if (isMobile) close();
-              }}
-            />
-          </Stack>
-        </Stack>
+      {isMobile && opened && (
+        <Portal target={MODAL_ROOT_SELECTOR}>
+          <Box
+            data-testid="finance-mobile-nav-overlay"
+            onClick={close}
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 200,
+              backgroundColor: "var(--mantine-color-gray-filled)",
+              opacity: 0.45,
+            }}
+          />
+          <Box
+            data-testid="finance-mobile-nav-drawer"
+            style={{
+              position: "fixed",
+              left: 0,
+              top: FINANCE_NAVBAR_TOP_PX,
+              width: 220,
+              bottom: 0,
+              zIndex: 201,
+              backgroundColor: "var(--mantine-color-body)",
+              borderRight: "1px solid var(--mantine-color-gray-3)",
+              boxSizing: "border-box",
+            }}
+          >
+            {navPanel}
+          </Box>
+        </Portal>
+      )}
+
+      <AppShell.Navbar visibleFrom="sm" p={0} data-testid="finance-navbar">
+        {navPanel}
       </AppShell.Navbar>
 
       <AppShell.Main>

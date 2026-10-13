@@ -103,8 +103,8 @@ export default function RootLayout({
       <body>
         <Analytics />
         <SpeedInsights />
-        <AppRoot>
-          <MantineProvider theme={theme}>
+        <MantineProvider theme={theme}>
+          <AppRoot>
             <AppShell header={{ height: SITE_APP_SHELL_HEADER_HEIGHT_PX }} padding={0}>
               <AppShellHeader
                 px={{ base: 20, sm: 80, md: 160, xl: 340 }}
@@ -127,9 +127,9 @@ export default function RootLayout({
                 {children}
               </AppShellMain>
             </AppShell>
-          </MantineProvider>
-        </AppRoot>
-        <ModalRoot />
+          </AppRoot>
+          <ModalRoot />
+        </MantineProvider>
       </body>
     </html>
   );
