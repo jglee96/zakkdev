@@ -62,14 +62,14 @@ body {
   min-height: 36px;
   padding: 8px 12px;
   border-radius: var(--mantine-radius-default);
-  border: calc(0.0625rem * var(--mantine-scale)) solid var(--mantine-color-gray-4);
-  background-color: var(--mantine-color-white);
+  border: 1px solid #ddd8d2;
+  background-color: #fdfcf9;
   color: var(--mantine-color-text);
 }
 
 [data-mantine-color-scheme="dark"] .finance-chat-textarea {
-  border-color: var(--mantine-color-dark-4);
-  background-color: var(--mantine-color-dark-6);
+  border-color: #2a2724;
+  background-color: #131110;
 }
 
 .finance-chat-textarea:focus {

@@ -16,12 +16,13 @@ import {
   Text,
   TextInput,
   ThemeIcon,
-  Title,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { IconRobot, IconSend, IconUser, IconAlertCircle, IconClock, IconCoin } from "@tabler/icons-react";
 import { useFinanceStore, type Message, type ChatResponse } from "../store/finance-store";
 import { ChatMessageContent } from "./chat-message-content";
+import { FinanceSectionTitle } from "./finance-section-title";
+import classes from "./finance-ui.module.css";
 import { FINANCE_COMBOBOX_PORTAL_PROPS } from "@/shared/site-layout/modal-root";
 
 const MAIN_BOT_ID = "main-bot";
@@ -127,9 +128,9 @@ export function ChatPanel() {
         data-testid="chat-page-header"
         style={{ flexShrink: 0, minWidth: 0 }}
       >
-        <Title order={4} data-testid="chat-page-title" style={{ flex: "0 0 auto" }}>
+        <FinanceSectionTitle data-testid="chat-page-title" style={{ flex: "0 0 auto" }}>
           채팅
-        </Title>
+        </FinanceSectionTitle>
         <Box style={{ flex: "1 1 160px", minWidth: 140, maxWidth: 320 }}>
           <Select
             data-testid="bot-selector"
@@ -145,7 +146,8 @@ export function ChatPanel() {
       </Group>
 
       <Paper
-        withBorder
+        withBorder={false}
+        className={classes.surfaceCard}
         flex={1}
         mih={0}
         style={{ display: "flex", flexDirection: "column", overflow: "hidden", flex: 1, minHeight: 0 }}
@@ -153,7 +155,7 @@ export function ChatPanel() {
         <ScrollArea flex={1} mih={0} viewportRef={viewportRef} p="md" data-testid="chat-messages">
           {botMessages.length === 0 ? (
             <Box ta="center" py="xl" data-testid="chat-empty">
-              <ThemeIcon size={48} radius="xl" variant="light" color="blue" mb="md">
+              <ThemeIcon size={48} radius="xl" variant="light" color="braun-red" mb="md">
                 <IconRobot size={28} />
               </ThemeIcon>
               <Text c="dimmed">금융 리서치에 대해 질문해 보세요.</Text>
@@ -260,16 +262,17 @@ function MessageBubble({ message }: { message: Message }) {
         size="sm"
         radius="xl"
         variant="light"
-        color={isUser ? "gray" : "blue"}
+        color={isUser ? "gray" : "braun-red"}
         mt={4}
       >
         {isUser ? <IconUser size={14} /> : <IconRobot size={14} />}
       </ThemeIcon>
       <Card
-        shadow="xs"
+        shadow="none"
         padding="sm"
-        radius="md"
-        bg={isUser ? "gray.1" : "blue.0"}
+        radius="sm"
+        withBorder={false}
+        className={isUser ? classes.chatBubbleUser : classes.chatBubbleAssistant}
         style={{ maxWidth: "min(100%, 720px)", minWidth: 0, flex: 1 }}
       >
         {isUser || !message.content ? (

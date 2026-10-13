@@ -13,7 +13,6 @@ import {
   Progress,
   Stack,
   Text,
-  Title,
   Tooltip,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
@@ -32,6 +31,9 @@ import {
 } from "@tabler/icons-react";
 import { useFinanceStore, type AgentRun, type RunStatus } from "../store/finance-store";
 import { FinanceModal } from "./FinanceModal";
+import { CollapsibleRunResultMarkdown } from "./finance-markdown";
+import { FinanceSectionTitle } from "./finance-section-title";
+import classes from "./finance-ui.module.css";
 
 const STATUS_CONFIG: Record<RunStatus, { color: string; label: string; icon: typeof IconCheck }> = {
   queued: { color: "blue", label: "대기중", icon: IconClock },
@@ -60,7 +62,7 @@ export function RunList({ onRefresh }: { onRefresh: () => void }) {
     <Stack gap="md" w="100%" data-testid="run-list-container">
       <Group justify="space-between">
         <Group gap="xs">
-          <Title order={4}>실행 기록</Title>
+          <FinanceSectionTitle>실행 기록</FinanceSectionTitle>
           {runningCount > 0 && (
             <Badge color="cyan" variant="light" data-testid="running-count-badge">
               {runningCount}개 실행중
@@ -79,7 +81,7 @@ export function RunList({ onRefresh }: { onRefresh: () => void }) {
       {isLoadingRuns && runs.length === 0 ? (
         <Box ta="center" py="xl" data-testid="runs-loading"><Loader /></Box>
       ) : runs.length === 0 ? (
-        <Card withBorder p="xl" ta="center" data-testid="runs-empty">
+        <Card withBorder={false} p="xl" ta="center" classNames={{ root: classes.surfaceCard }} data-testid="runs-empty">
           <IconActivity size={48} color="gray" style={{ margin: "0 auto", marginBottom: 16 }} />
           <Text c="dimmed">아직 실행 기록이 없습니다.</Text>
           <Text size="sm" c="dimmed" mt="xs">
@@ -128,7 +130,7 @@ function RunCard({
     : 0;
 
   return (
-    <Card withBorder padding="sm" data-testid={`run-card-${run.id}`}>
+    <Card withBorder={false} padding="sm" classNames={{ root: `${classes.surfaceCard} ${classes.listRow}` }} data-testid={`run-card-${run.id}`}>
       <Group justify="space-between" wrap="nowrap">
         <Group gap="sm" wrap="nowrap" style={{ flex: 1, cursor: "pointer" }} onClick={onSelect}>
           <StatusIcon size={18} color={`var(--mantine-color-${status.color}-6)`} />
@@ -169,7 +171,7 @@ function RunCard({
       )}
 
       <Collapse in={expanded}>
-        <Box mt="sm" pt="sm" style={{ borderTop: "1px solid var(--mantine-color-gray-3)" }}>
+        <Box mt="sm" pt="sm" style={{ borderTop: "1px solid #ddd8d2" }}>
           <Stack gap="xs">
             {run.usage && (
               <Group gap="md">
@@ -195,12 +197,7 @@ function RunCard({
               </Alert>
             )}
             {run.reportData?.response && (
-              <Box>
-                <Text size="xs" fw={500}>결과:</Text>
-                <Text size="xs" c="dimmed" lineClamp={3}>
-                  {run.reportData.response}
-                </Text>
-              </Box>
+              <CollapsibleRunResultMarkdown content={run.reportData.response} label="결과" />
             )}
             {run.reportData?.sources && run.reportData.sources.length > 0 && (
               <Group gap="xs">
@@ -273,7 +270,7 @@ function RunDetailModal({ run, onClose }: { run: AgentRun | null; onClose: () =>
         </Group>
 
         {run.usage && (
-          <Card withBorder p="sm">
+          <Card withBorder={false} p="sm" classNames={{ root: classes.surfaceCard }}>
             <Text size="sm" fw={500} mb="xs">사용량</Text>
             <Group gap="md">
               <Box>
@@ -312,14 +309,7 @@ function RunDetailModal({ run, onClose }: { run: AgentRun | null; onClose: () =>
         )}
 
         {run.reportData?.response && (
-          <Box>
-            <Text size="sm" fw={500}>결과</Text>
-            <Card withBorder p="sm" mt="xs">
-              <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
-                {run.reportData.response}
-              </Text>
-            </Card>
-          </Box>
+          <CollapsibleRunResultMarkdown content={run.reportData.response} label="결과" preview={false} />
         )}
 
         {run.reportData?.sources && run.reportData.sources.length > 0 && (

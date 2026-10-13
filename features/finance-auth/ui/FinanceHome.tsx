@@ -32,6 +32,7 @@ import { RoutineList } from "./RoutineList";
 import { RunList } from "./RunList";
 import { FINANCE_NAVBAR_TOP_PX, SITE_APP_SHELL_HEADER_HEIGHT_PX } from "@/shared/site-layout/constants";
 import { MODAL_ROOT_SELECTOR } from "@/shared/site-layout/modal-root";
+import classes from "./finance-ui.module.css";
 
 export function FinanceHome() {
   const router = useRouter();
@@ -150,6 +151,7 @@ export function FinanceHome() {
             leftSection={<item.icon size={18} />}
             rightSection={item.badge ? <Badge size="xs" variant="light">{item.badge}</Badge> : undefined}
             active={activeTab === item.tab}
+            color="braun-red"
             onClick={() => {
               setActiveTab(item.tab);
               if (isMobile) close();
@@ -246,7 +248,7 @@ export function FinanceHome() {
               bottom: 0,
               zIndex: 201,
               backgroundColor: "var(--mantine-color-body)",
-              borderRight: "1px solid var(--mantine-color-gray-3)",
+              borderRight: "1px solid #ddd8d2",
               boxSizing: "border-box",
             }}
           >
@@ -255,7 +257,7 @@ export function FinanceHome() {
         </Portal>
       )}
 
-      <AppShell.Navbar visibleFrom="sm" p={0} data-testid="finance-navbar">
+      <AppShell.Navbar visibleFrom="sm" p={0} className={classes.navShell} data-testid="finance-navbar">
         {navPanel}
       </AppShell.Navbar>
 
@@ -263,12 +265,10 @@ export function FinanceHome() {
         <Box
           hiddenFrom="sm"
           data-testid="finance-mobile-nav-bar"
+          className={classes.mobileNavBar}
           py={4}
           px="xs"
-          style={{
-            flexShrink: 0,
-            borderBottom: "1px solid var(--app-shell-border-color, var(--mantine-color-gray-3))",
-          }}
+          style={{ flexShrink: 0 }}
         >
           <Burger
             opened={opened}

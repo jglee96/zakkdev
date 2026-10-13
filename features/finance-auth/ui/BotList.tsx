@@ -15,7 +15,6 @@ import {
   Text,
   TextInput,
   Textarea,
-  Title,
   Tooltip,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
@@ -23,6 +22,8 @@ import { IconPlus, IconRefresh, IconRobot, IconSettings, IconTrash } from "@tabl
 import { useFinanceStore, type Bot, type BotTemplate } from "../store/finance-store";
 import { getToolLabelKo, normalizeToolCode } from "./tool-labels";
 import { FinanceModal } from "./FinanceModal";
+import { FinanceSectionTitle } from "./finance-section-title";
+import classes from "./finance-ui.module.css";
 import { FINANCE_COMBOBOX_PORTAL_PROPS } from "@/shared/site-layout/modal-root";
 
 const TEMPLATE_OPTIONS = [
@@ -46,7 +47,7 @@ export function BotList({ onRefresh }: { onRefresh: () => void }) {
   return (
     <Stack gap="md" w="100%" data-testid="bot-list-container">
       <Group justify="space-between" align="flex-end" wrap="wrap" gap="sm" w="100%" style={{ minWidth: 0 }}>
-        <Title order={4}>봇 관리</Title>
+        <FinanceSectionTitle>봇 관리</FinanceSectionTitle>
         <Group gap="xs" style={{ flexShrink: 0 }}>
           <Tooltip label="새로고침">
             <ActionIcon variant="subtle" onClick={onRefresh} data-testid="refresh-bots">
@@ -73,7 +74,7 @@ export function BotList({ onRefresh }: { onRefresh: () => void }) {
           <Loader />
         </Box>
       ) : bots.length === 0 ? (
-        <Card withBorder p="xl" ta="center" data-testid="bots-empty">
+        <Card withBorder={false} p="xl" ta="center" classNames={{ root: classes.surfaceCard }} data-testid="bots-empty">
           <IconRobot size={48} color="gray" style={{ margin: "0 auto", marginBottom: 16 }} />
           <Text c="dimmed">아직 생성된 봇이 없습니다.</Text>
           <Button mt="md" onClick={openCreate}>첫 봇 만들기</Button>
@@ -97,8 +98,9 @@ function BotCard({ bot, onSelect }: { bot: Bot; onSelect: () => void }) {
 
   return (
     <Card
-      withBorder
+      withBorder={false}
       padding="sm"
+      classNames={{ root: `${classes.surfaceCard} ${classes.listRow}` }}
       style={{ cursor: "pointer" }}
       onClick={onSelect}
       data-testid={`bot-card-${bot.name}`}

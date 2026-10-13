@@ -15,7 +15,6 @@ import {
   Text,
   TextInput,
   Textarea,
-  Title,
   Tooltip,
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
@@ -30,6 +29,8 @@ import {
 } from "@tabler/icons-react";
 import { useFinanceStore, type Routine, type RoutineStatus } from "../store/finance-store";
 import { FinanceModal } from "./FinanceModal";
+import { FinanceSectionTitle } from "./finance-section-title";
+import classes from "./finance-ui.module.css";
 import { FINANCE_COMBOBOX_PORTAL_PROPS } from "@/shared/site-layout/modal-root";
 
 const STATUS_BADGE: Record<RoutineStatus, { color: string; label: string }> = {
@@ -103,7 +104,7 @@ export function RoutineList({ onRefresh }: { onRefresh: () => void }) {
   return (
     <Stack gap="md" w="100%" data-testid="routine-list-container">
       <Group justify="space-between" align="flex-end" wrap="wrap" gap="sm" w="100%" style={{ minWidth: 0 }}>
-        <Title order={4}>정기 실행 (루틴)</Title>
+        <FinanceSectionTitle>정기 실행 (루틴)</FinanceSectionTitle>
         <Group gap="xs" style={{ flexShrink: 0 }}>
           <Tooltip label="새로고침">
             <ActionIcon variant="subtle" onClick={onRefresh} data-testid="refresh-routines">
@@ -126,7 +127,7 @@ export function RoutineList({ onRefresh }: { onRefresh: () => void }) {
       {isLoadingRoutines ? (
         <Box ta="center" py="xl" data-testid="routines-loading"><Loader /></Box>
       ) : activeRoutines.length === 0 ? (
-        <Card withBorder p="xl" ta="center" data-testid="routines-empty">
+        <Card withBorder={false} p="xl" ta="center" classNames={{ root: classes.surfaceCard }} data-testid="routines-empty">
           <IconCalendarTime size={48} color="gray" style={{ margin: "0 auto", marginBottom: 16 }} />
           <Text c="dimmed">아직 생성된 루틴이 없습니다.</Text>
           <Text size="sm" c="dimmed" mt="xs">
@@ -185,7 +186,7 @@ function RoutineCard({
   }
 
   return (
-    <Card withBorder padding="sm" data-testid={`routine-card-${routine.name}`}>
+    <Card withBorder={false} padding="sm" classNames={{ root: `${classes.surfaceCard} ${classes.listRow}` }} data-testid={`routine-card-${routine.name}`}>
       <Group justify="space-between" wrap="nowrap">
         <Box style={{ cursor: "pointer", flex: 1 }} onClick={onSelect}>
           <Group gap="sm" wrap="nowrap">

@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Alert, Button, PasswordInput, Stack, Text, Title } from "@mantine/core";
+import classes from "./finance-ui.module.css";
 
 export function FinanceLogin() {
   const router = useRouter();
@@ -38,8 +39,8 @@ export function FinanceLogin() {
   return (
     <Stack maw={360} mx="auto" gap="lg" data-testid="login-container">
       <div>
-        <Title order={1} size="h2" data-testid="login-title">금융 리서치 로그인</Title>
-        <Text c="dimmed" mt="xs">소유자만 사용할 수 있는 개인 공간입니다.</Text>
+        <Title order={1} fw={300} size="h1" data-testid="login-title">금융 리서치 로그인</Title>
+        <Text mt="xs" className={classes.loginIntro}>소유자만 사용할 수 있는 개인 공간입니다.</Text>
       </div>
       <form onSubmit={login} data-testid="login-form">
         <Stack>

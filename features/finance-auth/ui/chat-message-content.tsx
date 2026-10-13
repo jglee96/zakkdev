@@ -1,9 +1,9 @@
 "use client";
 
-import { Anchor, Badge, Box, Card, Group, Stack, Text, TypographyStylesProvider } from "@mantine/core";
+import { Anchor, Badge, Box, Card, Group, Stack, Text } from "@mantine/core";
 import { IconCalendar, IconExternalLink } from "@tabler/icons-react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { FinanceMarkdownBody } from "./finance-markdown";
+import classes from "./finance-ui.module.css";
 
 export type ParsedSource = {
   title: string;
@@ -76,17 +76,13 @@ export function ChatMessageContent({ content }: { content: string }) {
 
   return (
     <Stack gap="sm" data-testid="chat-message-content" style={{ minWidth: 0, overflowWrap: "anywhere" }}>
-      <TypographyStylesProvider>
-        <Box className="finance-chat-markdown">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{parsed.bodyMarkdown}</ReactMarkdown>
-        </Box>
-      </TypographyStylesProvider>
+      <FinanceMarkdownBody markdown={parsed.bodyMarkdown} />
 
       {parsed.datePrecision && (
         <Badge
           size="sm"
           variant="light"
-          color="blue"
+          color="braun-red"
           leftSection={<IconCalendar size={12} />}
           data-testid="date-precision-badge"
         >
@@ -100,9 +96,10 @@ export function ChatMessageContent({ content }: { content: string }) {
           {parsed.sources.map((source, index) => (
             <Card
               key={`${source.url}-${index}`}
-              withBorder
+              withBorder={false}
               padding="sm"
-              radius="md"
+              radius="sm"
+              classNames={{ root: classes.surfaceCard }}
               data-testid={`source-citation-${index}`}
             >
               <Stack gap={4}>

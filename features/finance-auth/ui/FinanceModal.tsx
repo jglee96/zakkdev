@@ -14,6 +14,9 @@ const defaultStyles: ModalProps["styles"] = {
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
+    borderRadius: 4,
+    border: "1px solid #ddd8d2",
+    boxShadow: "none",
   },
   body: {
     overflowY: "auto",
