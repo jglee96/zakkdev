@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActionIcon,
   Alert,
@@ -64,6 +64,8 @@ export function RunList({
 
   const visibleRuns = botIdFilter ? runs.filter((r) => r.botId === botIdFilter) : runs;
   const runningCount = visibleRuns.filter((r) => r.status === "running" || r.status === "queued").length;
+  const botNameById = useMemo(() => new Map(bots.map((b) => [b.id, b.name])), [bots]);
+  const routineNameById = useMemo(() => new Map(routines.map((r) => [r.id, r.name])), [routines]);
 
   return (
     <Stack gap="md" w="100%" data-testid="run-list-container">
@@ -101,8 +103,8 @@ export function RunList({
             <RunCard
               key={run.id}
               run={run}
-              botName={bots.find((b) => b.id === run.botId)?.name}
-              routineName={routines.find((r) => r.id === run.routineId)?.name}
+              botName={botNameById.get(run.botId)}
+              routineName={run.routineId ? routineNameById.get(run.routineId) : undefined}
               onSelect={() => setSelectedRun(run)}
             />
           ))}

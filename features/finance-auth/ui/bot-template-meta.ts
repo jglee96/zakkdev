@@ -1,4 +1,4 @@
-import type { BotTemplate } from "../store/finance-store";
+import type { Bot, BotTemplate } from "../store/finance-store";
 import {
   IconChartLine,
   IconGlobe,
@@ -70,4 +70,15 @@ export function getBotDisplayMeta(bot: { id: string; name: string; template: Bot
   }
   const meta = getTemplateMeta(bot.template);
   return { ...meta, name: bot.name };
+}
+
+export function getActiveBotDisplayMeta(bots: Bot[], selectedBotId: string | null) {
+  const activeBotId = selectedBotId || MAIN_BOT_ID;
+  const activeBot =
+    activeBotId === MAIN_BOT_ID
+      ? { id: MAIN_BOT_ID, name: "메인 봇", template: "main" as const }
+      : bots.find((b) => b.id === activeBotId);
+  return activeBot
+    ? getBotDisplayMeta(activeBot)
+    : getBotDisplayMeta({ id: MAIN_BOT_ID, name: "메인 봇", template: "kr-stock" });
 }

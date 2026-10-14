@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActionIcon,
   Alert,
@@ -108,6 +108,7 @@ export function RoutineList({
   const activeRoutines = routines
     .filter((r) => r.status !== "deleted")
     .filter((r) => (botIdFilter ? r.botId === botIdFilter : true));
+  const botNameById = useMemo(() => new Map(bots.map((b) => [b.id, b.name])), [bots]);
 
   return (
     <Stack gap="md" w="100%" data-testid="routine-list-container">
@@ -149,7 +150,7 @@ export function RoutineList({
             <RoutineCard
               key={routine.id}
               routine={routine}
-              botName={bots.find((b) => b.id === routine.botId)?.name}
+              botName={botNameById.get(routine.botId)}
               onSelect={() => setSelectedRoutine(routine)}
               onRefresh={onRefresh}
             />

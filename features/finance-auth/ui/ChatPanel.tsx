@@ -20,7 +20,7 @@ import { useFinanceStore, type Message, type ChatResponse } from "../store/finan
 import { BotAvatar } from "./bot-avatar";
 import { ChatMessageContent } from "./chat-message-content";
 import { FinanceOnboarding } from "./finance-onboarding";
-import { getBotDisplayMeta } from "./bot-template-meta";
+import { getActiveBotDisplayMeta } from "./bot-template-meta";
 import { MAIN_BOT_ID } from "../constants";
 import classes from "./finance-ui.module.css";
 
@@ -44,13 +44,7 @@ export function ChatPanel({ onOpenCreateBot }: { onOpenCreateBot: () => void }) 
 
   const activeBotId = selectedBotId || MAIN_BOT_ID;
   const botMessages = messages.filter((m) => m.botId === activeBotId);
-  const activeBot =
-    activeBotId === MAIN_BOT_ID
-      ? { id: MAIN_BOT_ID, name: "메인 봇", template: "main" as const }
-      : bots.find((b) => b.id === activeBotId);
-  const display = activeBot
-    ? getBotDisplayMeta(activeBot)
-    : getBotDisplayMeta({ id: MAIN_BOT_ID, name: "메인 봇", template: "kr-stock" });
+  const display = getActiveBotDisplayMeta(bots, selectedBotId);
 
   const specialistCount = bots.filter((b) => b.id !== MAIN_BOT_ID && b.template !== "main").length;
 
