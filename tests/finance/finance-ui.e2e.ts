@@ -961,30 +961,59 @@ async function injectMockMessages(ctx: TestContext) {
         id: "msg-assistant-1",
         botId: "main-bot",
         role: "assistant",
-        content: `삼성전자 최근 공시를 분석했습니다.
-
-## 주요 공시 내용
-
-### 2026년 3분기 잠정실적 (공시일: 2026-10-10)
-- 매출액 79.1조원으로 전년 동기 대비 15.2% 증가
-- 영업이익 12.8조원으로 42.1% 증가
-
-### 신규 투자 계획 (공시일: 2026-10-08)  
-- 파운드리 생산라인 증설에 4.5조원 투자 예정
-
-📅 날짜 정확도: 일 단위 (DART 공시 기준)
-
----
-**출처:**
-- [삼성전자 잠정실적](https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20261010) - DART 공시 (2026-10-10)
-- [삼성전자 투자계획](https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20261008) - DART 공시 (2026-10-08)`,
+        content: "삼성전자 최근 공시를 분석했습니다. 잠정실적과 투자 계획 공시를 요약합니다.",
+        datePrecision: "공시 접수일만 확인됨 (발표 시각 미제공)",
+        sources: [
+          {
+            id: "dart:20261010",
+            provider: "dart",
+            title: "삼성전자 잠정실적",
+            url: "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20261010",
+            receiptNo: "20261010",
+            filingDate: "2026-10-10",
+            timePrecision: "date",
+            firstSeenAt: timestamp - 600000,
+          },
+          {
+            id: "dart:20261008",
+            provider: "dart",
+            title: "삼성전자 투자계획",
+            url: "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20261008",
+            receiptNo: "20261008",
+            filingDate: "2026-10-08",
+            timePrecision: "date",
+            firstSeenAt: timestamp - 600000,
+          },
+        ],
+        blocks: [
+          {
+            type: "disclosure",
+            sourceId: "dart:20261010",
+            headline: "2026년 3분기 잠정실적",
+            summaryMarkdown: "- 매출액 79.1조원 (+15.2%)\n- 영업이익 12.8조원 (+42.1%)",
+          },
+          {
+            type: "thesis",
+            claim: "파운드리 증설 투자는 중장기 성장에 긍정적",
+            stance: "supports",
+            evidenceSourceIds: ["dart:20261008"],
+          },
+        ],
         createdAt: timestamp - 590000,
       },
     ];
 
-    const store = (window as unknown as { __FINANCE_STORE__?: { getState: () => { setMessages: (m: unknown[]) => void } } }).__FINANCE_STORE__;
+    const store = (window as unknown as {
+      __FINANCE_STORE__?: {
+        getState: () => {
+          setMessages: (m: unknown[]) => void;
+          markMessagesLoaded: (botId: string) => void;
+        };
+      };
+    }).__FINANCE_STORE__;
     if (store) {
       store.getState().setMessages(mockMessages);
+      store.getState().markMessagesLoaded("main-bot");
       return true;
     }
     return false;
@@ -1015,6 +1044,11 @@ async function testChatWithSources(ctx: TestContext) {
   await assertSiteNavVisible(ctx, "02-chat-desktop");
   await assertChatChromeVisible(ctx, "02-chat-desktop");
   await assertChatInputInViewport(ctx, "02-chat-desktop");
+  const hasDisclosureCard = await ctx.page.$('[data-testid="disclosure-card"]');
+  const hasThesisCard = await ctx.page.$('[data-testid="thesis-card"]');
+  assert.ok(hasDisclosureCard, "Structured disclosure card should render");
+  assert.ok(hasThesisCard, "Structured thesis card should render");
+
   const { content: chatContent } = await takeScreenshot(ctx, "02-chat-with-sources-desktop-1440x900", { width: 1440, height: 900 });
   await ctx.page.setViewport({ width: 390, height: 844 });
   await closeMobileFinanceNav(ctx);
@@ -1033,11 +1067,10 @@ async function testChatWithSources(ctx: TestContext) {
     "Chat panel should be visible"
   );
   assert.ok(!chatContent.includes("## "), "Chat should render markdown headings, not raw ## markers");
-  const sourceCardCount = await ctx.page.$$eval(
-    '[data-testid="source-citation-list"] [data-testid^="source-citation-"]',
-    (els) => els.length,
-  );
-  assert.ok(sourceCardCount >= 2, `Expected source citation cards, found ${sourceCardCount}`);
+  const disclosureCount = await ctx.page.$$eval('[data-testid="disclosure-card"]', (els) => els.length);
+  const thesisCount = await ctx.page.$$eval('[data-testid="thesis-card"]', (els) => els.length);
+  assert.ok(disclosureCount >= 1, `Expected disclosure cards, found ${disclosureCount}`);
+  assert.ok(thesisCount >= 1, `Expected thesis cards, found ${thesisCount}`);
   const dateBadge = await ctx.page.$('[data-testid="date-precision-badge"]');
   assert.ok(dateBadge, "Date precision badge should be visible");
   console.log("  ✓ Chat panel with sources displayed");

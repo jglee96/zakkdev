@@ -145,12 +145,32 @@ test("Demo Step 2: Mock LLM으로 공시 검색 및 분석", { skip: !isIntegrat
       model: "mock",
     },
     {
-      content: `삼성전자의 최근 공시를 분석했습니다.
-
-1. 반기보고서 (2026-10-01): 반도체 사업 매출 증가 확인
-2. 분기보고서 (2026-08-01): 영업이익 전년 대비 개선
-3. 자기주식 취득 결정: 주주환원 정책 강화`,
-      toolCalls: [],
+      content: null,
+      toolCalls: [
+        {
+          id: "call_respond_1",
+          name: "respond",
+          arguments: JSON.stringify({
+            bodyMarkdown:
+              "삼성전자의 최근 공시를 분석했습니다. 반기·분기 보고서에서 반도체 매출과 영업이익 개선이 확인됩니다.",
+            datePrecision: "공시 접수일만 확인됨 (발표 시각 미제공)",
+            blocks: [
+              {
+                type: "disclosure",
+                sourceId: `dart:${FIXTURE_FILINGS[0].receiptNo}`,
+                headline: FIXTURE_FILINGS[0].reportName,
+                summaryMarkdown: "반도체 사업 매출 증가",
+              },
+              {
+                type: "disclosure",
+                sourceId: `dart:${FIXTURE_FILINGS[3].receiptNo}`,
+                headline: FIXTURE_FILINGS[3].reportName,
+                summaryMarkdown: "영업이익 전년 대비 개선",
+              },
+            ],
+          }),
+        },
+      ],
       usage: { inputTokens: 800, outputTokens: 200 },
       model: "mock",
     },

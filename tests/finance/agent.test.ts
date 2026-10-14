@@ -97,10 +97,11 @@ test("getToolsForTemplate returns OpenAI-compatible tool format", () => {
 
 test("getToolsForBot filters tools by allowed list", () => {
   const allTools = getToolsForBot(["create_bot", "list_bots"]);
-  assert.equal(allTools.length, 2);
+  assert.equal(allTools.length, 3);
   const toolNames = allTools.map((t) => (t as { type: "function"; function: { name: string } }).function.name);
   assert.ok(toolNames.includes("create_bot"));
   assert.ok(toolNames.includes("list_bots"));
+  assert.ok(toolNames.includes("respond"));
   assert.ok(!toolNames.includes("invoke_bot"));
 });
 

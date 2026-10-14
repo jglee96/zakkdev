@@ -140,12 +140,19 @@ export function RunCard({
               </Alert>
             )}
             {run.reportData?.response && (
-              <CollapsibleRunResultMarkdown content={run.reportData.response} label="결과" />
+              <CollapsibleRunResultMarkdown
+                content={run.reportData.response}
+                label="결과"
+                blocks={run.reportData.blocks}
+                sources={run.reportData.sources}
+                datePrecision={run.reportData.datePrecision}
+                structuredFallback={run.reportData.structuredFallback}
+              />
             )}
-            {run.reportData?.sources && run.reportData.sources.length > 0 && (
+            {run.reportData?.legacySources && run.reportData.legacySources.length > 0 && (
               <Group gap="xs">
                 <Text size="xs" fw={500}>출처:</Text>
-                {run.reportData.sources.map((source, i) => (
+                {run.reportData.legacySources.map((source, i) => (
                   <Badge key={i} size="xs" variant="outline">
                     {source.title || source.reference}
                   </Badge>

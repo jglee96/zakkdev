@@ -112,12 +112,17 @@ export function ChatPanel({ onOpenCreateBot }: { onOpenCreateBot: () => void }) 
       const chatResponse = data as ChatResponse;
       setLastChatResponse(chatResponse);
 
-      if (chatResponse.response) {
+      const body = chatResponse.bodyMarkdown ?? chatResponse.response;
+      if (body) {
         const assistantMessage: Message = {
           id: chatResponse.runId,
           botId: activeBotId,
           role: "assistant",
-          content: chatResponse.response,
+          content: body,
+          sources: chatResponse.sources,
+          blocks: chatResponse.blocks,
+          datePrecision: chatResponse.datePrecision,
+          structuredFallback: chatResponse.structuredFallback,
           createdAt: Date.now(),
         };
         addMessage(assistantMessage);
@@ -298,7 +303,13 @@ function MessageBubble({ message, botId }: { message: Message; botId: string }) 
       <BotAvatar botId={botId} size={32} />
       <Box className={`${classes.chatBubble} ${classes.chatBubbleAssistant}`}>
         {message.content ? (
-          <ChatMessageContent content={message.content} />
+          <ChatMessageContent
+            content={message.content}
+            blocks={message.blocks}
+            sources={message.sources}
+            datePrecision={message.datePrecision}
+            structuredFallback={message.structuredFallback}
+          />
         ) : (
           <Text size="sm" className={classes.muted}>—</Text>
         )}

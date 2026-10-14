@@ -120,14 +120,22 @@ export function RunDetailModal({
         )}
 
         {run.reportData?.response && (
-          <CollapsibleRunResultMarkdown content={run.reportData.response} label="결과" preview={false} />
+          <CollapsibleRunResultMarkdown
+            content={run.reportData.response}
+            label="결과"
+            preview={false}
+            blocks={run.reportData.blocks}
+            sources={run.reportData.sources}
+            datePrecision={run.reportData.datePrecision}
+            structuredFallback={run.reportData.structuredFallback}
+          />
         )}
 
-        {run.reportData?.sources && run.reportData.sources.length > 0 && (
+        {run.reportData?.legacySources && run.reportData.legacySources.length > 0 && (
           <Box>
             <Text size="sm" fw={500}>출처</Text>
             <Stack gap="xs" mt="xs">
-              {run.reportData.sources.map((source, i) => (
+              {run.reportData.legacySources.map((source, i) => (
                 <Card key={i} withBorder p="xs">
                   <Group gap="xs">
                     <Badge size="xs">{source.type}</Badge>

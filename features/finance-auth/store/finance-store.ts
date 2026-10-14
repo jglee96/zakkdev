@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import type { ChatBlock, ChatSource } from "@/shared/finance/chat/types";
 import { mergeBotMessages } from "../lib/merge-bot-messages";
 import { MAIN_BOT_ID } from "../constants";
 
@@ -28,6 +29,10 @@ export type Message = {
   content: string | null;
   toolCalls?: Array<{ id: string; name: string; arguments: string }>;
   toolCallId?: string;
+  sources?: ChatSource[];
+  blocks?: ChatBlock[];
+  datePrecision?: string;
+  structuredFallback?: boolean;
   createdAt: number;
 };
 
@@ -36,6 +41,11 @@ export type ChatResponse = {
   botId: string;
   status: "completed" | "timeout" | "error" | "budget_exceeded";
   response?: string;
+  bodyMarkdown?: string;
+  blocks?: ChatBlock[];
+  sources?: ChatSource[];
+  datePrecision?: string;
+  structuredFallback?: boolean;
   error?: string;
   usage: {
     steps: number;
@@ -85,7 +95,11 @@ export type AgentRun = {
   reportData?: {
     response?: string;
     reportId?: string;
-    sources?: Array<{ type: string; reference: string; title?: string }>;
+    blocks?: ChatBlock[];
+    sources?: ChatSource[];
+    datePrecision?: string;
+    structuredFallback?: boolean;
+    legacySources?: Array<{ type: string; reference: string; title?: string }>;
   };
   startedAt?: number;
   finishedAt?: number;

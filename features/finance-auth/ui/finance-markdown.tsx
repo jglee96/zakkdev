@@ -4,6 +4,8 @@ import { Box, Button, Group, Stack, Text, TypographyStylesProvider } from "@mant
 import { useDisclosure } from "@mantine/hooks";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import type { ChatBlock, ChatSource } from "@/shared/finance/chat/types";
+import { StructuredMessageBody } from "./structured-chat-cards";
 import classes from "./finance-ui.module.css";
 
 export function FinanceMarkdownBody({ markdown }: { markdown: string }) {
@@ -20,10 +22,18 @@ export function CollapsibleRunResultMarkdown({
   content,
   label = "결과",
   preview = true,
+  blocks,
+  sources,
+  datePrecision,
+  structuredFallback,
 }: {
   content: string;
   label?: string;
   preview?: boolean;
+  blocks?: ChatBlock[];
+  sources?: ChatSource[];
+  datePrecision?: string;
+  structuredFallback?: boolean;
 }) {
   const [expanded, { toggle }] = useDisclosure(false);
   const longContent = content.length > 280 || content.split("\n").length > 4;
@@ -43,7 +53,17 @@ export function CollapsibleRunResultMarkdown({
       <Box
         className={`${classes.markdownPanel} ${preview && longContent && !expanded ? classes.markdownPreview : ""}`}
       >
-        <FinanceMarkdownBody markdown={content} />
+        {blocks?.length || sources?.length ? (
+          <StructuredMessageBody
+            bodyMarkdown={content}
+            blocks={blocks}
+            sources={sources}
+            datePrecision={datePrecision}
+            structuredFallback={structuredFallback}
+          />
+        ) : (
+          <FinanceMarkdownBody markdown={content} />
+        )}
       </Box>
     </Stack>
   );
