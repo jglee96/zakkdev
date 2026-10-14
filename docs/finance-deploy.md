@@ -39,20 +39,112 @@ Capture **outputs** from `finance-worker` deploy (see section 4).
 
 ## 3. Secrets (AWS Secrets Manager)
 
-Create secrets (JSON or plain string). Example JSON:
+The **worker Lambda** does not store API keys in plain environment variables. CDK (`infra/finance-worker.ts`) imports existing secrets by **name** and passes their ARNs to the function as `OPENROUTER_SECRET_ARN` and `OPENDART_SECRET_ARN`. At cold start, `infra/lambda/finance-worker/load-runtime-secrets.ts` fetches each secret and sets `OPENROUTER_API_KEY` / `OPENDART_API_KEY` in `process.env`.
+
+### Names and JSON shape (must match code)
+
+| Secret name (CDK default) | Lambda env (ARN) | After load |
+|---------------------------|------------------|------------|
+| `finance/openrouter-api-key` | `OPENROUTER_SECRET_ARN` | `OPENROUTER_API_KEY` |
+| `finance/opendart-api-key` | `OPENDART_SECRET_ARN` | `OPENDART_API_KEY` |
+
+- **Secret name** — Defaults above unless you deploy with `-c openRouterSecretName=...` or `-c openDartSecretName=...` (same strings you use in `create-secret --name`).
+- **Secret value** — Prefer JSON with the key **`apiKey`** (lowercase). The loader also accepts `API_KEY` or `key`, or a **plain string** (entire secret body is the key). Example:
 
 ```json
-{ "apiKey": "sk-or-..." }
+{"apiKey":"YOUR_KEY_HERE"}
 ```
 
-| Secret name (default) | Used by |
-|------------------------|---------|
-| `finance/openrouter-api-key` | Worker Lambda (`OPENROUTER_SECRET_ARN`) |
-| `finance/opendart-api-key` | Worker Lambda (`OPENDART_SECRET_ARN`) |
+Use the same region as the worker stack (`AWS_REGION`, e.g. `ap-northeast-2`).
 
-Override names with CDK context: `-c openRouterSecretName=...` `-c openDartSecretName=...`.
+**Vercel chat** does not read Secrets Manager for these keys. Set **`OPENROUTER_API_KEY`** and **`OPENDART_API_KEY`** in the Vercel project (mark both **Sensitive**). **Local dev** uses the same variable names in **`.env.local`** (covered by `.gitignore` via `.env*.local` — never commit keys).
 
-Vercel chat routes use env vars directly (not Secrets Manager): set `OPENROUTER_API_KEY` and `OPENDART_API_KEY` in Vercel if chat runs on Vercel.
+### 3a. AWS CLI
+
+Set region once (matches deploy):
+
+```bash
+export AWS_REGION=ap-northeast-2
+```
+
+**Option A — prompt for key (avoids shell history)**
+
+```bash
+read -s -p "OpenRouter API key: " OPENROUTER_KEY; echo
+aws secretsmanager create-secret \
+  --region "$AWS_REGION" \
+  --name finance/openrouter-api-key \
+  --description "OpenRouter API key for finance worker Lambda" \
+  --secret-string "$(printf '{"apiKey":"%s"}' "$OPENROUTER_KEY")"
+unset OPENROUTER_KEY
+
+read -s -p "OpenDART API key: " OPENDART_KEY; echo
+aws secretsmanager create-secret \
+  --region "$AWS_REGION" \
+  --name finance/opendart-api-key \
+  --description "OpenDART API key for finance worker Lambda" \
+  --secret-string "$(printf '{"apiKey":"%s"}' "$OPENDART_KEY")"
+unset OPENDART_KEY
+```
+
+**Option B — temp file (no key on the command line)**
+
+```bash
+umask 077
+printf '%s' '{"apiKey":"PASTE_KEY_HERE"}' > /tmp/finance-openrouter-secret.json
+aws secretsmanager create-secret \
+  --region "$AWS_REGION" \
+  --name finance/openrouter-api-key \
+  --secret-string file:///tmp/finance-openrouter-secret.json
+shred -u /tmp/finance-openrouter-secret.json 2>/dev/null || rm -f /tmp/finance-openrouter-secret.json
+
+# Repeat for OpenDART with finance/opendart-api-key and a separate temp file.
+```
+
+If `create-secret` fails because the name already exists, use **update** (rotation) instead:
+
+```bash
+read -s -p "New OpenRouter API key: " OPENROUTER_KEY; echo
+aws secretsmanager put-secret-value \
+  --region "$AWS_REGION" \
+  --secret-id finance/openrouter-api-key \
+  --secret-string "$(printf '{"apiKey":"%s"}' "$OPENROUTER_KEY")"
+unset OPENROUTER_KEY
+```
+
+**Verify without printing the secret**
+
+```bash
+aws secretsmanager describe-secret \
+  --region "$AWS_REGION" \
+  --secret-id finance/openrouter-api-key \
+  --query '{Name:Name,ARN:ARN,LastChangedDate:LastChangedDate,VersionIdsToStages:VersionIdsToStages}' \
+  --output table
+
+aws secretsmanager describe-secret --region "$AWS_REGION" --secret-id finance/opendart-api-key --output table
+```
+
+Do **not** use `get-secret-value` in shared logs or CI; use `describe-secret` to confirm existence and ARN. After `finance-worker` deploy, confirm stack outputs / Lambda env ARNs match these secrets.
+
+Create secrets **before** or **after** CDK deploy: CDK references secrets by name (`Secret.fromSecretNameV2`); the secrets must exist before the worker can successfully cold-start.
+
+### 3b. AWS Console
+
+1. Open **AWS Secrets Manager** in the same region as the stack.
+2. **Store a new secret** → **Other type of secret**.
+3. **Key/value** — Add one key: `apiKey`, value = your API key (Console builds JSON for you). Alternatively paste **Plaintext** JSON: `{"apiKey":"..."}`.
+4. **Secret name** — Exactly `finance/openrouter-api-key` or `finance/opendart-api-key` (or your CDK context override).
+5. Leave rotation disabled unless you configure rotation separately; routine key rotation is done with **Store a new secret value** on the secret detail page (equivalent to `put-secret-value`).
+6. Repeat for the second provider.
+7. On the secret detail page, copy **ARN** only if you need to cross-check with Lambda configuration; CDK wires ARNs automatically on deploy.
+
+### 3c. Chat vs worker (summary)
+
+| Runtime | OpenRouter / OpenDART |
+|---------|------------------------|
+| Worker Lambda | Secrets Manager → `apiKey` JSON → in-memory `OPENROUTER_API_KEY` / `OPENDART_API_KEY` |
+| Vercel (chat API) | Project env: `OPENROUTER_API_KEY`, `OPENDART_API_KEY` (**Sensitive**) |
+| Local (`pnpm dev`) | `.env.local` with the same names; file is gitignored |
 
 ## 4. Vercel environment variables
 
@@ -95,10 +187,13 @@ Vercel runtime role must have scheduler IAM (attached by worker stack when `verc
 
 ### Chat / worker LLM
 
+See **section 3** for Secrets Manager setup. Vercel chat needs both keys in project env (Sensitive); the worker loads them from ARNs at Lambda cold start.
+
 | Variable | Where |
 |----------|--------|
-| `OPENROUTER_API_KEY` | Vercel (chat) |
-| `OPENROUTER_API_KEY` / `OPENDART_API_KEY` | Loaded in Lambda from Secrets Manager ARNs at cold start |
+| `OPENROUTER_API_KEY` | Vercel (chat), or `.env.local` locally |
+| `OPENDART_API_KEY` | Vercel (chat), or `.env.local` locally |
+| `OPENROUTER_SECRET_ARN` / `OPENDART_SECRET_ARN` | Set by CDK on worker Lambda only |
 
 ## 5. Scheduler behavior
 
