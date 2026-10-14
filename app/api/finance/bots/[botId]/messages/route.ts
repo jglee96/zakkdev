@@ -54,6 +54,10 @@ export async function GET(request: Request, { params }: Params) {
       content: msg.content,
       toolCalls: msg.toolCalls,
       toolCallId: msg.toolCallId,
+      sources: msg.sources,
+      blocks: msg.blocks,
+      datePrecision: msg.datePrecision,
+      structuredFallback: msg.structuredFallback,
       createdAt: msg.createdAt,
     }));
 

@@ -15,6 +15,11 @@ import {
   getBotConversationHistory,
   type RepositoryConfig,
 } from "./repositories";
+import { STRUCTURED_FINISH_INSTRUCTION } from "../chat/instructions";
+import { finalizeAssistantResponse, finalizeFromRespondTool } from "../chat/finalize-response";
+import { createSourceRegistry, type SourceRegistry } from "../chat/source-registry";
+import { RESPOND_TOOL_NAME } from "../chat/respond-tool";
+import type { ValidatedAssistantMessage } from "../chat/types";
 import {
   type CostConfig,
   type RunTracker,
@@ -135,7 +140,8 @@ export async function runAgent(
 
   try {
     const templateDef = getTemplateDefinition(bot.template);
-    const systemPrompt = `${templateDef.defaultInstructions}\n\n${bot.instructions}`;
+    const systemPrompt = `${templateDef.defaultInstructions}\n\n${bot.instructions}\n\n${STRUCTURED_FINISH_INSTRUCTION}`;
+    const sourceRegistry = createSourceRegistry();
 
     const history = await getBotConversationHistory(runtime.repoConfig, bot.id, 20);
     const messages: ChatCompletionMessageParam[] = [
@@ -156,7 +162,18 @@ export async function runAgent(
     });
 
     const tools = getToolsForBot(bot.allowedTools);
-    const executor = toolExecutor || createDefaultToolExecutor();
+    const baseExecutor = toolExecutor || createDefaultToolExecutor();
+    const executor: ToolExecutor = async (name, args, ctx, rt) => {
+      if (name === RESPOND_TOOL_NAME) {
+        return { ok: true };
+      }
+      const result = await baseExecutor(name, args, ctx, rt);
+      sourceRegistry.ingestToolResult(name, result, startedAt);
+      if (name === "save_insight" && Array.isArray(args.evidence)) {
+        sourceRegistry.ingestToolResult(name, { evidence: args.evidence }, startedAt);
+      }
+      return result;
+    };
 
     for (let step = 0; step < runtime.costConfig.runLimits.maxSteps; step++) {
       const now = Date.now();
@@ -230,24 +247,36 @@ export async function runAgent(
       });
 
       if (response.toolCalls.length === 0) {
-        await createMessage(runtime.repoConfig, bot.ownerId, {
-          botId: bot.id,
-          role: "assistant",
-          content: response.content,
+        const timeoutMs = Math.min(SYNC_CALL_TIMEOUT_MS, deadlineAt - Date.now() - 1000);
+        const finalized = await finalizeAssistantResponse({
+          client: runtime.llmClient,
+          llmConfig: { ...runtime.llmConfig, timeoutMs: Math.max(1000, timeoutMs) },
+          sourceRegistry,
+          draftMarkdown: response.content || "",
         });
-
-        if (!parentContext) {
-          await settleBudget(runtime.budgetClient, runtime.costConfig, reservationId, tracker.usage.costUsd);
+        if (finalized.repairAttempted && finalized.repairUsage) {
+          tracker = recordCall(
+            tracker,
+            model,
+            finalized.repairUsage.inputTokens,
+            finalized.repairUsage.outputTokens,
+          );
+          totalInputTokens += finalized.repairUsage.inputTokens;
+          totalOutputTokens += finalized.repairUsage.outputTokens;
         }
 
-        return {
+        return await completeStructuredRun({
           runId,
-          botId: bot.id,
-          status: "completed",
-          response: response.content || "",
-          usage: { steps: tracker.usage.steps, calls: tracker.usage.calls, inputTokens: totalInputTokens, outputTokens: totalOutputTokens, costUsd: tracker.usage.costUsd },
-          durationMs: Date.now() - startedAt,
-        };
+          bot,
+          startedAt,
+          tracker,
+          totalInputTokens,
+          totalOutputTokens,
+          runtime,
+          reservationId,
+          parentContext,
+          message: finalized.message,
+        });
       }
 
       await createMessage(runtime.repoConfig, bot.ownerId, {
@@ -258,6 +287,44 @@ export async function runAgent(
       });
 
       for (const toolCall of response.toolCalls) {
+        if (toolCall.name === RESPOND_TOOL_NAME) {
+          const args = parseToolArguments(toolCall.arguments);
+          let finalMessage = await finalizeFromRespondTool(args, sourceRegistry);
+          if (!finalMessage) {
+            const repairTimeoutMs = Math.min(SYNC_CALL_TIMEOUT_MS, deadlineAt - Date.now() - 1000);
+            const finalized = await finalizeAssistantResponse({
+              client: runtime.llmClient,
+              llmConfig: { ...runtime.llmConfig, timeoutMs: Math.max(1000, repairTimeoutMs) },
+              sourceRegistry,
+              draftMarkdown: JSON.stringify(args),
+            });
+            if (finalized.repairAttempted && finalized.repairUsage) {
+              tracker = recordCall(
+                tracker,
+                model,
+                finalized.repairUsage.inputTokens,
+                finalized.repairUsage.outputTokens,
+              );
+              totalInputTokens += finalized.repairUsage.inputTokens;
+              totalOutputTokens += finalized.repairUsage.outputTokens;
+            }
+            finalMessage = finalized.message;
+          }
+
+          return await completeStructuredRun({
+            runId,
+            bot,
+            startedAt,
+            tracker,
+            totalInputTokens,
+            totalOutputTokens,
+            runtime,
+            reservationId,
+            parentContext,
+            message: finalMessage,
+          });
+        }
+
         if (!isToolAllowed(toolCall.name, bot.allowedTools)) {
           messages.push({
             role: "tool",
@@ -312,6 +379,66 @@ export async function runAgent(
       durationMs: Date.now() - startedAt,
     };
   }
+}
+
+async function completeStructuredRun(params: {
+  runId: string;
+  bot: Bot;
+  startedAt: number;
+  tracker: RunTracker;
+  totalInputTokens: number;
+  totalOutputTokens: number;
+  runtime: AgentRuntimeConfig;
+  reservationId: string;
+  parentContext?: AgentRunContext;
+  message: ValidatedAssistantMessage;
+}): Promise<AgentRunResult> {
+  const {
+    runId,
+    bot,
+    startedAt,
+    tracker,
+    totalInputTokens,
+    totalOutputTokens,
+    runtime,
+    reservationId,
+    parentContext,
+    message,
+  } = params;
+
+  await createMessage(runtime.repoConfig, bot.ownerId, {
+    botId: bot.id,
+    role: "assistant",
+    content: message.bodyMarkdown,
+    sources: message.sources,
+    blocks: message.blocks,
+    datePrecision: message.datePrecision,
+    structuredFallback: message.structuredFallback,
+  });
+
+  if (!parentContext) {
+    await settleBudget(runtime.budgetClient, runtime.costConfig, reservationId, tracker.usage.costUsd);
+  }
+
+  return {
+    runId,
+    botId: bot.id,
+    status: "completed",
+    response: message.bodyMarkdown,
+    bodyMarkdown: message.bodyMarkdown,
+    blocks: message.blocks,
+    sources: message.sources,
+    datePrecision: message.datePrecision,
+    structuredFallback: message.structuredFallback,
+    usage: {
+      steps: tracker.usage.steps,
+      calls: tracker.usage.calls,
+      inputTokens: totalInputTokens,
+      outputTokens: totalOutputTokens,
+      costUsd: tracker.usage.costUsd,
+    },
+    durationMs: Date.now() - startedAt,
+  };
 }
 
 function createDefaultToolExecutor(): ToolExecutor {

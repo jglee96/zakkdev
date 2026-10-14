@@ -268,6 +268,10 @@ export async function createMessage(
     content: input.content,
     toolCalls: input.toolCalls,
     toolCallId: input.toolCallId,
+    sources: input.sources,
+    blocks: input.blocks,
+    datePrecision: input.datePrecision,
+    structuredFallback: input.structuredFallback,
     createdAt: now,
   };
 
@@ -318,6 +322,10 @@ function itemToMessage(item: Record<string, unknown>): Message {
     content: item.content as string | null,
     toolCalls: item.toolCalls as Message["toolCalls"],
     toolCallId: item.toolCallId as string | undefined,
+    sources: item.sources as Message["sources"],
+    blocks: item.blocks as Message["blocks"],
+    datePrecision: item.datePrecision as string | undefined,
+    structuredFallback: item.structuredFallback as boolean | undefined,
     createdAt: item.createdAt as number,
   };
 }

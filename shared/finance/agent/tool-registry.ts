@@ -1,6 +1,7 @@
 import "server-only";
 import type { ChatCompletionTool } from "openai/resources/chat/completions";
 import type { BotTemplate } from "./types";
+import { RESPOND_TOOL_DEFINITION } from "../chat/respond-tool";
 import { TEMPLATE_DEFINITIONS } from "./templates";
 
 export type ToolDefinition = {
@@ -12,6 +13,7 @@ export type ToolDefinition = {
 };
 
 export const TOOL_DEFINITIONS: Record<string, ToolDefinition> = {
+  respond: { ...RESPOND_TOOL_DEFINITION },
   create_bot: {
     name: "create_bot",
     description: "새로운 전문 봇을 생성합니다. template은 kr-stock, us-stock, index-futures 중 하나입니다.",
@@ -414,8 +416,13 @@ export function getToolsForTemplate(template: BotTemplate): ChatCompletionTool[]
     }));
 }
 
+const RESPOND_TOOL_NAME = "respond";
+
 export function getToolsForBot(allowedTools: readonly string[]): ChatCompletionTool[] {
-  return allowedTools
+  const names = allowedTools.includes(RESPOND_TOOL_NAME)
+    ? [...allowedTools]
+    : [...allowedTools, RESPOND_TOOL_NAME];
+  return names
     .map((name) => TOOL_DEFINITIONS[name])
     .filter((def): def is ToolDefinition => def !== undefined)
     .map((def) => ({
@@ -429,6 +436,7 @@ export function getToolsForBot(allowedTools: readonly string[]): ChatCompletionT
 }
 
 export function isToolAllowed(toolName: string, allowedTools: readonly string[]): boolean {
+  if (toolName === RESPOND_TOOL_NAME) return true;
   return allowedTools.includes(toolName);
 }
 

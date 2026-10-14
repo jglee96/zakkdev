@@ -33,6 +33,8 @@ export type UpdateBotInput = {
 
 export type MessageRole = "system" | "user" | "assistant" | "tool";
 
+import type { ChatBlock, ChatSource } from "../chat/types";
+
 export type Message = {
   readonly id: string;
   readonly ownerId: string;
@@ -45,6 +47,10 @@ export type Message = {
     arguments: string;
   }>;
   readonly toolCallId?: string;
+  readonly sources?: readonly ChatSource[];
+  readonly blocks?: readonly ChatBlock[];
+  readonly datePrecision?: string;
+  readonly structuredFallback?: boolean;
   readonly createdAt: number;
 };
 
@@ -54,6 +60,10 @@ export type CreateMessageInput = {
   content: string | null;
   toolCalls?: Array<{ id: string; name: string; arguments: string }>;
   toolCallId?: string;
+  sources?: ChatSource[];
+  blocks?: ChatBlock[];
+  datePrecision?: string;
+  structuredFallback?: boolean;
 };
 
 export type AgentRunContext = {
@@ -71,6 +81,11 @@ export type AgentRunResult = {
   readonly botId: string;
   readonly status: "completed" | "timeout" | "error" | "budget_exceeded";
   readonly response?: string;
+  readonly bodyMarkdown?: string;
+  readonly blocks?: ChatBlock[];
+  readonly sources?: ChatSource[];
+  readonly datePrecision?: string;
+  readonly structuredFallback?: boolean;
   readonly error?: string;
   readonly usage: {
     steps: number;
