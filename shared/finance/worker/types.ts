@@ -1,4 +1,5 @@
 import "server-only";
+import type { ChatBlock, ChatSource } from "../chat/types";
 
 export type AgentRunStatus =
   | "queued"
@@ -54,9 +55,14 @@ export type RunCheckpoint = {
 
 export type RunReportData = {
   readonly response?: string;
+  readonly bodyMarkdown?: string;
   readonly reportId?: string;
   readonly memorySnapshot?: string;
-  readonly sources?: ReadonlyArray<{
+  readonly blocks?: readonly ChatBlock[];
+  readonly sources?: readonly ChatSource[];
+  readonly datePrecision?: string;
+  readonly structuredFallback?: boolean;
+  readonly legacySources?: ReadonlyArray<{
     type: string;
     reference: string;
     title?: string;

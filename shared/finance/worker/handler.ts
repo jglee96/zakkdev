@@ -22,24 +22,14 @@ import {
   getRoutine,
 } from "../routine";
 import type { AgentRuntimeConfig } from "../agent/runtime";
-import type { Bot } from "../agent/types";
+import type { AgentRunResult, Bot } from "../agent/types";
+import { agentRunResultToReportData } from "./report-data";
 
 export type WorkerConfig = {
   runRepo: RunRepositoryConfig;
   routineRepo: RoutineRepositoryConfig;
   getBot: (ownerId: string, botId: string) => Promise<Bot | null>;
-  runAgent: (bot: Bot, instruction: string, config: AgentRuntimeConfig, deadline: number) => Promise<{
-    status: "completed" | "timeout" | "error" | "budget_exceeded";
-    response?: string;
-    error?: string;
-    usage: {
-      steps: number;
-      calls: number;
-      inputTokens: number;
-      outputTokens: number;
-      costUsd: number;
-    };
-  }>;
+  runAgent: (bot: Bot, instruction: string, config: AgentRuntimeConfig, deadline: number) => Promise<AgentRunResult>;
   createRuntimeConfig: () => AgentRuntimeConfig;
 };
 
@@ -195,6 +185,7 @@ async function processRecord(
       result.status === "timeout" ? "timeout" : "failed";
 
     if (finalStatus === "completed" || result.status === "budget_exceeded") {
+      const reportData = agentRunResultToReportData(result);
       const commitResult = await commitRunCompletion(
         config.runRepo,
         routine.ownerId,
@@ -203,7 +194,9 @@ async function processRecord(
         leaseResult.fencingToken,
         finalStatus,
         result.usage,
-        result.error
+        result.error,
+        result.status === "budget_exceeded" ? "BUDGET_EXCEEDED" : undefined,
+        reportData
       );
 
       if (!commitResult.committed) {
