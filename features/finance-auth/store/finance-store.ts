@@ -273,7 +273,10 @@ export const useFinanceStore = create<FinanceState>()((set) => ({
   reset: () => set(initialState),
 }));
 
-if (typeof window !== "undefined") {
+if (
+  typeof window !== "undefined" &&
+  (process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_FINANCE_EXPOSE_STORE === "1")
+) {
   (window as unknown as { __FINANCE_STORE__: typeof useFinanceStore }).__FINANCE_STORE__ =
     useFinanceStore;
 }

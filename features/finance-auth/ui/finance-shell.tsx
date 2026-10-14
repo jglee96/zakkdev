@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Alert,
@@ -14,7 +14,7 @@ import {
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { IconChevronDown } from "@tabler/icons-react";
 import { useShallow } from "zustand/react/shallow";
-import type { FinanceShellSnapshot } from "../types/shell-snapshot";
+import type { FinanceShellSnapshot } from "@/shared/finance/shell/types";
 import { useFinanceStore } from "../store/finance-store";
 import { BotWorkspace } from "./bot-workspace";
 import { FinanceBotSidebar } from "./finance-bot-sidebar";
@@ -25,10 +25,11 @@ import { getActiveBotDisplayMeta } from "./bot-template-meta";
 import classes from "./finance-ui.module.css";
 
 export function FinanceShell({ initialData }: { initialData: FinanceShellSnapshot }) {
-  const hydratedRef = useRef(false);
-  if (!hydratedRef.current) {
+  const hydratedSnapshotKey = useRef<string | null>(null);
+  const snapshotKey = `${initialData.activeBotId}:${initialData.bots.length}:${initialData.runs.length}:${initialData.activeBotMessages.length}`;
+  if (hydratedSnapshotKey.current !== snapshotKey) {
     useFinanceStore.getState().hydrateFromServer(initialData);
-    hydratedRef.current = true;
+    hydratedSnapshotKey.current = snapshotKey;
   }
 
   const router = useRouter();
