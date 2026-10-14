@@ -39,57 +39,12 @@ export function BotAvatar({ botId, size = 36 }: { botId: string; size?: number }
 }
 
 function renderShape(shape: AvatarShape, art: ReturnType<typeof generateBotAvatarArt>, index: number) {
-  const fill = index % 2 === 0 ? art.foreground : art.accent;
+  const fill =
+    shape.fillRole === "foreground"
+      ? art.foreground
+      : shape.fillRole === "accent"
+        ? art.accent
+        : art.background;
 
-  switch (shape.kind) {
-    case "circle":
-      return (
-        <circle
-          key={index}
-          cx={shape.cx}
-          cy={shape.cy}
-          r={shape.r}
-          fill={fill}
-          opacity={shape.opacity}
-        />
-      );
-    case "ring":
-      return (
-        <circle
-          key={index}
-          cx={shape.cx}
-          cy={shape.cy}
-          r={shape.r}
-          fill="none"
-          stroke={fill}
-          strokeWidth={shape.stroke}
-          opacity={shape.opacity}
-        />
-      );
-    case "blob":
-      return (
-        <polygon
-          key={index}
-          points={shape.points}
-          fill={fill}
-          opacity={shape.opacity}
-        />
-      );
-    case "roundedPoly":
-      return (
-        <polygon
-          key={index}
-          points={shape.points}
-          fill={fill}
-          opacity={shape.opacity}
-          stroke={art.background}
-          strokeWidth={0.5}
-          strokeLinejoin="round"
-        />
-      );
-    default: {
-      const never: never = shape;
-      return never;
-    }
-  }
+  return <path key={`${shape.role}-${index}`} d={shape.d} fill={fill} opacity={shape.opacity} />;
 }
