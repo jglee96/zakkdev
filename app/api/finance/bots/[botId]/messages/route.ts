@@ -1,7 +1,7 @@
 import { requireFinanceSession } from "@/shared/finance/auth/guard";
 import { jsonResponse } from "@/shared/finance/auth/http";
-import { resolveBotForOwner } from "@/shared/finance/agent/resolve-bot";
-import { getRecentMessages, getRepositoryConfig } from "@/shared/finance/agent";
+import { getRecentMessages, getRepositoryConfig, resolveBotForOwner } from "@/shared/finance/agent";
+import { toFinanceMessage } from "@/shared/finance/shell/serializers";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -30,19 +30,7 @@ export async function GET(request: Request, { params }: Params) {
     }
 
     const stored = await getRecentMessages(repoConfig, bot.id, limit);
-    const messages = stored.map((msg) => ({
-      id: msg.id,
-      botId,
-      role: msg.role,
-      content: msg.content,
-      toolCalls: msg.toolCalls,
-      toolCallId: msg.toolCallId,
-      sources: msg.sources,
-      blocks: msg.blocks,
-      datePrecision: msg.datePrecision,
-      structuredFallback: msg.structuredFallback,
-      createdAt: msg.createdAt,
-    }));
+    const messages = stored.map((msg) => toFinanceMessage(msg, botId));
 
     return jsonResponse({ messages });
   } catch (error) {

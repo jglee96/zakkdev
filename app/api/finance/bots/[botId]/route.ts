@@ -5,7 +5,9 @@ import {
   updateBot,
   getRepositoryConfig,
   getBotConversationHistory,
+  resolveBotForOwner,
 } from "@/shared/finance/agent";
+import { toFinanceBot } from "@/shared/finance/shell/serializers";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -31,7 +33,7 @@ export async function GET(request: Request, { params }: Params) {
 
   try {
     const repoConfig = getRepositoryConfig();
-    const bot = await getBot(repoConfig, auth.session.ownerId, botId);
+    const bot = await resolveBotForOwner(repoConfig, auth.session.ownerId, botId);
 
     if (!bot) {
       return jsonResponse({ error: "봇을 찾을 수 없습니다." }, 404);
@@ -43,20 +45,11 @@ export async function GET(request: Request, { params }: Params) {
     let history;
     if (includeHistory) {
       const limit = Math.min(50, Number(url.searchParams.get("historyLimit")) || 20);
-      history = await getBotConversationHistory(repoConfig, botId, limit);
+      history = await getBotConversationHistory(repoConfig, bot.id, limit);
     }
 
     return jsonResponse({
-      bot: {
-        id: bot.id,
-        name: bot.name,
-        template: bot.template,
-        status: bot.status,
-        instructions: bot.instructions,
-        allowedTools: bot.allowedTools,
-        createdAt: bot.createdAt,
-        updatedAt: bot.updatedAt,
-      },
+      bot: toFinanceBot(bot),
       history,
     });
   } catch (error) {
