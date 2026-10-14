@@ -20,7 +20,7 @@ import { FinanceBotSidebar } from "./finance-bot-sidebar";
 import { CreateBotModal } from "./create-bot-modal";
 import { FINANCE_NAVBAR_TOP_PX, SITE_APP_SHELL_HEADER_HEIGHT_PX } from "@/shared/site-layout/constants";
 import { MODAL_ROOT_SELECTOR } from "@/shared/site-layout/modal-root";
-import { getBotDisplayMeta, MAIN_BOT_ID } from "./bot-template-meta";
+import { getActiveBotDisplayMeta } from "./bot-template-meta";
 import classes from "./finance-ui.module.css";
 
 export function FinanceHome() {
@@ -46,14 +46,7 @@ export function FinanceHome() {
     reset,
   } = useFinanceStore();
 
-  const activeBotId = selectedBotId || MAIN_BOT_ID;
-  const activeBot =
-    activeBotId === MAIN_BOT_ID
-      ? { id: MAIN_BOT_ID, name: "메인 봇", template: "main" as const }
-      : bots.find((b) => b.id === activeBotId);
-  const activeDisplay = activeBot
-    ? getBotDisplayMeta(activeBot as { id: string; name: string; template: "main" | import("../store/finance-store").BotTemplate })
-    : getBotDisplayMeta({ id: MAIN_BOT_ID, name: "메인 봇", template: "kr-stock" });
+  const activeDisplay = getActiveBotDisplayMeta(bots, selectedBotId);
 
   const fetchBots = useCallback(async () => {
     setIsLoadingBots(true);
@@ -95,9 +88,7 @@ export function FinanceHome() {
   }, [setRuns, setRunsError]);
 
   useEffect(() => {
-    fetchBots();
-    fetchRoutines();
-    fetchRuns();
+    void Promise.all([fetchBots(), fetchRoutines(), fetchRuns()]);
   }, [fetchBots, fetchRoutines, fetchRuns]);
 
   useEffect(() => {
@@ -124,9 +115,7 @@ export function FinanceHome() {
   }
 
   function refreshAll() {
-    fetchBots();
-    fetchRoutines();
-    fetchRuns();
+    void Promise.all([fetchBots(), fetchRoutines(), fetchRuns()]);
   }
 
   const financeViewportHeight = `calc(100dvh - ${SITE_APP_SHELL_HEADER_HEIGHT_PX}px)`;
