@@ -12,8 +12,10 @@ import {
   resumeRoutineWithScheduler,
   deleteRoutine,
   deleteRoutineWithScheduler,
+  assertFinanceSchedulerProductionConfig,
   getRoutineOrchestratorConfig,
   isSchedulerOrchestrationEnabled,
+  SchedulerConfigurationError,
   type RoutineRepositoryConfig,
   RoutineValidationError,
   RoutineLimitError,
@@ -44,6 +46,7 @@ export async function executeCreateRoutine(
   }
 
   try {
+    assertFinanceSchedulerProductionConfig();
     const repoConfig = getRoutineRepoConfig(runtime);
     const input = { botId, name, instruction, cronExpr, timezone };
 
@@ -76,6 +79,9 @@ export async function executeCreateRoutine(
       message: `루틴 "${routine.name}"이(가) 생성되었습니다. (ID: ${routine.id})`,
     };
   } catch (error) {
+    if (error instanceof SchedulerConfigurationError) {
+      return { error: error.message, code: "scheduler_config" };
+    }
     if (error instanceof RoutineValidationError) {
       return { error: error.message, code: "validation_error" };
     }
@@ -143,6 +149,7 @@ export async function executePauseRoutine(
   }
 
   try {
+    assertFinanceSchedulerProductionConfig();
     const repoConfig = getRoutineRepoConfig(runtime);
     const routine = await getRoutine(repoConfig, context.ownerId, routineId);
 
@@ -186,6 +193,9 @@ export async function executePauseRoutine(
       message: `루틴 "${updated.name}"이(가) 일시정지되었습니다.`,
     };
   } catch (error) {
+    if (error instanceof SchedulerConfigurationError) {
+      return { error: error.message, code: "scheduler_config" };
+    }
     if (error instanceof RoutineNotFoundError) {
       return { error: "루틴을 찾을 수 없습니다.", code: "not_found" };
     }
@@ -208,6 +218,7 @@ export async function executeResumeRoutine(
   }
 
   try {
+    assertFinanceSchedulerProductionConfig();
     const repoConfig = getRoutineRepoConfig(runtime);
     const routine = await getRoutine(repoConfig, context.ownerId, routineId);
 
@@ -251,6 +262,9 @@ export async function executeResumeRoutine(
       message: `루틴 "${updated.name}"이(가) 재개되었습니다.`,
     };
   } catch (error) {
+    if (error instanceof SchedulerConfigurationError) {
+      return { error: error.message, code: "scheduler_config" };
+    }
     if (error instanceof RoutineNotFoundError) {
       return { error: "루틴을 찾을 수 없습니다.", code: "not_found" };
     }
@@ -273,6 +287,7 @@ export async function executeDeleteRoutine(
   }
 
   try {
+    assertFinanceSchedulerProductionConfig();
     const repoConfig = getRoutineRepoConfig(runtime);
     const routine = await getRoutine(repoConfig, context.ownerId, routineId);
 
@@ -311,6 +326,9 @@ export async function executeDeleteRoutine(
       message: `루틴 "${deleted.name}"이(가) 삭제되었습니다. 더 이상 실행되지 않습니다.`,
     };
   } catch (error) {
+    if (error instanceof SchedulerConfigurationError) {
+      return { error: error.message, code: "scheduler_config" };
+    }
     if (error instanceof RoutineNotFoundError) {
       return { error: "루틴을 찾을 수 없습니다.", code: "not_found" };
     }

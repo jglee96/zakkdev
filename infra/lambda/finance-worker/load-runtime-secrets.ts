@@ -24,19 +24,26 @@ export async function loadRuntimeSecretsFromEnv(env: NodeJS.ProcessEnv = process
   }
   const region = env.AWS_REGION || env.AWS_DEFAULT_REGION || "ap-northeast-2";
 
-  if (!env.OPENROUTER_API_KEY && env.OPENROUTER_SECRET_ARN) {
-    const key = await readSecretValue(env.OPENROUTER_SECRET_ARN, region);
-    if (key) {
+  try {
+    if (!env.OPENROUTER_API_KEY && env.OPENROUTER_SECRET_ARN) {
+      const key = await readSecretValue(env.OPENROUTER_SECRET_ARN, region);
+      if (!key) {
+        throw new Error(`Secret ${env.OPENROUTER_SECRET_ARN} did not contain an API key`);
+      }
       env.OPENROUTER_API_KEY = key;
     }
-  }
 
-  if (!env.OPENDART_API_KEY && env.OPENDART_SECRET_ARN) {
-    const key = await readSecretValue(env.OPENDART_SECRET_ARN, region);
-    if (key) {
+    if (!env.OPENDART_API_KEY && env.OPENDART_SECRET_ARN) {
+      const key = await readSecretValue(env.OPENDART_SECRET_ARN, region);
+      if (!key) {
+        throw new Error(`Secret ${env.OPENDART_SECRET_ARN} did not contain an API key`);
+      }
       env.OPENDART_API_KEY = key;
     }
-  }
 
-  loaded = true;
+    loaded = true;
+  } catch (error) {
+    loaded = false;
+    throw error;
+  }
 }

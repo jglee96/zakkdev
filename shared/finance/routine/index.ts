@@ -45,3 +45,8 @@ export {
 } from "./orchestrator-runtime";
 
 export { orchestratorErrorStatus, orchestratorFailureMessage } from "./http-orchestrator";
+
+export {
+  assertFinanceSchedulerProductionConfig,
+  SchedulerConfigurationError,
+} from "../schedule/scheduler-runtime";

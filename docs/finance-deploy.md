@@ -183,7 +183,9 @@ Vercel runtime role must have scheduler IAM (attached by worker stack when `verc
 | `FINANCE_DYNAMODB_ENDPOINT` | `http://127.0.0.1:8000` |
 | `FINANCE_SCHEDULER_MODE` | `fake` (in-memory schedules) or `off` (DB-only pending routines) |
 
-`auto` mode: uses `fake` when `FINANCE_DYNAMODB_ENDPOINT` is set; uses `aws` when scheduler target ARNs are set.
+`auto` mode (non-production only): uses `fake` when `FINANCE_DYNAMODB_ENDPOINT` is set; uses `aws` when **all three** scheduler ARNs (queue, DLQ, role) are set; otherwise `off`.
+
+On **Vercel production** (`VERCEL_ENV=production`), routine mutations **fail with HTTP 503** unless `FINANCE_SCHEDULER_MODE=aws` and queue, DLQ, and role ARNs are configured — silent `off`/`fake`/`noop` is blocked.
 
 ### Chat / worker LLM
 

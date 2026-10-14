@@ -9,6 +9,8 @@ import {
   RoutineNotFoundError,
   RoutineValidationError,
   RoutineVersionConflictError,
+  SchedulerConfigurationError,
+  assertFinanceSchedulerProductionConfig,
   getRoutineOrchestratorConfig,
   isSchedulerOrchestrationEnabled,
   orchestratorErrorStatus,
@@ -85,6 +87,7 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   try {
+    assertFinanceSchedulerProductionConfig();
     if (!isSchedulerOrchestrationEnabled()) {
       const repoConfig = getFinanceTableRepoConfig();
       const routine = await updateRoutine(repoConfig, auth.session.ownerId, routineId, updates);
@@ -108,6 +111,9 @@ export async function PATCH(request: Request, { params }: Params) {
     return jsonResponse({ routine: toFinanceRoutine(result.data) });
   } catch (error) {
     console.error("[PATCH /api/finance/routines/:routineId] failed:", error);
+    if (error instanceof SchedulerConfigurationError) {
+      return jsonResponse({ error: error.message, code: "SCHEDULER_CONFIG" }, 503);
+    }
     if (error instanceof RoutineNotFoundError) {
       return jsonResponse({ error: "루틴을 찾을 수 없습니다." }, 404);
     }
@@ -130,6 +136,7 @@ export async function DELETE(request: Request, { params }: Params) {
   const { routineId } = await params;
 
   try {
+    assertFinanceSchedulerProductionConfig();
     if (!isSchedulerOrchestrationEnabled()) {
       const repoConfig = getFinanceTableRepoConfig();
       const existing = await getRoutine(repoConfig, auth.session.ownerId, routineId);
@@ -156,6 +163,9 @@ export async function DELETE(request: Request, { params }: Params) {
     return jsonResponse({ success: true, routine: toFinanceRoutine(result.data) });
   } catch (error) {
     console.error("[DELETE /api/finance/routines/:routineId] failed:", error);
+    if (error instanceof SchedulerConfigurationError) {
+      return jsonResponse({ error: error.message, code: "SCHEDULER_CONFIG" }, 503);
+    }
     if (error instanceof RoutineNotFoundError) {
       return jsonResponse({ error: "루틴을 찾을 수 없습니다." }, 404);
     }

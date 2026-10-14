@@ -12,6 +12,8 @@ export function orchestratorErrorStatus(code: string): number {
       return 409;
     case "LIMIT":
       return 429;
+    case "SCHEDULER_CONFIG":
+      return 503;
     default:
       return 502;
   }

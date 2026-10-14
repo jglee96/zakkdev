@@ -42,13 +42,66 @@ export function resolveFinanceSchedulerMode(
   if (raw !== "auto") {
     throw new SchedulerConfigurationError(`Invalid FINANCE_SCHEDULER_MODE: ${raw}`);
   }
-  if (env.FINANCE_SCHEDULER_TARGET_QUEUE_ARN && env.FINANCE_SCHEDULER_ROLE_ARN) {
+  if (
+    env.FINANCE_SCHEDULER_TARGET_QUEUE_ARN &&
+    env.FINANCE_SCHEDULER_ROLE_ARN &&
+    env.FINANCE_SCHEDULER_TARGET_DLQ_ARN
+  ) {
     return "aws";
   }
   if (env.FINANCE_DYNAMODB_ENDPOINT) {
     return "fake";
   }
   return "off";
+}
+
+/** True for Vercel production or non-local NODE_ENV=production without DynamoDB Local. */
+export function isFinanceProductionRuntime(
+  env: Partial<NodeJS.ProcessEnv> = process.env,
+): boolean {
+  const vercelEnv = env.VERCEL_ENV;
+  if (vercelEnv === "production") {
+    return true;
+  }
+  if (vercelEnv === "preview" || vercelEnv === "development") {
+    return false;
+  }
+  if (env.FINANCE_DYNAMODB_ENDPOINT) {
+    return false;
+  }
+  return env.NODE_ENV === "production";
+}
+
+/**
+ * Production must use real AWS Scheduler. Prevents silent `off`/`fake`/`noop` and pending-only routines.
+ */
+export function assertFinanceSchedulerProductionConfig(
+  env: Partial<NodeJS.ProcessEnv> = process.env,
+): void {
+  if (!isFinanceProductionRuntime(env)) {
+    return;
+  }
+
+  const raw = (env.FINANCE_SCHEDULER_MODE || "auto").toLowerCase();
+  if (raw === "fake" || raw === "noop" || raw === "off") {
+    throw new SchedulerConfigurationError(
+      `FINANCE_SCHEDULER_MODE=${raw} is not allowed in production. Set FINANCE_SCHEDULER_MODE=aws and configure scheduler target ARNs.`,
+    );
+  }
+
+  const resolved = resolveFinanceSchedulerMode(env);
+  if (resolved !== "aws") {
+    throw new SchedulerConfigurationError(
+      "Production finance requires AWS EventBridge Scheduler. Set FINANCE_SCHEDULER_MODE=aws and FINANCE_SCHEDULER_TARGET_QUEUE_ARN, FINANCE_SCHEDULER_TARGET_DLQ_ARN, and FINANCE_SCHEDULER_ROLE_ARN.",
+    );
+  }
+
+  const target = getScheduleTargetFromEnv(env);
+  if (!target) {
+    throw new SchedulerConfigurationError(
+      "Production scheduler target ARNs are incomplete. Set queue, DLQ, and role ARNs from the finance-worker stack outputs.",
+    );
+  }
 }
 
 export function shouldUseRoutineOrchestrator(mode: FinanceSchedulerMode): boolean {

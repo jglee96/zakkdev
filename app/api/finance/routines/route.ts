@@ -6,6 +6,8 @@ import {
   listRoutinesByOwner,
   RoutineValidationError,
   RoutineLimitError,
+  SchedulerConfigurationError,
+  assertFinanceSchedulerProductionConfig,
   getRoutineOrchestratorConfig,
   isSchedulerOrchestrationEnabled,
   orchestratorErrorStatus,
@@ -78,6 +80,7 @@ export async function POST(request: Request) {
   };
 
   try {
+    assertFinanceSchedulerProductionConfig();
     if (!isSchedulerOrchestrationEnabled()) {
       const repoConfig = getFinanceTableRepoConfig();
       const routine = await createRoutine(repoConfig, auth.session.ownerId, input);
@@ -100,6 +103,9 @@ export async function POST(request: Request) {
     return jsonResponse({ routine: toFinanceRoutine(result.data) }, 201);
   } catch (error) {
     console.error("[POST /api/finance/routines] failed:", error);
+    if (error instanceof SchedulerConfigurationError) {
+      return jsonResponse({ error: error.message, code: "SCHEDULER_CONFIG" }, 503);
+    }
     if (error instanceof RoutineValidationError) {
       return jsonResponse({ error: error.message }, 400);
     }

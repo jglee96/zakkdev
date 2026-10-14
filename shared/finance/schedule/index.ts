@@ -25,6 +25,8 @@ export { createNoopSchedulerClient } from "./noop-scheduler";
 export {
   type FinanceSchedulerMode,
   SchedulerConfigurationError,
+  assertFinanceSchedulerProductionConfig,
+  isFinanceProductionRuntime,
   resolveFinanceSchedulerMode,
   getScheduleTargetFromEnv,
   createSchedulerClientFromEnv,
