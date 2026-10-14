@@ -87,6 +87,44 @@
   border-bottom: 1px solid #ddd8d2;
 }
 
+.workspaceMain {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow: hidden;
+  background-color: var(--mantine-color-body);
+}
+
+.chatPanelRoot {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  overflow: hidden;
+}
+
+.chatThreadColumn {
+  width: 100%;
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+.chatComposerBar {
+  flex-shrink: 0;
+  border-top: 1px solid #ddd8d2;
+  background-color: var(--mantine-color-body);
+}
+
+.chatHeaderBar {
+  flex-shrink: 0;
+  border-bottom: 1px solid #ddd8d2;
+}
+
 .botSidebarItem {
   width: 100%;
   padding: 8px 10px;
@@ -134,7 +172,9 @@
   .chatBubbleAssistant,
   .markdownPanel,
   .navShell,
-  .mobileNavBar {
+  .mobileNavBar,
+  .chatComposerBar,
+  .chatHeaderBar {
     border-color: #2a2724;
   }
 

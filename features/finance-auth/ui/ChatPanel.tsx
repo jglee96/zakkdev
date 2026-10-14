@@ -9,7 +9,6 @@ import {
   Button,
   Card,
   Group,
-  Paper,
   ScrollArea,
   Stack,
   Text,
@@ -119,137 +118,145 @@ export function ChatPanel({ onOpenCreateBot }: { onOpenCreateBot: () => void }) 
   }
 
   return (
-    <Stack flex={1} mih={0} mah="100%" w="100%" gap="sm" style={{ flex: 1, minHeight: 0 }} data-testid="chat-panel">
-      <Group
-        justify="space-between"
-        align="flex-end"
-        wrap="wrap"
-        gap="sm"
-        w="100%"
-        data-testid="chat-page-header"
-        style={{ flexShrink: 0, minWidth: 0 }}
-      >
-        <Box style={{ minWidth: 0 }}>
-          <Text size="sm" fw={500} data-testid="chat-page-title" truncate>
-            {display.name}
-          </Text>
-          <Text size="xs" className={classes.muted} data-testid="chat-bot-role-line" truncate>
-            {display.roleLine}
-          </Text>
+    <Box className={classes.chatPanelRoot} data-testid="chat-panel">
+      <Box className={classes.chatHeaderBar} px="md" py="sm">
+        <Group
+          justify="space-between"
+          align="flex-end"
+          wrap="wrap"
+          gap="sm"
+          w="100%"
+          data-testid="chat-page-header"
+          className={classes.chatThreadColumn}
+          style={{ minWidth: 0 }}
+        >
+          <Box style={{ minWidth: 0 }}>
+            <Text size="sm" fw={500} data-testid="chat-page-title" truncate>
+              {display.name}
+            </Text>
+            <Text size="xs" className={classes.muted} data-testid="chat-bot-role-line" truncate>
+              {display.roleLine}
+            </Text>
+          </Box>
+        </Group>
+      </Box>
+
+      <Box px="md" pt="sm" style={{ flexShrink: 0 }}>
+        <Box className={classes.chatThreadColumn}>
+          <FinanceOnboarding
+            specialistBotCount={specialistCount}
+            onCreateBot={onOpenCreateBot}
+            onStarterPrompt={(text) => setInput(text)}
+          />
         </Box>
-      </Group>
+      </Box>
 
-      <FinanceOnboarding
-        specialistBotCount={specialistCount}
-        onCreateBot={onOpenCreateBot}
-        onStarterPrompt={(text) => setInput(text)}
-      />
-
-      <Paper
-        withBorder={false}
-        className={classes.surfaceCard}
-        flex={1}
-        mih={0}
-        style={{ display: "flex", flexDirection: "column", overflow: "hidden", flex: 1, minHeight: 0 }}
-      >
-        <ScrollArea flex={1} mih={0} viewportRef={viewportRef} p="md" data-testid="chat-messages">
-          {botMessages.length === 0 ? (
-            <Box ta="center" py="xl" data-testid="chat-empty">
-              <ThemeIcon size={48} radius="xl" variant="light" color="braun-red" mb="md">
-                <IconRobot size={28} />
-              </ThemeIcon>
-              <Text className={classes.muted}>{display.name}에게 질문해 보세요.</Text>
-              <Text size="sm" className={classes.muted} mt="xs">
-                예: &quot;삼성전자 최근 공시 분석해줘&quot;
-              </Text>
-            </Box>
-          ) : (
-            <Stack gap="md">
-              {botMessages.map((msg) => (
-                <MessageBubble key={msg.id} message={msg} />
-              ))}
-              {isSendingMessage && (
-                <Group gap="xs" data-testid="chat-loading">
-                  <ThemeIcon size="sm" radius="xl" variant="light" color="braun-red">
-                    <IconRobot size={14} />
-                  </ThemeIcon>
-                  <Text size="sm" c="dimmed">답변 생성 중...</Text>
-                </Group>
-              )}
-            </Stack>
-          )}
+      <Box style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <ScrollArea flex={1} mih={0} viewportRef={viewportRef} px="md" py="md" data-testid="chat-messages">
+          <Box className={classes.chatThreadColumn}>
+            {botMessages.length === 0 ? (
+              <Box ta="center" py="xl" data-testid="chat-empty">
+                <ThemeIcon size={48} radius="xl" variant="light" color="braun-red" mb="md">
+                  <IconRobot size={28} />
+                </ThemeIcon>
+                <Text className={classes.muted}>{display.name}에게 질문해 보세요.</Text>
+                <Text size="sm" className={classes.muted} mt="xs">
+                  예: &quot;삼성전자 최근 공시 분석해줘&quot;
+                </Text>
+              </Box>
+            ) : (
+              <Stack gap="md">
+                {botMessages.map((msg) => (
+                  <MessageBubble key={msg.id} message={msg} />
+                ))}
+                {isSendingMessage && (
+                  <Group gap="xs" data-testid="chat-loading">
+                    <ThemeIcon size="sm" radius="xl" variant="light" color="braun-red">
+                      <IconRobot size={14} />
+                    </ThemeIcon>
+                    <Text size="sm" c="dimmed">답변 생성 중...</Text>
+                  </Group>
+                )}
+              </Stack>
+            )}
+          </Box>
         </ScrollArea>
 
         {chatError && (
-          <Alert color="red" icon={<IconAlertCircle size={16} />} m="md" mt={0} data-testid="chat-error">
-            {chatError}
-          </Alert>
+          <Box px="md" className={classes.chatThreadColumn}>
+            <Alert color="red" icon={<IconAlertCircle size={16} />} mb="xs" data-testid="chat-error">
+              {chatError}
+            </Alert>
+          </Box>
         )}
 
         {lastChatResponse && lastChatResponse.botId === activeBotId && (
-          <ResponseStats response={lastChatResponse} />
+          <Box px="md" className={classes.chatThreadColumn}>
+            <ResponseStats response={lastChatResponse} />
+          </Box>
         )}
 
         <Box
-          p="md"
-          pt={0}
-          className="finance-chat-composer"
-          style={{ flexShrink: 0 }}
+          px="md"
+          py="md"
+          className={`${classes.chatComposerBar} finance-chat-composer`}
           data-testid="chat-composer"
         >
-          <form onSubmit={handleSubmit} data-testid="chat-form">
-            <Group gap="xs" align="center" wrap="nowrap" w="100%" style={{ minWidth: 0 }}>
-              <Box style={{ flex: 1, minWidth: 0, alignSelf: "center" }}>
-                {isMobile ? (
-                  <TextInput
-                    data-testid="chat-input-textarea"
-                    placeholder="메시지를 입력하세요..."
-                    value={input}
-                    onChange={(e) => setInput(e.currentTarget.value)}
-                    disabled={isSendingMessage}
-                    size="sm"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSubmit(e);
-                      }
-                    }}
-                  />
-                ) : (
-                  <TextareaAutosize
-                    data-testid="chat-input-textarea"
-                    className="finance-chat-textarea"
-                    placeholder="메시지를 입력하세요..."
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    disabled={isSendingMessage}
-                    minRows={1}
-                    maxRows={4}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSubmit(e);
-                      }
-                    }}
-                  />
-                )}
-              </Box>
-              <Button
-                type="submit"
-                data-testid="chat-send"
-                size="sm"
-                loading={isSendingMessage}
-                disabled={!input.trim()}
-                leftSection={<IconSend size={16} />}
-                style={{ flexShrink: 0, alignSelf: "center" }}
-              >
-                전송
-              </Button>
-            </Group>
-          </form>
+          <Box className={classes.chatThreadColumn}>
+            <form onSubmit={handleSubmit} data-testid="chat-form">
+              <Group gap="xs" align="center" wrap="nowrap" w="100%" style={{ minWidth: 0 }}>
+                <Box style={{ flex: 1, minWidth: 0, alignSelf: "center" }}>
+                  {isMobile ? (
+                    <TextInput
+                      data-testid="chat-input-textarea"
+                      placeholder="메시지를 입력하세요..."
+                      value={input}
+                      onChange={(e) => setInput(e.currentTarget.value)}
+                      disabled={isSendingMessage}
+                      size="sm"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSubmit(e);
+                        }
+                      }}
+                    />
+                  ) : (
+                    <TextareaAutosize
+                      data-testid="chat-input-textarea"
+                      className="finance-chat-textarea"
+                      placeholder="메시지를 입력하세요..."
+                      value={input}
+                      onChange={(e) => setInput(e.target.value)}
+                      disabled={isSendingMessage}
+                      minRows={1}
+                      maxRows={4}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSubmit(e);
+                        }
+                      }}
+                    />
+                  )}
+                </Box>
+                <Button
+                  type="submit"
+                  data-testid="chat-send"
+                  size="sm"
+                  loading={isSendingMessage}
+                  disabled={!input.trim()}
+                  leftSection={<IconSend size={16} />}
+                  style={{ flexShrink: 0, alignSelf: "center" }}
+                >
+                  전송
+                </Button>
+              </Group>
+            </form>
+          </Box>
         </Box>
-      </Paper>
-    </Stack>
+      </Box>
+    </Box>
   );
 }
 

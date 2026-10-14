@@ -146,7 +146,7 @@ export function FinanceHome() {
     <AppShell
       data-testid="finance-app-shell"
       navbar={{ width: sidebarWidth, breakpoint: "sm", collapsed: { mobile: true, desktop: false } }}
-      padding={{ base: "xs", sm: "sm" }}
+      padding={0}
       style={{
         minHeight: financeViewportHeight,
         height: financeViewportHeight,
@@ -176,7 +176,7 @@ export function FinanceHome() {
           alignItems: "stretch",
           display: "flex",
           flexDirection: "column",
-          paddingTop: 0,
+          padding: 0,
           overflow: "hidden",
         },
       }}
@@ -217,13 +217,21 @@ export function FinanceHome() {
         {sidebar}
       </AppShell.Navbar>
 
-      <AppShell.Main>
+      <AppShell.Main
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          minHeight: 0,
+          flex: 1,
+          overflow: "hidden",
+        }}
+      >
         <Box
           hiddenFrom="sm"
           data-testid="finance-mobile-nav-bar"
           className={classes.mobileNavBar}
           py={6}
-          px="xs"
+          px="sm"
           style={{ flexShrink: 0 }}
         >
           <Group justify="space-between" wrap="nowrap" gap="xs">
@@ -242,26 +250,22 @@ export function FinanceHome() {
         </Box>
 
         <Box
+          className={classes.workspaceMain}
+          data-testid="finance-workspace-main"
           w="100%"
-          maw={1100}
-          mx="auto"
-          px={{ base: "sm", sm: "md" }}
-          py={{ base: "xs", sm: "sm" }}
           style={{
             flex: 1,
             width: "100%",
-            maxWidth: "min(1100px, 100%)",
             boxSizing: "border-box",
             display: "flex",
             flexDirection: "column",
             minHeight: 0,
             minWidth: 0,
-            alignSelf: "stretch",
             overflow: "hidden",
           }}
         >
           {logoutError && (
-            <Alert color="red" mb="md" withCloseButton onClose={() => setLogoutError(null)}>
+            <Alert color="red" m="sm" withCloseButton onClose={() => setLogoutError(null)}>
               {logoutError}
             </Alert>
           )}

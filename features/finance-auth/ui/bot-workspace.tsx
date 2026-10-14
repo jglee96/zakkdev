@@ -33,10 +33,10 @@ export function BotWorkspace({
     <Tabs
       value={botWorkspaceTab}
       onChange={(v) => v && setBotWorkspaceTab(v as BotWorkspaceTab)}
-      style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, minWidth: 0 }}
+      style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, minWidth: 0, height: "100%" }}
       data-testid="bot-workspace"
     >
-      <Tabs.List style={{ flexShrink: 0 }} grow>
+      <Tabs.List style={{ flexShrink: 0, borderBottom: "1px solid #ddd8d2" }} grow>
         {TAB_ITEMS.map((tab) => (
           <Tabs.Tab
             key={tab.value}
@@ -50,16 +50,16 @@ export function BotWorkspace({
         ))}
       </Tabs.List>
 
-      <Tabs.Panel value="chat" pt="sm" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
+      <Tabs.Panel value="chat" style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <ChatPanel onOpenCreateBot={onOpenCreateBot} />
       </Tabs.Panel>
-      <Tabs.Panel value="runs" pt="sm" style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+      <Tabs.Panel value="runs" p="md" style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
         <RunList onRefresh={onRefreshRuns} botIdFilter={botId} />
       </Tabs.Panel>
-      <Tabs.Panel value="routines" pt="sm" style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+      <Tabs.Panel value="routines" p="md" style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
         <RoutineList onRefresh={onRefreshRoutines} botIdFilter={botId} />
       </Tabs.Panel>
-      <Tabs.Panel value="sources" pt="sm" style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
+      <Tabs.Panel value="sources" p="md" style={{ flex: 1, minHeight: 0, overflow: "auto" }}>
         <BotSourcesPanel />
       </Tabs.Panel>
     </Tabs>
