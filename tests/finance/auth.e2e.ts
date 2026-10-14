@@ -48,7 +48,12 @@ async function main() {
     await page.type('input[name="password"]', password);
     await page.click('button[type="submit"]');
     await page.waitForFunction(() => window.location.pathname === "/finance");
-    await page.waitForFunction(() => document.body.innerText.includes("금융 분석 기능은 준비 중"));
+    await page.waitForFunction(
+      () =>
+        document.body.innerText.includes("채팅") ||
+        document.body.innerText.includes("메인 봇") ||
+        document.querySelector('[data-testid="bot-workspace"]') !== null,
+    );
     const sessionCookie = (await browser.cookies()).find((cookie) => cookie.name === "finance-session-local");
     assert.ok(sessionCookie?.httpOnly);
     assert.equal(sessionCookie?.sameSite, "Strict");

@@ -814,7 +814,7 @@ describe("Atomic report+memory+completion transaction", () => {
       response: "Analysis complete: Found 3 significant disclosures.",
       reportId: `report-${randomUUID()}`,
       memorySnapshot: JSON.stringify({ lastAnalyzedDate: "2026-10-12", topics: ["earnings", "guidance"] }),
-      sources: [
+      legacySources: [
         { type: "sec_filing", reference: "10-K", title: "Annual Report 2026" },
         { type: "disclosure", reference: "8-K", title: "Material Event" },
       ],
@@ -839,7 +839,7 @@ describe("Atomic report+memory+completion transaction", () => {
     assert.deepEqual(finalRun?.usage, usage);
     assert.deepEqual(finalRun?.reportData, reportData);
     assert.equal(finalRun?.reportData?.response, "Analysis complete: Found 3 significant disclosures.");
-    assert.equal(finalRun?.reportData?.sources?.length, 2);
+    assert.equal(finalRun?.reportData?.legacySources?.length, 2);
   });
 
   test("late worker cannot overwrite report data (fencing)", { skip: !isIntegration }, async () => {

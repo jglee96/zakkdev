@@ -15,7 +15,7 @@
 
 import assert from "node:assert/strict";
 import { execSync, spawn } from "node:child_process";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, rm, writeFile } from "node:fs/promises";
 import { randomBytes, randomUUID } from "node:crypto";
 import path from "node:path";
 import { hash } from "@node-rs/argon2";
@@ -771,21 +771,44 @@ async function insertMockData(ctx: TestContext) {
       costUsd: 0.0287,
     },
     reportData: {
-      response: `📊 오늘의 시장 분석 리포트 (2026-10-12)
-
-## 삼성전자 (005930) 주요 공시
-
-### 1. 2026년 3분기 잠정 실적 발표 (2026-10-10, 정확도: 일 단위)
-- 매출액: 79.1조원 (전년 동기 대비 +15.2%)
-- 영업이익: 12.8조원 (전년 동기 대비 +42.1%)
-
-### 2. 신규 투자 계획 공시 (2026-10-08, 정확도: 일 단위)
-- 파운드리 생산라인 증설: 4.5조원 규모
-
-출처 확인됨 ✓`,
+      response: "오늘의 시장 분석: 삼성전자 잠정실적과 투자 계획 공시를 요약합니다.",
+      bodyMarkdown: "오늘의 시장 분석: 삼성전자 잠정실적과 투자 계획 공시를 요약합니다.",
+      datePrecision: "공시 접수일만 확인됨 (발표 시각 미제공)",
       sources: [
-        { type: "disclosure", reference: "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20261010", title: "삼성전자 2026년 3분기 잠정실적" },
-        { type: "disclosure", reference: "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20261008", title: "삼성전자 신규 투자 계획" },
+        {
+          id: "dart:20261010",
+          provider: "dart",
+          title: "삼성전자 2026년 3분기 잠정실적",
+          url: "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20261010",
+          receiptNo: "20261010",
+          filingDate: "2026-10-10",
+          timePrecision: "date",
+          firstSeenAt: now - 3600000,
+        },
+        {
+          id: "dart:20261008",
+          provider: "dart",
+          title: "삼성전자 신규 투자 계획",
+          url: "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=20261008",
+          receiptNo: "20261008",
+          filingDate: "2026-10-08",
+          timePrecision: "date",
+          firstSeenAt: now - 3600000,
+        },
+      ],
+      blocks: [
+        {
+          type: "disclosure",
+          sourceId: "dart:20261010",
+          headline: "3분기 잠정 실적",
+          summaryMarkdown: "- 매출액 79.1조원 (+15.2%)\n- 영업이익 12.8조원 (+42.1%)",
+        },
+        {
+          type: "thesis",
+          claim: "파운드리 증설은 중장기 성장 모멘텀을 강화",
+          stance: "supports",
+          evidenceSourceIds: ["dart:20261008"],
+        },
       ],
     },
   };
@@ -1379,7 +1402,8 @@ async function testRoutineCreate(ctx: TestContext) {
 
 async function testRunList(ctx: TestContext) {
   console.log("\n📋 Test: Run list");
-  
+
+  await clickSidebarBot(ctx, "bot-sidebar-item-bot-kr-stock");
   await clickNavItem(ctx, "nav-runs");
   
   const { content: runContent } = await takeScreenshot(ctx, "08-runs-list-desktop-1440x900", { width: 1440, height: 900 });
@@ -1395,8 +1419,25 @@ async function testRunList(ctx: TestContext) {
 async function testRunsWithErrors(ctx: TestContext) {
   console.log("\n📋 Test: Runs with error states");
   
+  await clickSidebarBot(ctx, "bot-sidebar-item-bot-kr-stock");
+  await clickNavItem(ctx, "nav-runs");
+  await ctx.page.evaluate(() => {
+    const refresh = document.querySelector('[data-testid="refresh-runs"]') as HTMLElement | null;
+    refresh?.click();
+  });
+  await new Promise((resolve) => setTimeout(resolve, 1200));
   await ctx.page.setViewport({ width: 1440, height: 900 });
-  
+
+  const expandedCompleted = await ctx.page.evaluate(() => {
+    const btn = document.querySelector('[data-testid="run-expand-run-completed"]') as HTMLElement | null;
+    if (btn) {
+      btn.click();
+      return true;
+    }
+    return false;
+  });
+  assert.ok(expandedCompleted, "Completed run row should be expandable");
+
   await ctx.page.evaluate(() => {
     const buttons = document.querySelectorAll('[data-testid^="run-expand-"]');
     buttons.forEach((btn, i) => {
@@ -1405,6 +1446,22 @@ async function testRunsWithErrors(ctx: TestContext) {
   });
   
   await new Promise((resolve) => setTimeout(resolve, 800));
+
+  const runDisclosure = await ctx.page.$('[data-testid="run-card-run-completed"] [data-testid="disclosure-card"]');
+  const runThesis = await ctx.page.$('[data-testid="run-card-run-completed"] [data-testid="thesis-card"]');
+  assert.ok(runDisclosure, "Completed run should render structured disclosure card");
+  assert.ok(runThesis, "Completed run should render structured thesis card");
+
+  await takeScreenshot(ctx, "structured-run-desktop-1440x900", { width: 1440, height: 900 });
+  await takeScreenshot(ctx, "structured-run-mobile-390x844", { width: 390, height: 844 });
+  await copyFile(
+    path.join(SCREENSHOT_DIR, "structured-run-desktop-1440x900.png"),
+    path.join(SCREENSHOT_DIR, "structured-run-desktop.png"),
+  );
+  await copyFile(
+    path.join(SCREENSHOT_DIR, "structured-run-mobile-390x844.png"),
+    path.join(SCREENSHOT_DIR, "structured-run-mobile.png"),
+  );
   
   const { content: errorContent } = await takeScreenshot(ctx, "09-runs-with-errors-desktop-1440x900", { width: 1440, height: 900 });
   await takeScreenshot(ctx, "09-runs-with-errors-mobile-390x844", { width: 390, height: 844 });

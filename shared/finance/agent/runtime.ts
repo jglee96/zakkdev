@@ -694,7 +694,8 @@ export async function runAgentForWorker(
 
   try {
     const templateDef = getTemplateDefinition(bot.template);
-    const systemPrompt = `${templateDef.defaultInstructions}\n\n${bot.instructions}`;
+    const systemPrompt = `${templateDef.defaultInstructions}\n\n${bot.instructions}\n\n${STRUCTURED_FINISH_INSTRUCTION}`;
+    const sourceRegistry = createSourceRegistry();
 
     let messages: ChatCompletionMessageParam[];
     let startStep = 0;
@@ -717,7 +718,18 @@ export async function runAgentForWorker(
     }
 
     const tools = getToolsForBot(bot.allowedTools);
-    const executor = createDefaultToolExecutor();
+    const baseExecutor = createDefaultToolExecutor();
+    const executor: ToolExecutor = async (name, args, ctx, rt) => {
+      if (name === RESPOND_TOOL_NAME) {
+        return { ok: true };
+      }
+      const result = await baseExecutor(name, args, ctx, rt);
+      sourceRegistry.ingestToolResult(name, result, startedAt);
+      if (name === "save_insight" && Array.isArray(args.evidence)) {
+        sourceRegistry.ingestToolResult(name, { evidence: args.evidence }, startedAt);
+      }
+      return result;
+    };
 
     for (let step = startStep; step < runtime.costConfig.runLimits.maxSteps; step++) {
       const now = Date.now();
@@ -803,18 +815,82 @@ export async function runAgentForWorker(
       });
 
       if (response.toolCalls.length === 0) {
+        const timeoutMs = Math.min(WORKER_CALL_TIMEOUT_MS, timeRemaining - 5000);
+        const finalized = await finalizeAssistantResponse({
+          client: runtime.llmClient,
+          llmConfig: { ...runtime.llmConfig, timeoutMs: Math.max(1000, timeoutMs) },
+          sourceRegistry,
+          draftMarkdown: response.content || "",
+        });
+        if (finalized.repairAttempted && finalized.repairUsage) {
+          tracker = recordCall(
+            tracker,
+            model,
+            finalized.repairUsage.inputTokens,
+            finalized.repairUsage.outputTokens,
+          );
+          totalInputTokens += finalized.repairUsage.inputTokens;
+          totalOutputTokens += finalized.repairUsage.outputTokens;
+        }
+
         await settleBudget(runtime.budgetClient, runtime.costConfig, reservationId, tracker.usage.costUsd);
+        const message = finalized.message;
         return {
           runId,
           botId: bot.id,
           status: "completed",
-          response: response.content || "",
+          response: message.bodyMarkdown,
+          bodyMarkdown: message.bodyMarkdown,
+          blocks: message.blocks,
+          sources: message.sources,
+          datePrecision: message.datePrecision,
+          structuredFallback: message.structuredFallback,
           usage: { steps: tracker.usage.steps, calls: tracker.usage.calls, inputTokens: totalInputTokens, outputTokens: totalOutputTokens, costUsd: tracker.usage.costUsd },
           durationMs: Date.now() - startedAt,
         };
       }
 
       for (const toolCall of response.toolCalls) {
+        if (toolCall.name === RESPOND_TOOL_NAME) {
+          const args = parseToolArguments(toolCall.arguments);
+          let finalMessage = await finalizeFromRespondTool(args, sourceRegistry);
+          if (!finalMessage) {
+            const timeoutMs = Math.min(WORKER_CALL_TIMEOUT_MS, timeRemaining - 5000);
+            const finalized = await finalizeAssistantResponse({
+              client: runtime.llmClient,
+              llmConfig: { ...runtime.llmConfig, timeoutMs: Math.max(1000, timeoutMs) },
+              sourceRegistry,
+              draftMarkdown: JSON.stringify(args),
+            });
+            if (finalized.repairAttempted && finalized.repairUsage) {
+              tracker = recordCall(
+                tracker,
+                model,
+                finalized.repairUsage.inputTokens,
+                finalized.repairUsage.outputTokens,
+              );
+              totalInputTokens += finalized.repairUsage.inputTokens;
+              totalOutputTokens += finalized.repairUsage.outputTokens;
+            }
+            finalMessage = finalized.message;
+          }
+
+          await settleBudget(runtime.budgetClient, runtime.costConfig, reservationId, tracker.usage.costUsd);
+          return {
+            runId,
+            botId: bot.id,
+            status: "completed",
+            response: finalMessage.bodyMarkdown,
+            bodyMarkdown: finalMessage.bodyMarkdown,
+            blocks: finalMessage.blocks,
+            sources: finalMessage.sources,
+            datePrecision: finalMessage.datePrecision,
+            structuredFallback: finalMessage.structuredFallback,
+            usage: { steps: tracker.usage.steps, calls: tracker.usage.calls, inputTokens: totalInputTokens, outputTokens: totalOutputTokens, costUsd: tracker.usage.costUsd },
+            durationMs: Date.now() - startedAt,
+          };
+        }
+
         if (!isToolAllowed(toolCall.name, bot.allowedTools)) {
           messages.push({
             role: "tool",
