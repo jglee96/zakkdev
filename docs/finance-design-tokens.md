@@ -46,6 +46,27 @@ Finance screens reuse the same visual language as the public blog (Braun-inspire
 | Site content max width | 768px (blog); finance main column max 1100px (unchanged layout) |
 | Header height | 64px (`SITE_APP_SHELL_HEADER_HEIGHT_PX`) |
 
+## Bot avatar hues (`features/finance-auth/ui/bot-avatar-art.ts`)
+
+Deterministic **shape** from `botId` hash (unchanged); **hue** from `pickAvatarHueIndex(botId)` over 12 muted swatches tuned for warm-neutral UI (`#f4f1ec` / `#131110`).
+
+| Hue id | Light body | Dark body | Notes |
+|--------|------------|-----------|--------|
+| `terracotta` | `#b85c3a` | `#df8a66` | Warm clay |
+| `ochre` | `#9a7332` | `#d4ad62` | Golden brown |
+| `olive` | `#646b4a` | `#a8b184` | Green-gray |
+| `sage` | `#4f6f5c` | `#8fae9a` | Soft green |
+| `teal` | `#3a6f6c` | `#6faaa6` | Blue-green |
+| `slate-blue` | `#4a6278` | `#89a3b8` | Cool gray-blue |
+| `indigo` | `#4f5580` | `#9a9ec4` | Muted violet-blue |
+| `plum` | `#6e4f66` | `#b892a8` | Dusty purple |
+| `rose` | `#9d5c6b` | `#d48a98` | Muted rose |
+| `sand` | `#7a6b5a` | `#b8a894` | Warm taupe |
+| `charcoal` | `#4a4844` | `#a8a39c` | Neutral brown-gray |
+| `braun-rust` | `#a8482c` | `#d97250` | Braun-family accent |
+
+Each swatch defines `canvas` (tile background), `body` (main blob), `inner` (accent inner blob), and `innerSoft` (soft inner blob). Body vs canvas targets **≥ 3:1** contrast on both schemes.
+
 ## Components
 
 Finance UI maps to blog patterns via `features/finance-auth/ui/finance-ui.module.css`:

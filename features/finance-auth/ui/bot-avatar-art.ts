@@ -1,4 +1,4 @@
-/** Neutral abstract avatar art — one cohesive centered mark per botId, design-token palette only. */
+/** Neutral abstract avatar art — one cohesive centered mark per botId; hues from avatar palette. */
 
 export type ColorScheme = "light" | "dark";
 
@@ -16,6 +16,7 @@ export type BotAvatarArt = {
   background: string;
   foreground: string;
   accent: string;
+  innerSoft: string;
   shapes: AvatarShape[];
 };
 
@@ -23,23 +24,135 @@ const VIEW_SIZE = 32;
 const CENTER = 16;
 const VIEW_MARGIN = 3;
 
-const LIGHT_BACKGROUNDS = ["#fdfcf9", "#f4f1ec", "#fbdbd2", "#e8e3db", "#f4f1ec"];
-const LIGHT_FOREGROUNDS = ["#c74219", "#5e5a56", "#a83614", "#882b10", "#9e9890"];
-const LIGHT_ACCENTS = ["#df5f3a", "#dad4ca", "#c74219", "#5e5a56"];
+/** Muted avatar hues — see docs/finance-design-tokens.md */
+export type AvatarHueSwatch = {
+  id: string;
+  light: { canvas: string; body: string; inner: string; innerSoft: string };
+  dark: { canvas: string; body: string; inner: string; innerSoft: string };
+};
 
-const DARK_BACKGROUNDS = ["#131110", "#1c1917", "#2a2724", "#1c1917", "#131110"];
-const DARK_FOREGROUNDS = ["#c74219", "#8a8480", "#ede9e3", "#df5f3a", "#b5afa4"];
-const DARK_ACCENTS = ["#882b10", "#5e5a56", "#a83614", "#8a8480"];
+export const AVATAR_HUE_PALETTE: AvatarHueSwatch[] = [
+  {
+    id: "terracotta",
+    light: { canvas: "#f6e8e2", body: "#b85c3a", inner: "#8f3f24", innerSoft: "#e8c9bb" },
+    dark: { canvas: "#221a18", body: "#df8a66", inner: "#f2b89a", innerSoft: "#3d2a24" },
+  },
+  {
+    id: "ochre",
+    light: { canvas: "#f4ead8", body: "#9a7332", inner: "#73521f", innerSoft: "#e2d0b0" },
+    dark: { canvas: "#211d16", body: "#d4ad62", inner: "#ecc98a", innerSoft: "#3a3224" },
+  },
+  {
+    id: "olive",
+    light: { canvas: "#ece9df", body: "#646b4a", inner: "#4a5140", innerSoft: "#d4cfc0" },
+    dark: { canvas: "#1b1d17", body: "#a8b184", inner: "#c5ce9e", innerSoft: "#2e3228" },
+  },
+  {
+    id: "sage",
+    light: { canvas: "#e7efe9", body: "#4f6f5c", inner: "#3a5548", innerSoft: "#c8d9ce" },
+    dark: { canvas: "#181c19", body: "#8fae9a", inner: "#b3cdb9", innerSoft: "#28312c" },
+  },
+  {
+    id: "teal",
+    light: { canvas: "#e3f0ef", body: "#3a6f6c", inner: "#285450", innerSoft: "#b8d9d6" },
+    dark: { canvas: "#161c1c", body: "#6faaa6", inner: "#9fd0cc", innerSoft: "#243230" },
+  },
+  {
+    id: "slate-blue",
+    light: { canvas: "#e5ecf2", body: "#4a6278", inner: "#354a5c", innerSoft: "#c5d4e0" },
+    dark: { canvas: "#181b1f", body: "#89a3b8", inner: "#b3c9d9", innerSoft: "#2a323a" },
+  },
+  {
+    id: "indigo",
+    light: { canvas: "#e8e9f2", body: "#4f5580", inner: "#3a3f62", innerSoft: "#c8cadf" },
+    dark: { canvas: "#1a1a22", body: "#9a9ec4", inner: "#c0c4e6", innerSoft: "#2c2d3a" },
+  },
+  {
+    id: "plum",
+    light: { canvas: "#efe8ec", body: "#6e4f66", inner: "#523a48", innerSoft: "#d8c8d0" },
+    dark: { canvas: "#1f1a1d", body: "#b892a8", inner: "#d9b8c8", innerSoft: "#352a30" },
+  },
+  {
+    id: "rose",
+    light: { canvas: "#f5e9eb", body: "#9d5c6b", inner: "#7a4250", innerSoft: "#e4c8cf" },
+    dark: { canvas: "#211a1c", body: "#d48a98", inner: "#efb0bc", innerSoft: "#3a2a2e" },
+  },
+  {
+    id: "sand",
+    light: { canvas: "#f0ebe4", body: "#7a6b5a", inner: "#5c5044", innerSoft: "#ddd4c8" },
+    dark: { canvas: "#1d1b18", body: "#b8a894", inner: "#d6c8b4", innerSoft: "#322e28" },
+  },
+  {
+    id: "charcoal",
+    light: { canvas: "#e8e6e3", body: "#4a4844", inner: "#353330", innerSoft: "#ccc9c4" },
+    dark: { canvas: "#181716", body: "#a8a39c", inner: "#c9c4bc", innerSoft: "#2a2826" },
+  },
+  {
+    id: "braun-rust",
+    light: { canvas: "#f3e3dc", body: "#a8482c", inner: "#7f331c", innerSoft: "#e4c4b6" },
+    dark: { canvas: "#221816", body: "#d97250", inner: "#f0a68a", innerSoft: "#3d2820" },
+  },
+];
+
+export const AVATAR_PAGE_CANVAS = {
+  light: "#f4f1ec",
+  dark: "#131110",
+} as const;
 
 type Point = { x: number; y: number };
 
-function hashBotId(botId: string): number {
+export function hashBotId(botId: string): number {
   let h = 2166136261;
   for (let i = 0; i < botId.length; i++) {
     h ^= botId.charCodeAt(i);
     h = Math.imul(h, 16777619);
   }
   return h >>> 0;
+}
+
+/** Spread hue picks across the palette (stable per botId). */
+export function pickAvatarHueIndex(botId: string): number {
+  const seed = hashBotId(botId);
+  const mixed = Math.imul(seed ^ (seed >>> 13), 0x9e3779b1) >>> 0;
+  return mixed % AVATAR_HUE_PALETTE.length;
+}
+
+function relativeLuminance(hex: string): number {
+  const raw = hex.replace("#", "");
+  const r = parseInt(raw.slice(0, 2), 16) / 255;
+  const g = parseInt(raw.slice(2, 4), 16) / 255;
+  const b = parseInt(raw.slice(4, 6), 16) / 255;
+  const toLin = (c: number) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+  const R = toLin(r);
+  const G = toLin(g);
+  const B = toLin(b);
+  return 0.2126 * R + 0.7152 * G + 0.0722 * B;
+}
+
+export function contrastRatio(foreground: string, background: string): number {
+  const l1 = relativeLuminance(foreground);
+  const l2 = relativeLuminance(background);
+  const lighter = Math.max(l1, l2);
+  const darker = Math.min(l1, l2);
+  return (lighter + 0.05) / (darker + 0.05);
+}
+
+export function resolveAvatarColors(botId: string, scheme: ColorScheme): {
+  hueId: string;
+  background: string;
+  foreground: string;
+  accent: string;
+  innerSoft: string;
+} {
+  const hue = AVATAR_HUE_PALETTE[pickAvatarHueIndex(botId)]!;
+  const swatch = scheme === "light" ? hue.light : hue.dark;
+  return {
+    hueId: hue.id,
+    background: swatch.canvas,
+    foreground: swatch.body,
+    accent: swatch.inner,
+    innerSoft: swatch.innerSoft,
+  };
 }
 
 function mulberry32(seed: number) {
@@ -151,13 +264,7 @@ export function generateBotAvatarArt(botId: string, scheme: ColorScheme): BotAva
   const seed = hashBotId(botId);
   const rand = mulberry32(seed);
 
-  const backgrounds = scheme === "light" ? LIGHT_BACKGROUNDS : DARK_BACKGROUNDS;
-  const foregrounds = scheme === "light" ? LIGHT_FOREGROUNDS : DARK_FOREGROUNDS;
-  const accents = scheme === "light" ? LIGHT_ACCENTS : DARK_ACCENTS;
-
-  const background = backgrounds[seed % backgrounds.length]!;
-  const foreground = foregrounds[(seed >>> 3) % foregrounds.length]!;
-  const accent = accents[(seed >>> 7) % accents.length]!;
+  const { background, foreground, accent, innerSoft } = resolveAvatarColors(botId, scheme);
 
   const bodyRadius = 9.2 + (seed % 5) * 0.35;
   const symmetric = seed % 3 !== 0;
@@ -185,11 +292,11 @@ export function generateBotAvatarArt(botId: string, scheme: ColorScheme): BotAva
       role: "inner",
       d: innerPath,
       fillRole: innerFill,
-      opacity: innerFill === "background" ? 0.55 : 0.72,
+      opacity: innerFill === "background" ? 0.85 : 0.78,
     });
   }
 
-  return { background, foreground, accent, shapes };
+  return { background, foreground, accent, innerSoft, shapes };
 }
 
 export function renderAvatarSvgMarkup(botId: string, scheme: ColorScheme, size: number): string {
@@ -201,7 +308,7 @@ export function renderAvatarSvgMarkup(botId: string, scheme: ColorScheme, size: 
           ? art.foreground
           : shape.fillRole === "accent"
             ? art.accent
-            : art.background;
+            : art.innerSoft;
       return `<path d="${shape.d}" fill="${fill}" opacity="${shape.opacity}" />`;
     })
     .join("");

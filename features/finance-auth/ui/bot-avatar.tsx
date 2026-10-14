@@ -44,7 +44,7 @@ function renderShape(shape: AvatarShape, art: ReturnType<typeof generateBotAvata
       ? art.foreground
       : shape.fillRole === "accent"
         ? art.accent
-        : art.background;
+        : art.innerSoft;
 
   return <path key={`${shape.role}-${index}`} d={shape.d} fill={fill} opacity={shape.opacity} />;
 }
