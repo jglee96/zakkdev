@@ -14,6 +14,9 @@ import {
   MantineProvider,
 } from "@mantine/core";
 import { SiteHeader } from "@/widgets/site-header";
+import { AppRoot } from "@/widgets/app-root/AppRoot";
+import { ModalRoot } from "@/widgets/modal-root/ModalRoot";
+import { SITE_APP_SHELL_HEADER_HEIGHT_PX } from "@/shared/site-layout/constants";
 
 import "@mantine/core/styles.css";
 import "./globals.css";
@@ -101,24 +104,31 @@ export default function RootLayout({
         <Analytics />
         <SpeedInsights />
         <MantineProvider theme={theme}>
-          <AppShell header={{ height: 64 }} padding={0}>
-            <AppShellHeader
-              px={{ base: 20, sm: 80, md: 160, xl: 340 }}
-              style={{ borderBottom: "1px solid #DDD8D2" }}
-            >
-              <SiteHeader />
-            </AppShellHeader>
-            <AppShellMain mx={{ sm: 80, md: 160, xl: 340 }}>
-              <Box
-                px={{ base: 20, sm: 0 }}
-                pt={{ base: 28, sm: 40 }}
-                pb={{ base: 40, sm: 60 }}
-                style={{ maxWidth: 768, marginLeft: "auto", marginRight: "auto" }}
+          <AppRoot>
+            <AppShell header={{ height: SITE_APP_SHELL_HEADER_HEIGHT_PX }} padding={0}>
+              <AppShellHeader
+                px={{ base: 20, sm: 80, md: 160, xl: 340 }}
+                style={{ borderBottom: "1px solid #DDD8D2", zIndex: 250 }}
+                data-testid="site-app-shell-header"
+              >
+                <SiteHeader />
+              </AppShellHeader>
+              <AppShellMain
+                style={{
+                  overflowX: "clip",
+                  width: "100%",
+                  maxWidth: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  minHeight: 0,
+                  ["--site-app-shell-header-height" as string]: `${SITE_APP_SHELL_HEADER_HEIGHT_PX}px`,
+                }}
               >
                 {children}
-              </Box>
-            </AppShellMain>
-          </AppShell>
+              </AppShellMain>
+            </AppShell>
+          </AppRoot>
+          <ModalRoot />
         </MantineProvider>
       </body>
     </html>
