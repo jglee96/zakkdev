@@ -37,3 +37,16 @@ export {
   pauseRoutineWithScheduler,
   resumeRoutineWithScheduler,
 } from "./orchestrator";
+
+export {
+  getRoutineOrchestratorConfig,
+  isSchedulerOrchestrationEnabled,
+  getResolvedSchedulerMode,
+} from "./orchestrator-runtime";
+
+export { orchestratorErrorStatus, orchestratorFailureMessage } from "./http-orchestrator";
+
+export {
+  assertFinanceSchedulerProductionConfig,
+  SchedulerConfigurationError,
+} from "../schedule/scheduler-runtime";

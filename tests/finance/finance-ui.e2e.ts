@@ -566,7 +566,7 @@ async function setupTestEnvironment(): Promise<TestContext> {
   
   const runtimeEnv: NodeJS.ProcessEnv = {
     ...process.env,
-    NEXT_PUBLIC_FINANCE_EXPOSE_STORE: "1",
+    NEXT_PUBLIC_EXPOSE_STORE_FOR_TESTS: "1",
     NEXT_TELEMETRY_DISABLED: "1",
     FINANCE_PASSWORD_HASH: passwordHash,
     FINANCE_SESSION_SECRET: secret,
