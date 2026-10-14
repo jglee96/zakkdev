@@ -18,9 +18,6 @@ export function BotAvatar({ botId, size = 36 }: { botId: string; size?: number }
         width: size,
         height: size,
         flexShrink: 0,
-        borderRadius: 4,
-        border: `1px solid ${isDark ? "#2a2724" : "#ddd8d2"}`,
-        overflow: "hidden",
       }}
     >
       <svg
@@ -31,7 +28,6 @@ export function BotAvatar({ botId, size = 36 }: { botId: string; size?: number }
         aria-hidden
         style={{ display: "block" }}
       >
-        <rect width="32" height="32" fill={art.background} />
         {art.shapes.map((shape, index) => renderShape(shape, art, index))}
       </svg>
     </Box>

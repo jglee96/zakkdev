@@ -22,7 +22,9 @@ export type BotAvatarArt = {
 
 const VIEW_SIZE = 32;
 const CENTER = 16;
-const VIEW_MARGIN = 3;
+/** Minimum inset from viewBox edge for body paths (transparent avatar, no tile). */
+export const AVATAR_VIEW_PADDING_PX = 1;
+const VIEW_MARGIN = AVATAR_VIEW_PADDING_PX;
 
 /** Muted avatar hues — see docs/finance-design-tokens.md */
 export type AvatarHueSwatch = {
@@ -34,69 +36,75 @@ export type AvatarHueSwatch = {
 export const AVATAR_HUE_PALETTE: AvatarHueSwatch[] = [
   {
     id: "terracotta",
-    light: { canvas: "#f6e8e2", body: "#b85c3a", inner: "#8f3f24", innerSoft: "#e8c9bb" },
-    dark: { canvas: "#221a18", body: "#df8a66", inner: "#f2b89a", innerSoft: "#3d2a24" },
+    light: { canvas: "#f6e8e2", body: "#9e4a2e", inner: "#7a381c", innerSoft: "#d4a894" },
+    dark: { canvas: "#221a18", body: "#e89570", inner: "#f4c4a8", innerSoft: "#3d2a24" },
   },
   {
     id: "ochre",
-    light: { canvas: "#f4ead8", body: "#9a7332", inner: "#73521f", innerSoft: "#e2d0b0" },
-    dark: { canvas: "#211d16", body: "#d4ad62", inner: "#ecc98a", innerSoft: "#3a3224" },
+    light: { canvas: "#f4ead8", body: "#8a6528", inner: "#634a18", innerSoft: "#d4c4a4" },
+    dark: { canvas: "#211d16", body: "#ddb96a", inner: "#f0d490", innerSoft: "#3a3224" },
   },
   {
     id: "olive",
-    light: { canvas: "#ece9df", body: "#646b4a", inner: "#4a5140", innerSoft: "#d4cfc0" },
-    dark: { canvas: "#1b1d17", body: "#a8b184", inner: "#c5ce9e", innerSoft: "#2e3228" },
+    light: { canvas: "#ece9df", body: "#545a3e", inner: "#3f4532", innerSoft: "#c4bfb0" },
+    dark: { canvas: "#1b1d17", body: "#b0ba8c", inner: "#ccd6a4", innerSoft: "#2e3228" },
   },
   {
     id: "sage",
-    light: { canvas: "#e7efe9", body: "#4f6f5c", inner: "#3a5548", innerSoft: "#c8d9ce" },
-    dark: { canvas: "#181c19", body: "#8fae9a", inner: "#b3cdb9", innerSoft: "#28312c" },
+    light: { canvas: "#e7efe9", body: "#456354", inner: "#314a3e", innerSoft: "#b8c9be" },
+    dark: { canvas: "#181c19", body: "#98b8a4", inner: "#b8d4c2", innerSoft: "#28312c" },
   },
   {
     id: "teal",
-    light: { canvas: "#e3f0ef", body: "#3a6f6c", inner: "#285450", innerSoft: "#b8d9d6" },
-    dark: { canvas: "#161c1c", body: "#6faaa6", inner: "#9fd0cc", innerSoft: "#243230" },
+    light: { canvas: "#e3f0ef", body: "#326562", inner: "#224a48", innerSoft: "#a8c9c6" },
+    dark: { canvas: "#161c1c", body: "#78b4b0", inner: "#a8d8d4", innerSoft: "#243230" },
   },
   {
     id: "slate-blue",
-    light: { canvas: "#e5ecf2", body: "#4a6278", inner: "#354a5c", innerSoft: "#c5d4e0" },
-    dark: { canvas: "#181b1f", body: "#89a3b8", inner: "#b3c9d9", innerSoft: "#2a323a" },
+    light: { canvas: "#e5ecf2", body: "#3f556a", inner: "#2c3e50", innerSoft: "#b5c4d0" },
+    dark: { canvas: "#181b1f", body: "#92aec4", inner: "#bcd2e2", innerSoft: "#2a323a" },
   },
   {
     id: "indigo",
-    light: { canvas: "#e8e9f2", body: "#4f5580", inner: "#3a3f62", innerSoft: "#c8cadf" },
-    dark: { canvas: "#1a1a22", body: "#9a9ec4", inner: "#c0c4e6", innerSoft: "#2c2d3a" },
+    light: { canvas: "#e8e9f2", body: "#454b72", inner: "#32365a", innerSoft: "#b8bad0" },
+    dark: { canvas: "#1a1a22", body: "#a4a8d0", inner: "#c8cce8", innerSoft: "#2c2d3a" },
   },
   {
     id: "plum",
-    light: { canvas: "#efe8ec", body: "#6e4f66", inner: "#523a48", innerSoft: "#d8c8d0" },
-    dark: { canvas: "#1f1a1d", body: "#b892a8", inner: "#d9b8c8", innerSoft: "#352a30" },
+    light: { canvas: "#efe8ec", body: "#62455c", inner: "#463240", innerSoft: "#ccbcc4" },
+    dark: { canvas: "#1f1a1d", body: "#c09cb2", inner: "#e0c0d0", innerSoft: "#352a30" },
   },
   {
     id: "rose",
-    light: { canvas: "#f5e9eb", body: "#9d5c6b", inner: "#7a4250", innerSoft: "#e4c8cf" },
-    dark: { canvas: "#211a1c", body: "#d48a98", inner: "#efb0bc", innerSoft: "#3a2a2e" },
+    light: { canvas: "#f5e9eb", body: "#8f4f5d", inner: "#6c3846", innerSoft: "#d4b8bf" },
+    dark: { canvas: "#211a1c", body: "#dc94a2", inner: "#f4b8c4", innerSoft: "#3a2a2e" },
   },
   {
     id: "sand",
-    light: { canvas: "#f0ebe4", body: "#7a6b5a", inner: "#5c5044", innerSoft: "#ddd4c8" },
-    dark: { canvas: "#1d1b18", body: "#b8a894", inner: "#d6c8b4", innerSoft: "#322e28" },
+    light: { canvas: "#f0ebe4", body: "#6a5c4c", inner: "#4e4438", innerSoft: "#ccc4b8" },
+    dark: { canvas: "#1d1b18", body: "#c4b4a0", inner: "#e0d4c0", innerSoft: "#322e28" },
   },
   {
     id: "charcoal",
-    light: { canvas: "#e8e6e3", body: "#4a4844", inner: "#353330", innerSoft: "#ccc9c4" },
-    dark: { canvas: "#181716", body: "#a8a39c", inner: "#c9c4bc", innerSoft: "#2a2826" },
+    light: { canvas: "#e8e6e3", body: "#3e3c38", inner: "#2c2a28", innerSoft: "#bcb9b4" },
+    dark: { canvas: "#181716", body: "#b4afa8", inner: "#d4cfc8", innerSoft: "#2a2826" },
   },
   {
     id: "braun-rust",
-    light: { canvas: "#f3e3dc", body: "#a8482c", inner: "#7f331c", innerSoft: "#e4c4b6" },
-    dark: { canvas: "#221816", body: "#d97250", inner: "#f0a68a", innerSoft: "#3d2820" },
+    light: { canvas: "#f3e3dc", body: "#963f24", inner: "#702c16", innerSoft: "#d4b4a6" },
+    dark: { canvas: "#221816", body: "#e07c58", inner: "#f4ac90", innerSoft: "#3d2820" },
   },
 ];
 
 export const AVATAR_PAGE_CANVAS = {
   light: "#f4f1ec",
   dark: "#131110",
+} as const;
+
+/** Sidebar active row (`.botSidebarItemActive`) — avatars sit on this in the list. */
+export const AVATAR_SIDEBAR_ACTIVE = {
+  light: "#fbdbd2",
+  dark: "#2a2724",
 } as const;
 
 type Point = { x: number; y: number };
@@ -266,7 +274,8 @@ export function generateBotAvatarArt(botId: string, scheme: ColorScheme): BotAva
 
   const { background, foreground, accent, innerSoft } = resolveAvatarColors(botId, scheme);
 
-  const bodyRadius = 9.2 + (seed % 5) * 0.35;
+  // ~1px viewBox padding at 32×32; Catmull-Rom stays inside vertex hull with modest wobble.
+  const bodyRadius = 13.88 + (seed % 5) * 0.08;
   const symmetric = seed % 3 !== 0;
   const bodyVerts = blobVertices(rand, CENTER, CENTER, bodyRadius, symmetric);
   const bodyPath = catmullRomClosedPath(bodyVerts);
@@ -312,5 +321,5 @@ export function renderAvatarSvgMarkup(botId: string, scheme: ColorScheme, size: 
       return `<path d="${shape.d}" fill="${fill}" opacity="${shape.opacity}" />`;
     })
     .join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 32 32"><rect width="32" height="32" fill="${art.background}" />${paths}</svg>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 32 32">${paths}</svg>`;
 }

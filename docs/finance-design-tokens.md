@@ -48,24 +48,26 @@ Finance screens reuse the same visual language as the public blog (Braun-inspire
 
 ## Bot avatar hues (`features/finance-auth/ui/bot-avatar-art.ts`)
 
-Deterministic **shape** from `botId` hash (unchanged); **hue** from `pickAvatarHueIndex(botId)` over 12 muted swatches tuned for warm-neutral UI (`#f4f1ec` / `#131110`).
+Deterministic **shape** from `botId` hash; **hue** from `pickAvatarHueIndex(botId)` over 12 muted swatches. **`BotAvatar` renders only the blob paths** on a transparent background (no tile rect, border, or frame). The body blob fills the 32×32 viewBox with about **1px padding**; the inner blob scales with the body and stays fully inside.
+
+Contrast targets for the **body** fill: **≥ 3:1** on page (`#f4f1ec` / `#131110`) and **≥ 2.5:1** on sidebar active row (`#fbdbd2` / `#2a2724`).
 
 | Hue id | Light body | Dark body | Notes |
 |--------|------------|-----------|--------|
-| `terracotta` | `#b85c3a` | `#df8a66` | Warm clay |
-| `ochre` | `#9a7332` | `#d4ad62` | Golden brown |
-| `olive` | `#646b4a` | `#a8b184` | Green-gray |
-| `sage` | `#4f6f5c` | `#8fae9a` | Soft green |
-| `teal` | `#3a6f6c` | `#6faaa6` | Blue-green |
-| `slate-blue` | `#4a6278` | `#89a3b8` | Cool gray-blue |
-| `indigo` | `#4f5580` | `#9a9ec4` | Muted violet-blue |
-| `plum` | `#6e4f66` | `#b892a8` | Dusty purple |
-| `rose` | `#9d5c6b` | `#d48a98` | Muted rose |
-| `sand` | `#7a6b5a` | `#b8a894` | Warm taupe |
-| `charcoal` | `#4a4844` | `#a8a39c` | Neutral brown-gray |
-| `braun-rust` | `#a8482c` | `#d97250` | Braun-family accent |
+| `terracotta` | `#9e4a2e` | `#e89570` | Warm clay |
+| `ochre` | `#8a6528` | `#ddb96a` | Golden brown |
+| `olive` | `#545a3e` | `#b0ba8c` | Green-gray |
+| `sage` | `#456354` | `#98b8a4` | Soft green |
+| `teal` | `#326562` | `#78b4b0` | Blue-green |
+| `slate-blue` | `#3f556a` | `#92aec4` | Cool gray-blue |
+| `indigo` | `#454b72` | `#a4a8d0` | Muted violet-blue |
+| `plum` | `#62455c` | `#c09cb2` | Dusty purple |
+| `rose` | `#8f4f5d` | `#dc94a2` | Muted rose |
+| `sand` | `#6a5c4c` | `#c4b4a0` | Warm taupe |
+| `charcoal` | `#3e3c38` | `#b4afa8` | Neutral brown-gray |
+| `braun-rust` | `#963f24` | `#e07c58` | Braun-family accent |
 
-Each swatch defines `canvas` (tile background), `body` (main blob), `inner` (accent inner blob), and `innerSoft` (soft inner blob). Body vs canvas targets **≥ 3:1** contrast on both schemes.
+Each swatch still defines `canvas` (reference / inner-soft pairing), `body`, `inner`, and `innerSoft` for the two blob layers.
 
 ## Components
 

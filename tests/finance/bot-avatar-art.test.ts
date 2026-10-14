@@ -3,6 +3,8 @@ import { test } from "node:test";
 import {
   AVATAR_HUE_PALETTE,
   AVATAR_PAGE_CANVAS,
+  AVATAR_SIDEBAR_ACTIVE,
+  AVATAR_VIEW_PADDING_PX,
   contrastRatio,
   generateBotAvatarArt,
   pickAvatarHueIndex,
@@ -35,7 +37,6 @@ test("bot avatar art is deterministic per bot id", () => {
 test("bot avatar art varies by color scheme using dedicated hue swatches", () => {
   const light = generateBotAvatarArt("main-bot", "light");
   const dark = generateBotAvatarArt("main-bot", "dark");
-  assert.notEqual(light.background, dark.background);
   assert.notEqual(light.foreground, dark.foreground);
   assert.equal(light.shapes.length, dark.shapes.length);
   assert.ok(light.shapes.length >= 1 && light.shapes.length <= 2);
@@ -53,24 +54,59 @@ test("avatar palette assigns diverse hues to sample bot ids", () => {
   assert.equal(AVATAR_HUE_PALETTE.length, 12);
 });
 
-test("avatar colors meet contrast on canvas and page backgrounds", () => {
+test("avatar body meets contrast on page and sidebar active surfaces", () => {
   for (const botId of SAMPLE_BOT_IDS) {
     for (const scheme of ["light", "dark"] as const) {
       const colors = resolveAvatarColors(botId, scheme);
       const pageBg = AVATAR_PAGE_CANVAS[scheme];
+      const sidebarBg = AVATAR_SIDEBAR_ACTIVE[scheme];
       assert.ok(
-        contrastRatio(colors.foreground, colors.background) >= 3,
-        `${botId}/${scheme}: body vs canvas`,
+        contrastRatio(colors.foreground, pageBg) >= 3,
+        `${botId}/${scheme}: body vs page (${pageBg})`,
       );
       assert.ok(
-        contrastRatio(colors.foreground, pageBg) >= 2.8,
-        `${botId}/${scheme}: body vs page`,
+        contrastRatio(colors.foreground, sidebarBg) >= 2.5,
+        `${botId}/${scheme}: body vs sidebar active (${sidebarBg})`,
       );
       assert.ok(
         contrastRatio(colors.accent, colors.foreground) >= 1.05 ||
           contrastRatio(colors.innerSoft, colors.foreground) >= 1.05,
         `${botId}/${scheme}: inner tones vs body`,
       );
+    }
+  }
+});
+
+test("avatar body fills viewBox with minimal padding", () => {
+  const viewSize = 32;
+  const pad = AVATAR_VIEW_PADDING_PX;
+  const tolerance = 0.65;
+  const minSpan = viewSize - 2 * pad - 2.75;
+
+  for (const botId of SAMPLE_BOT_IDS) {
+    for (const scheme of ["light", "dark"] as const) {
+      const art = generateBotAvatarArt(botId, scheme);
+      const body = art.shapes.find((s) => s.role === "body");
+      assert.ok(body, `${botId}/${scheme}: body path`);
+      const numbers = body.d.match(/-?\d+(\.\d+)?/g)?.map(Number) ?? [];
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+      for (let i = 0; i + 1 < numbers.length; i += 2) {
+        const x = numbers[i];
+        const y = numbers[i + 1];
+        if (x < minX) minX = x;
+        if (y < minY) minY = y;
+        if (x > maxX) maxX = x;
+        if (y > maxY) maxY = y;
+      }
+      assert.ok(minX >= pad - tolerance, `${botId}/${scheme}: minX ${minX}`);
+      assert.ok(minY >= pad - tolerance, `${botId}/${scheme}: minY ${minY}`);
+      assert.ok(maxX <= viewSize - pad + tolerance, `${botId}/${scheme}: maxX ${maxX}`);
+      assert.ok(maxY <= viewSize - pad + tolerance, `${botId}/${scheme}: maxY ${maxY}`);
+      assert.ok(maxX - minX >= minSpan, `${botId}/${scheme}: width ${maxX - minX}`);
+      assert.ok(maxY - minY >= minSpan, `${botId}/${scheme}: height ${maxY - minY}`);
     }
   }
 });
