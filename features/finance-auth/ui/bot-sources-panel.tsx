@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { Anchor, Card, Group, Stack, Text } from "@mantine/core";
 import { IconExternalLink } from "@tabler/icons-react";
+import { useShallow } from "zustand/react/shallow";
 import { useFinanceStore } from "../store/finance-store";
 import { MAIN_BOT_ID } from "./bot-template-meta";
 import { parseAssistantMessage, type ParsedSource } from "./chat-message-content";
@@ -10,7 +11,9 @@ import { FinanceSectionTitle } from "./finance-section-title";
 import classes from "./finance-ui.module.css";
 
 export function BotSourcesPanel() {
-  const { messages, selectedBotId } = useFinanceStore();
+  const { messages, selectedBotId } = useFinanceStore(
+    useShallow((s) => ({ messages: s.messages, selectedBotId: s.selectedBotId })),
+  );
   const botId = selectedBotId || MAIN_BOT_ID;
 
   const sources = useMemo(() => {
