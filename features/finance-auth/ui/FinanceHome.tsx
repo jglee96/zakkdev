@@ -14,10 +14,11 @@ import {
 } from "@mantine/core";
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { IconChevronDown } from "@tabler/icons-react";
+import { useShallow } from "zustand/react/shallow";
 import { useFinanceStore } from "../store/finance-store";
 import { BotWorkspace } from "./bot-workspace";
 import { FinanceBotSidebar } from "./finance-bot-sidebar";
-import { CreateBotModal } from "./create-bot-modal";
+import { CreateBotModal } from "./finance-dynamic-modals";
 import { FINANCE_NAVBAR_TOP_PX, SITE_APP_SHELL_HEADER_HEIGHT_PX } from "@/shared/site-layout/constants";
 import { MODAL_ROOT_SELECTOR } from "@/shared/site-layout/modal-root";
 import { getActiveBotDisplayMeta } from "./bot-template-meta";
@@ -44,7 +45,22 @@ export function FinanceHome() {
     setRoutinesError,
     setRunsError,
     reset,
-  } = useFinanceStore();
+  } = useFinanceStore(
+    useShallow((s) => ({
+      botWorkspaceTab: s.botWorkspaceTab,
+      selectedBotId: s.selectedBotId,
+      bots: s.bots,
+      setBots: s.setBots,
+      setRoutines: s.setRoutines,
+      setRuns: s.setRuns,
+      isLoadingBots: s.isLoadingBots,
+      setIsLoadingBots: s.setIsLoadingBots,
+      setBotsError: s.setBotsError,
+      setRoutinesError: s.setRoutinesError,
+      setRunsError: s.setRunsError,
+      reset: s.reset,
+    })),
+  );
 
   const activeDisplay = getActiveBotDisplayMeta(bots, selectedBotId);
 

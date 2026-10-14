@@ -15,10 +15,11 @@ import {
 } from "@mantine/core";
 import { IconLogout, IconPlus, IconRefresh, IconSettings } from "@tabler/icons-react";
 import type { Bot } from "../store/finance-store";
+import { useShallow } from "zustand/react/shallow";
 import { useFinanceStore } from "../store/finance-store";
 import { BotAvatar } from "./bot-avatar";
 import { getBotDisplayMeta, getTemplateMeta, MAIN_BOT_ID } from "./bot-template-meta";
-import { BotDetailModal } from "./bot-detail-modal";
+import { BotDetailModal } from "./finance-dynamic-modals";
 import classes from "./finance-ui.module.css";
 
 type FinanceBotSidebarProps = {
@@ -36,7 +37,13 @@ export function FinanceBotSidebar({
   onBotSelected,
   onCreateBot,
 }: FinanceBotSidebarProps) {
-  const { bots, selectedBotId, selectBot } = useFinanceStore();
+  const { bots, selectedBotId, selectBot } = useFinanceStore(
+    useShallow((s) => ({
+      bots: s.bots,
+      selectedBotId: s.selectedBotId,
+      selectBot: s.selectBot,
+    })),
+  );
   const [settingsBot, setSettingsBot] = useState<Bot | null>(null);
 
   const activeId = selectedBotId || MAIN_BOT_ID;
