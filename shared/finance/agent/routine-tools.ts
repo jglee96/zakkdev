@@ -3,11 +3,17 @@ import type { AgentRunContext } from "./types";
 import type { AgentRuntimeConfig, ToolExecutor } from "./runtime";
 import {
   createRoutine,
+  createRoutineWithScheduler,
   listRoutinesByOwner,
   listRoutinesByBot,
   getRoutine,
   updateRoutine,
+  pauseRoutineWithScheduler,
+  resumeRoutineWithScheduler,
   deleteRoutine,
+  deleteRoutineWithScheduler,
+  getRoutineOrchestratorConfig,
+  isSchedulerOrchestrationEnabled,
   type RoutineRepositoryConfig,
   RoutineValidationError,
   RoutineLimitError,
@@ -39,13 +45,22 @@ export async function executeCreateRoutine(
 
   try {
     const repoConfig = getRoutineRepoConfig(runtime);
-    const routine = await createRoutine(repoConfig, context.ownerId, {
-      botId,
-      name,
-      instruction,
-      cronExpr,
-      timezone,
-    });
+    const input = { botId, name, instruction, cronExpr, timezone };
+
+    let routine;
+    if (isSchedulerOrchestrationEnabled()) {
+      const result = await createRoutineWithScheduler(
+        getRoutineOrchestratorConfig(),
+        context.ownerId,
+        input,
+      );
+      if (!result.success) {
+        return { error: result.error, code: result.code };
+      }
+      routine = result.data;
+    } else {
+      routine = await createRoutine(repoConfig, context.ownerId, input);
+    }
 
     return {
       routine: {
@@ -146,9 +161,20 @@ export async function executePauseRoutine(
       return { error: "삭제된 루틴은 일시정지할 수 없습니다." };
     }
 
-    const updated = await updateRoutine(repoConfig, context.ownerId, routineId, {
-      status: "paused",
-    });
+    let updated;
+    if (isSchedulerOrchestrationEnabled()) {
+      const result = await pauseRoutineWithScheduler(
+        getRoutineOrchestratorConfig(),
+        context.ownerId,
+        routineId,
+      );
+      if (!result.success) {
+        return { error: result.error, code: result.code };
+      }
+      updated = result.data;
+    } else {
+      updated = await updateRoutine(repoConfig, context.ownerId, routineId, { status: "paused" });
+    }
 
     return {
       routine: {
@@ -200,9 +226,20 @@ export async function executeResumeRoutine(
       return { error: "삭제된 루틴은 재개할 수 없습니다." };
     }
 
-    const updated = await updateRoutine(repoConfig, context.ownerId, routineId, {
-      status: "active",
-    });
+    let updated;
+    if (isSchedulerOrchestrationEnabled()) {
+      const result = await resumeRoutineWithScheduler(
+        getRoutineOrchestratorConfig(),
+        context.ownerId,
+        routineId,
+      );
+      if (!result.success) {
+        return { error: result.error, code: result.code };
+      }
+      updated = result.data;
+    } else {
+      updated = await updateRoutine(repoConfig, context.ownerId, routineId, { status: "active" });
+    }
 
     return {
       routine: {
@@ -250,7 +287,20 @@ export async function executeDeleteRoutine(
       };
     }
 
-    const deleted = await deleteRoutine(repoConfig, context.ownerId, routineId);
+    let deleted;
+    if (isSchedulerOrchestrationEnabled()) {
+      const result = await deleteRoutineWithScheduler(
+        getRoutineOrchestratorConfig(),
+        context.ownerId,
+        routineId,
+      );
+      if (!result.success) {
+        return { error: result.error, code: result.code };
+      }
+      deleted = result.data;
+    } else {
+      deleted = await deleteRoutine(repoConfig, context.ownerId, routineId);
+    }
 
     return {
       routine: {

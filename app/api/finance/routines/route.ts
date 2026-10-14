@@ -2,9 +2,14 @@ import { requireFinanceSession } from "@/shared/finance/auth/guard";
 import { jsonResponse } from "@/shared/finance/auth/http";
 import {
   createRoutine,
+  createRoutineWithScheduler,
   listRoutinesByOwner,
   RoutineValidationError,
   RoutineLimitError,
+  getRoutineOrchestratorConfig,
+  isSchedulerOrchestrationEnabled,
+  orchestratorErrorStatus,
+  orchestratorFailureMessage,
 } from "@/shared/finance/routine";
 import { getFinanceTableRepoConfig } from "@/shared/finance/api/table-repo-config";
 import { toFinanceRoutine } from "@/shared/finance/shell/serializers";
@@ -64,17 +69,35 @@ export async function POST(request: Request) {
     return jsonResponse({ error: "botId, name, instruction, cronExpr, timezone는 필수입니다." }, 400);
   }
 
-  try {
-    const repoConfig = getFinanceTableRepoConfig();
-    const routine = await createRoutine(repoConfig, auth.session.ownerId, {
-      botId: body.botId,
-      name: body.name,
-      instruction: body.instruction,
-      cronExpr: body.cronExpr,
-      timezone: body.timezone,
-    });
+  const input = {
+    botId: body.botId,
+    name: body.name,
+    instruction: body.instruction,
+    cronExpr: body.cronExpr,
+    timezone: body.timezone,
+  };
 
-    return jsonResponse({ routine: toFinanceRoutine(routine) }, 201);
+  try {
+    if (!isSchedulerOrchestrationEnabled()) {
+      const repoConfig = getFinanceTableRepoConfig();
+      const routine = await createRoutine(repoConfig, auth.session.ownerId, input);
+      return jsonResponse({ routine: toFinanceRoutine(routine) }, 201);
+    }
+
+    const result = await createRoutineWithScheduler(
+      getRoutineOrchestratorConfig(),
+      auth.session.ownerId,
+      input,
+    );
+
+    if (!result.success) {
+      return jsonResponse(
+        orchestratorFailureMessage(result),
+        orchestratorErrorStatus(result.code),
+      );
+    }
+
+    return jsonResponse({ routine: toFinanceRoutine(result.data) }, 201);
   } catch (error) {
     console.error("[POST /api/finance/routines] failed:", error);
     if (error instanceof RoutineValidationError) {
