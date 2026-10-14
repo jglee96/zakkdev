@@ -60,12 +60,14 @@ No primary source authored by Andrej Karpathy under the exact name **improve-cod
 
 ## Implemented in this pass (see git log)
 
-1. `shared/finance/constants.ts` + chat route import — single `MAIN_BOT_ID`.
-2. Remove unused `BotList.tsx`.
-3. Parallel initial/refresh fetches in `FinanceHome`.
-4. `getActiveBotDisplayMeta()` — DRY active bot header logic.
-5. `RunList` / `RoutineList` name maps for O(1) lookups.
-6. `bot-avatar.tsx` import cleanup.
+| Commit | Change |
+|--------|--------|
+| `ca7cf2c` | This review document. |
+| `2825d11` | `shared/finance/constants.ts` + chat route — single `MAIN_BOT_ID`. |
+| `d7fd73d` | Remove unused `BotList.tsx`. |
+| `ea86286` | `getActiveBotDisplayMeta()`, unit tests, `RunList` / `RoutineList` name maps. |
+| `3e10550` | Parallel initial/refresh fetches in `FinanceHome`. |
+| `ab791b7` | `bot-avatar.tsx` import cleanup. |
 
 ---
 
