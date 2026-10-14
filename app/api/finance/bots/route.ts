@@ -7,6 +7,7 @@ import {
   isValidTemplate,
   type BotTemplate,
 } from "@/shared/finance/agent";
+import { toFinanceBot } from "@/shared/finance/shell/serializers";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -36,16 +37,7 @@ export async function GET(request: Request) {
     );
 
     return jsonResponse({
-      bots: bots.map((bot) => ({
-        id: bot.id,
-        name: bot.name,
-        template: bot.template,
-        status: bot.status,
-        allowedTools: bot.allowedTools,
-        instructions: bot.instructions,
-        createdAt: bot.createdAt,
-        updatedAt: bot.updatedAt,
-      })),
+      bots: bots.map(toFinanceBot),
       count: bots.length,
     });
   } catch (error) {
@@ -87,17 +79,7 @@ export async function POST(request: Request) {
       allowedTools: body.allowedTools,
     });
 
-    return jsonResponse({
-      bot: {
-        id: bot.id,
-        name: bot.name,
-        template: bot.template,
-        status: bot.status,
-        allowedTools: bot.allowedTools,
-        instructions: bot.instructions,
-        createdAt: bot.createdAt,
-      },
-    }, 201);
+    return jsonResponse({ bot: toFinanceBot(bot) }, 201);
   } catch (error) {
     console.error("[POST /api/finance/bots] failed:", error);
     const message = error instanceof Error ? error.message : "봇 생성에 실패했습니다.";

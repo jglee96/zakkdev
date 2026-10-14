@@ -1,7 +1,8 @@
 import { requireFinanceSession } from "@/shared/finance/auth/guard";
 import { jsonResponse } from "@/shared/finance/auth/http";
-import { getRun, type RunRepositoryConfig } from "@/shared/finance/worker";
-import { getRepositoryConfig } from "@/shared/finance/agent";
+import { getRun } from "@/shared/finance/worker";
+import { getFinanceTableRepoConfig } from "@/shared/finance/api/table-repo-config";
+import { toFinanceRun } from "@/shared/finance/shell/serializers";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -9,14 +10,6 @@ export const maxDuration = 15;
 type Params = {
   params: Promise<{ runId: string }>;
 };
-
-function getRunRepoConfig(): RunRepositoryConfig {
-  const config = getRepositoryConfig();
-  return {
-    tableName: config.tableName,
-    client: config.client,
-  };
-}
 
 export async function GET(request: Request, { params }: Params) {
   const auth = await requireFinanceSession(request);
@@ -27,7 +20,7 @@ export async function GET(request: Request, { params }: Params) {
   const { runId } = await params;
 
   try {
-    const repoConfig = getRunRepoConfig();
+    const repoConfig = getFinanceTableRepoConfig();
     const run = await getRun(repoConfig, auth.session.ownerId, runId);
 
     if (!run) {
@@ -36,22 +29,8 @@ export async function GET(request: Request, { params }: Params) {
 
     return jsonResponse({
       run: {
-        id: run.id,
-        botId: run.botId,
-        routineId: run.routineId,
-        routineVersion: run.routineVersion,
-        scheduledAt: run.scheduledAt,
-        status: run.status,
-        attempt: run.attempt,
-        maxAttempts: run.maxAttempts,
-        usage: run.usage,
-        error: run.error,
-        errorCode: run.errorCode,
-        reportData: run.reportData,
+        ...toFinanceRun(run),
         checkpoint: run.checkpoint,
-        startedAt: run.startedAt,
-        finishedAt: run.finishedAt,
-        createdAt: run.createdAt,
         updatedAt: run.updatedAt,
       },
     });

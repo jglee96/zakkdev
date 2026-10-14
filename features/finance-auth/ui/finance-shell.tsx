@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Alert,
   AppShell,
   Box,
   Group,
-  Loader,
   Portal,
   Text,
   UnstyledButton,
@@ -15,6 +14,7 @@ import {
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { IconChevronDown } from "@tabler/icons-react";
 import { useShallow } from "zustand/react/shallow";
+import type { FinanceShellSnapshot } from "@/shared/finance/shell/types";
 import { useFinanceStore } from "../store/finance-store";
 import { BotWorkspace } from "./bot-workspace";
 import { FinanceBotSidebar } from "./finance-bot-sidebar";
@@ -24,7 +24,14 @@ import { MODAL_ROOT_SELECTOR } from "@/shared/site-layout/modal-root";
 import { getActiveBotDisplayMeta } from "./bot-template-meta";
 import classes from "./finance-ui.module.css";
 
-export function FinanceHome() {
+export function FinanceShell({ initialData }: { initialData: FinanceShellSnapshot }) {
+  const hydratedSnapshotKey = useRef<string | null>(null);
+  const snapshotKey = `${initialData.activeBotId}:${initialData.bots.length}:${initialData.runs.length}:${initialData.activeBotMessages.length}`;
+  if (hydratedSnapshotKey.current !== snapshotKey) {
+    useFinanceStore.getState().hydrateFromServer(initialData);
+    hydratedSnapshotKey.current = snapshotKey;
+  }
+
   const router = useRouter();
   const [drawerOpen, { toggle, close }] = useDisclosure();
   const [logoutPending, setLogoutPending] = useState(false);
@@ -39,8 +46,6 @@ export function FinanceHome() {
     setBots,
     setRoutines,
     setRuns,
-    isLoadingBots,
-    setIsLoadingBots,
     setBotsError,
     setRoutinesError,
     setRunsError,
@@ -53,8 +58,6 @@ export function FinanceHome() {
       setBots: s.setBots,
       setRoutines: s.setRoutines,
       setRuns: s.setRuns,
-      isLoadingBots: s.isLoadingBots,
-      setIsLoadingBots: s.setIsLoadingBots,
       setBotsError: s.setBotsError,
       setRoutinesError: s.setRoutinesError,
       setRunsError: s.setRunsError,
@@ -65,7 +68,6 @@ export function FinanceHome() {
   const activeDisplay = getActiveBotDisplayMeta(bots, selectedBotId);
 
   const fetchBots = useCallback(async () => {
-    setIsLoadingBots(true);
     setBotsError(null);
     try {
       const response = await fetch("/api/finance/bots", { credentials: "same-origin" });
@@ -74,10 +76,8 @@ export function FinanceHome() {
       setBots(data.bots);
     } catch (error) {
       setBotsError(error instanceof Error ? error.message : "알 수 없는 오류");
-    } finally {
-      setIsLoadingBots(false);
     }
-  }, [setBots, setIsLoadingBots, setBotsError]);
+  }, [setBots, setBotsError]);
 
   const fetchRoutines = useCallback(async () => {
     setRoutinesError(null);
@@ -102,10 +102,6 @@ export function FinanceHome() {
       setRunsError(error instanceof Error ? error.message : "알 수 없는 오류");
     }
   }, [setRuns, setRunsError]);
-
-  useEffect(() => {
-    void Promise.all([fetchBots(), fetchRoutines(), fetchRuns()]);
-  }, [fetchBots, fetchRoutines, fetchRuns]);
 
   useEffect(() => {
     if (botWorkspaceTab === "runs") {
@@ -275,19 +271,12 @@ export function FinanceHome() {
             </Alert>
           )}
 
-          {isLoadingBots ? (
-            <Box ta="center" py="xl">
-              <Loader size="lg" />
-              <Text c="dimmed" mt="md">로딩 중...</Text>
-            </Box>
-          ) : (
-            <BotWorkspace
-              onRefreshBots={fetchBots}
-              onRefreshRoutines={fetchRoutines}
-              onRefreshRuns={fetchRuns}
-              onOpenCreateBot={() => setCreateBotOpen(true)}
-            />
-          )}
+          <BotWorkspace
+            onRefreshBots={fetchBots}
+            onRefreshRoutines={fetchRoutines}
+            onRefreshRuns={fetchRuns}
+            onOpenCreateBot={() => setCreateBotOpen(true)}
+          />
         </Box>
       </AppShell.Main>
 

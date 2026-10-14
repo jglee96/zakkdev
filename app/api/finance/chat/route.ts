@@ -1,7 +1,6 @@
 import { requireFinanceSession } from "@/shared/finance/auth/guard";
 import { jsonResponse } from "@/shared/finance/auth/http";
 import {
-  getBot,
   getRepositoryConfig,
   runAgent,
   createLLMConfig,
@@ -10,6 +9,7 @@ import {
   LLMProviderError,
   TEMPLATE_DEFINITIONS,
   createBot,
+  resolveBotForOwner,
   type AgentRuntimeConfig,
 } from "@/shared/finance/agent";
 import { getCostConfig, createBudgetClient } from "@/shared/finance/cost";
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
       throw error;
     }
 
-    let bot = await getBot(repoConfig, auth.session.ownerId, botId);
+    let bot = await resolveBotForOwner(repoConfig, auth.session.ownerId, botId);
 
     if (!bot && botId === MAIN_BOT_ID) {
       bot = await createBot(repoConfig, auth.session.ownerId, {

@@ -4,12 +4,12 @@ import {
   getRoutine,
   updateRoutine,
   deleteRoutine,
-  type RoutineRepositoryConfig,
   RoutineNotFoundError,
   RoutineValidationError,
   RoutineVersionConflictError,
 } from "@/shared/finance/routine";
-import { getRepositoryConfig } from "@/shared/finance/agent";
+import { getFinanceTableRepoConfig } from "@/shared/finance/api/table-repo-config";
+import { toFinanceRoutine } from "@/shared/finance/shell/serializers";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -26,14 +26,6 @@ type Params = {
   params: Promise<{ routineId: string }>;
 };
 
-function getRoutineRepoConfig(): RoutineRepositoryConfig {
-  const config = getRepositoryConfig();
-  return {
-    tableName: config.tableName,
-    client: config.client,
-  };
-}
-
 export async function GET(request: Request, { params }: Params) {
   const auth = await requireFinanceSession(request);
   if ("response" in auth) {
@@ -43,30 +35,14 @@ export async function GET(request: Request, { params }: Params) {
   const { routineId } = await params;
 
   try {
-    const repoConfig = getRoutineRepoConfig();
+    const repoConfig = getFinanceTableRepoConfig();
     const routine = await getRoutine(repoConfig, auth.session.ownerId, routineId);
 
     if (!routine) {
       return jsonResponse({ error: "루틴을 찾을 수 없습니다." }, 404);
     }
 
-    return jsonResponse({
-      routine: {
-        id: routine.id,
-        botId: routine.botId,
-        name: routine.name,
-        instruction: routine.instruction,
-        cronExpr: routine.cronExpr,
-        timezone: routine.timezone,
-        status: routine.status,
-        version: routine.version,
-        schedulerName: routine.schedulerName,
-        lastScheduledAt: routine.lastScheduledAt,
-        nextScheduledAt: routine.nextScheduledAt,
-        createdAt: routine.createdAt,
-        updatedAt: routine.updatedAt,
-      },
-    });
+    return jsonResponse({ routine: toFinanceRoutine(routine) });
   } catch (error) {
     console.error("[GET /api/finance/routines/:routineId] failed:", error);
     return jsonResponse({ error: "루틴 조회에 실패했습니다." }, 500);
@@ -102,22 +78,10 @@ export async function PATCH(request: Request, { params }: Params) {
   }
 
   try {
-    const repoConfig = getRoutineRepoConfig();
+    const repoConfig = getFinanceTableRepoConfig();
     const routine = await updateRoutine(repoConfig, auth.session.ownerId, routineId, updates);
 
-    return jsonResponse({
-      routine: {
-        id: routine.id,
-        botId: routine.botId,
-        name: routine.name,
-        instruction: routine.instruction,
-        cronExpr: routine.cronExpr,
-        timezone: routine.timezone,
-        status: routine.status,
-        version: routine.version,
-        updatedAt: routine.updatedAt,
-      },
-    });
+    return jsonResponse({ routine: toFinanceRoutine(routine) });
   } catch (error) {
     console.error("[PATCH /api/finance/routines/:routineId] failed:", error);
     if (error instanceof RoutineNotFoundError) {
@@ -142,7 +106,7 @@ export async function DELETE(request: Request, { params }: Params) {
   const { routineId } = await params;
 
   try {
-    const repoConfig = getRoutineRepoConfig();
+    const repoConfig = getFinanceTableRepoConfig();
     await deleteRoutine(repoConfig, auth.session.ownerId, routineId);
 
     return jsonResponse({ success: true });

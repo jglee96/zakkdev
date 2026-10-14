@@ -4,6 +4,7 @@ import { create } from "zustand";
 import type { ChatBlock, ChatSource } from "@/shared/finance/chat/types";
 import { mergeBotMessages } from "../lib/merge-bot-messages";
 import { MAIN_BOT_ID } from "../constants";
+import type { FinanceShellSnapshot } from "@/shared/finance/shell/types";
 
 export type BotStatus = "active" | "paused" | "archived";
 export type BotTemplate = "main" | "kr-stock" | "us-stock" | "index-futures";
@@ -152,6 +153,7 @@ interface FinanceState {
   setLastChatResponse: (response: ChatResponse | null) => void;
   updateRun: (runId: string, updates: Partial<AgentRun>) => void;
   updateRoutine: (routineId: string, updates: Partial<Routine>) => void;
+  hydrateFromServer: (snapshot: FinanceShellSnapshot) => void;
   reset: () => void;
 }
 
@@ -226,10 +228,55 @@ export const useFinanceStore = create<FinanceState>()((set) => ({
         routine.id === routineId ? { ...routine, ...updates } : routine,
       ),
     })),
+  hydrateFromServer: (snapshot) =>
+    set({
+      bots: snapshot.bots.map((bot) => ({
+        ...bot,
+        allowedTools: [...bot.allowedTools],
+      })),
+      routines: snapshot.routines.map((routine) => ({ ...routine })),
+      runs: snapshot.runs.map((run) => ({
+        ...run,
+        reportData: run.reportData
+          ? {
+              ...run.reportData,
+              blocks: run.reportData.blocks ? [...run.reportData.blocks] : undefined,
+              sources: run.reportData.sources ? [...run.reportData.sources] : undefined,
+              legacySources: run.reportData.legacySources
+                ? [...run.reportData.legacySources]
+                : undefined,
+            }
+          : undefined,
+      })),
+      selectedBotId: snapshot.activeBotId,
+      messages: mergeBotMessages(
+        [],
+        snapshot.activeBotId,
+        snapshot.activeBotMessages.map((message) => ({
+          ...message,
+          toolCalls: message.toolCalls ? [...message.toolCalls] : undefined,
+          sources: message.sources ? [...message.sources] : undefined,
+          blocks: message.blocks ? [...message.blocks] : undefined,
+        })),
+      ),
+      messagesLoadedBotIds: { [snapshot.activeBotId]: true },
+      isLoadingBots: false,
+      isLoadingRoutines: false,
+      isLoadingRuns: false,
+      isLoadingMessages: false,
+      messagesLoadingBotId: null,
+      botsError: null,
+      routinesError: null,
+      runsError: null,
+      messagesError: null,
+    }),
   reset: () => set(initialState),
 }));
 
-if (typeof window !== "undefined") {
+if (
+  typeof window !== "undefined" &&
+  (process.env.NODE_ENV !== "production" || process.env.NEXT_PUBLIC_FINANCE_EXPOSE_STORE === "1")
+) {
   (window as unknown as { __FINANCE_STORE__: typeof useFinanceStore }).__FINANCE_STORE__ =
     useFinanceStore;
 }

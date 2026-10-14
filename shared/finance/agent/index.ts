@@ -65,6 +65,8 @@ export {
   getBotConversationHistory,
 } from "./repositories";
 
+export { resolveBotForOwner } from "./resolve-bot";
+
 export {
   type AgentRuntimeConfig,
   type ToolExecutor,

@@ -3,11 +3,11 @@ import { jsonResponse } from "@/shared/finance/auth/http";
 import {
   createRoutine,
   listRoutinesByOwner,
-  type RoutineRepositoryConfig,
   RoutineValidationError,
   RoutineLimitError,
 } from "@/shared/finance/routine";
-import { getRepositoryConfig } from "@/shared/finance/agent";
+import { getFinanceTableRepoConfig } from "@/shared/finance/api/table-repo-config";
+import { toFinanceRoutine } from "@/shared/finance/shell/serializers";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -20,14 +20,6 @@ type CreateRoutineBody = {
   timezone?: string;
 };
 
-function getRoutineRepoConfig(): RoutineRepositoryConfig {
-  const config = getRepositoryConfig();
-  return {
-    tableName: config.tableName,
-    client: config.client,
-  };
-}
-
 export async function GET(request: Request) {
   const auth = await requireFinanceSession(request);
   if ("response" in auth) {
@@ -38,7 +30,7 @@ export async function GET(request: Request) {
     const url = new URL(request.url);
     const status = url.searchParams.get("status") || "all";
 
-    const repoConfig = getRoutineRepoConfig();
+    const repoConfig = getFinanceTableRepoConfig();
     const routines = await listRoutinesByOwner(
       repoConfig,
       auth.session.ownerId,
@@ -46,21 +38,7 @@ export async function GET(request: Request) {
     );
 
     return jsonResponse({
-      routines: routines.map((r) => ({
-        id: r.id,
-        botId: r.botId,
-        name: r.name,
-        instruction: r.instruction,
-        cronExpr: r.cronExpr,
-        timezone: r.timezone,
-        status: r.status,
-        version: r.version,
-        schedulerName: r.schedulerName,
-        lastScheduledAt: r.lastScheduledAt,
-        nextScheduledAt: r.nextScheduledAt,
-        createdAt: r.createdAt,
-        updatedAt: r.updatedAt,
-      })),
+      routines: routines.map(toFinanceRoutine),
       count: routines.length,
     });
   } catch (error) {
@@ -87,7 +65,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const repoConfig = getRoutineRepoConfig();
+    const repoConfig = getFinanceTableRepoConfig();
     const routine = await createRoutine(repoConfig, auth.session.ownerId, {
       botId: body.botId,
       name: body.name,
@@ -96,19 +74,7 @@ export async function POST(request: Request) {
       timezone: body.timezone,
     });
 
-    return jsonResponse({
-      routine: {
-        id: routine.id,
-        botId: routine.botId,
-        name: routine.name,
-        instruction: routine.instruction,
-        cronExpr: routine.cronExpr,
-        timezone: routine.timezone,
-        status: routine.status,
-        version: routine.version,
-        createdAt: routine.createdAt,
-      },
-    }, 201);
+    return jsonResponse({ routine: toFinanceRoutine(routine) }, 201);
   } catch (error) {
     console.error("[POST /api/finance/routines] failed:", error);
     if (error instanceof RoutineValidationError) {
