@@ -1,1 +1,1 @@
-export const MAIN_BOT_ID = "main-bot";
+export { MAIN_BOT_ID } from "@/shared/finance/constants";

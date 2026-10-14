@@ -13,6 +13,7 @@ import {
   type AgentRuntimeConfig,
 } from "@/shared/finance/agent";
 import { getCostConfig, createBudgetClient } from "@/shared/finance/cost";
+import { MAIN_BOT_ID } from "@/shared/finance/constants";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -21,8 +22,6 @@ type ChatBody = {
   botId?: string;
   message?: string;
 };
-
-const MAIN_BOT_ID = "main-bot";
 
 export async function POST(request: Request) {
   const auth = await requireFinanceSession(request);
