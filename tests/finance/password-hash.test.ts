@@ -22,7 +22,7 @@ test("argon2 hashes from default and explicit credential params both verify", as
 
 test("getAuthConfig accepts hashes produced with default and credential generator params", async () => {
   const secret = randomBytes(32).toString("base64url");
-  const base = {
+  const base: Partial<NodeJS.ProcessEnv> = {
     NODE_ENV: "development",
     FINANCE_APP_ORIGIN: "http://127.0.0.1:4203",
     FINANCE_SESSION_SECRET: secret,
