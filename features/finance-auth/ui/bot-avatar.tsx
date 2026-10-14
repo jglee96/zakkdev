@@ -1,7 +1,6 @@
 "use client";
 
-import { Box } from "@mantine/core";
-import { useComputedColorScheme } from "@mantine/core";
+import { Box, useComputedColorScheme } from "@mantine/core";
 import { generateBotAvatarArt, type AvatarShape } from "./bot-avatar-art";
 
 export function BotAvatar({ botId, size = 36 }: { botId: string; size?: number }) {
