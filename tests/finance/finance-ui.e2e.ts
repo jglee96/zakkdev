@@ -111,6 +111,42 @@ async function dismissFinanceOnboarding(ctx: TestContext) {
   await new Promise((resolve) => setTimeout(resolve, 200));
 }
 
+async function assertMessengerChatLayout(ctx: TestContext, label: string) {
+  const layout = await ctx.page.evaluate(() => {
+    const userRow = document.querySelector('[data-testid="chat-message-user"]');
+    const botRow = document.querySelector('[data-testid="chat-message-assistant"]');
+    if (!userRow || !botRow) {
+      return { ok: false, reason: "missing-rows" };
+    }
+    const userBubble = userRow.firstElementChild;
+    const botAvatar = botRow.querySelector('[data-testid^="bot-avatar-"]');
+    const botBubble = botAvatar?.nextElementSibling;
+    if (!userBubble || !botAvatar || !botBubble) {
+      return { ok: false, reason: "missing-parts" };
+    }
+    const column = userRow.closest("[class*='chatThreadColumn']")?.getBoundingClientRect();
+    const midX = column ? column.left + column.width / 2 : window.innerWidth / 2;
+    const userRect = userBubble.getBoundingClientRect();
+    const botBubbleRect = botBubble.getBoundingClientRect();
+    const avatarRect = botAvatar.getBoundingClientRect();
+    const userRightAligned = userRect.left > midX - 4;
+    const botLeftAligned = botBubbleRect.left < midX;
+    const avatarLeftOfBubble = avatarRect.right <= botBubbleRect.left + 4;
+    const maxBubbleWidth = column ? column.width * 0.76 : window.innerWidth * 0.76;
+    const bubblesWithinMax =
+      userRect.width <= maxBubbleWidth + 2 && botBubbleRect.width <= maxBubbleWidth + 2;
+    return {
+      ok: userRightAligned && botLeftAligned && avatarLeftOfBubble && bubblesWithinMax,
+      userRightAligned,
+      botLeftAligned,
+      avatarLeftOfBubble,
+      bubblesWithinMax,
+      midX,
+    };
+  });
+  assert.ok(layout.ok, `${label}: messenger layout (${JSON.stringify(layout)})`);
+}
+
 async function assertChatChromeVisible(ctx: TestContext, label: string) {
   const titleOk = await ctx.page.$eval('[data-testid="chat-page-title"]', (el) => {
     const rect = el.getBoundingClientRect();
@@ -971,6 +1007,8 @@ async function testChatWithSources(ctx: TestContext) {
   }
   
   await new Promise((resolve) => setTimeout(resolve, 500));
+
+  await assertMessengerChatLayout(ctx, "02-chat-messenger");
   
   await assertSingleThemeToggle(ctx, "02-chat-desktop");
   await assertNoFinanceAppHeader(ctx, "02-chat-desktop");

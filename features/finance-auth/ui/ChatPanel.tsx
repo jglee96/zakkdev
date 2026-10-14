@@ -7,7 +7,6 @@ import {
   Badge,
   Box,
   Button,
-  Card,
   Group,
   ScrollArea,
   Stack,
@@ -16,8 +15,9 @@ import {
   ThemeIcon,
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
-import { IconRobot, IconSend, IconUser, IconAlertCircle, IconClock, IconCoin } from "@tabler/icons-react";
+import { IconRobot, IconSend, IconAlertCircle, IconClock, IconCoin } from "@tabler/icons-react";
 import { useFinanceStore, type Message, type ChatResponse } from "../store/finance-store";
+import { BotAvatar } from "./bot-avatar";
 import { ChatMessageContent } from "./chat-message-content";
 import { FinanceOnboarding } from "./finance-onboarding";
 import { getBotDisplayMeta } from "./bot-template-meta";
@@ -167,15 +167,13 @@ export function ChatPanel({ onOpenCreateBot }: { onOpenCreateBot: () => void }) 
             ) : (
               <Stack gap="md">
                 {botMessages.map((msg) => (
-                  <MessageBubble key={msg.id} message={msg} />
+                  <MessageBubble key={msg.id} message={msg} botId={activeBotId} />
                 ))}
                 {isSendingMessage && (
-                  <Group gap="xs" data-testid="chat-loading">
-                    <ThemeIcon size="sm" radius="xl" variant="light" color="braun-red">
-                      <IconRobot size={14} />
-                    </ThemeIcon>
-                    <Text size="sm" c="dimmed">답변 생성 중...</Text>
-                  </Group>
+                  <Box className={classes.chatMessageRowBot} data-testid="chat-loading">
+                    <BotAvatar botId={activeBotId} size={32} />
+                    <Text size="sm" c="dimmed" mt={6}>답변 생성 중...</Text>
+                  </Box>
                 )}
               </Stack>
             )}
@@ -260,37 +258,32 @@ export function ChatPanel({ onOpenCreateBot }: { onOpenCreateBot: () => void }) 
   );
 }
 
-function MessageBubble({ message }: { message: Message }) {
+function MessageBubble({ message, botId }: { message: Message; botId: string }) {
   const isUser = message.role === "user";
 
-  return (
-    <Group gap="sm" align="flex-start" wrap="nowrap" w="100%" style={{ minWidth: 0 }}>
-      <ThemeIcon
-        size="sm"
-        radius="xl"
-        variant="light"
-        color={isUser ? "gray" : "braun-red"}
-        mt={4}
-      >
-        {isUser ? <IconUser size={14} /> : <IconRobot size={14} />}
-      </ThemeIcon>
-      <Card
-        shadow="none"
-        padding="sm"
-        radius="sm"
-        withBorder={false}
-        className={isUser ? classes.chatBubbleUser : classes.chatBubbleAssistant}
-        style={{ maxWidth: "min(100%, 720px)", minWidth: 0, flex: 1 }}
-      >
-        {isUser || !message.content ? (
+  if (isUser) {
+    return (
+      <Box className={classes.chatMessageRowUser} data-testid="chat-message-user">
+        <Box className={`${classes.chatBubble} ${classes.chatBubbleUser}`}>
           <Text size="sm" style={{ whiteSpace: "pre-wrap" }}>
             {message.content}
           </Text>
-        ) : (
+        </Box>
+      </Box>
+    );
+  }
+
+  return (
+    <Box className={classes.chatMessageRowBot} data-testid="chat-message-assistant">
+      <BotAvatar botId={botId} size={32} />
+      <Box className={`${classes.chatBubble} ${classes.chatBubbleAssistant}`}>
+        {message.content ? (
           <ChatMessageContent content={message.content} />
+        ) : (
+          <Text size="sm" className={classes.muted}>—</Text>
         )}
-      </Card>
-    </Group>
+      </Box>
+    </Box>
   );
 }
 

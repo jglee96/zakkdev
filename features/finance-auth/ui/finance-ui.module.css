@@ -39,14 +39,37 @@
   color: #c74219;
 }
 
-.chatBubbleUser {
-  background-color: #f4f1ec;
+.chatMessageRowUser {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.chatMessageRowBot {
+  display: flex;
+  justify-content: flex-start;
+  align-items: flex-start;
+  gap: 8px;
+  width: 100%;
+}
+
+.chatBubble {
+  max-width: 75%;
+  min-width: 0;
+  padding: 10px 12px;
+  border-radius: 4px;
   border: 1px solid #ddd8d2;
+  box-sizing: border-box;
+}
+
+.chatBubbleUser {
+  background-color: #fbdbd2;
+  border-color: #e8b5a8;
 }
 
 .chatBubbleAssistant {
   background-color: #fdfcf9;
-  border: 1px solid #ddd8d2;
+  flex: 0 1 auto;
 }
 
 .markdownPanel {
@@ -189,7 +212,8 @@
   }
 
   .chatBubbleUser {
-    background-color: #1c1917;
+    background-color: #3d2218;
+    border-color: #882b10;
   }
 
   .chatBubbleAssistant,
