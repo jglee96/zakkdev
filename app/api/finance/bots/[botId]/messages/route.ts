@@ -1,12 +1,7 @@
 import { requireFinanceSession } from "@/shared/finance/auth/guard";
 import { jsonResponse } from "@/shared/finance/auth/http";
-import { MAIN_BOT_ID } from "@/shared/finance/constants";
-import {
-  getBot,
-  getRecentMessages,
-  getRepositoryConfig,
-  listBots,
-} from "@/shared/finance/agent";
+import { resolveBotForOwner } from "@/shared/finance/agent/resolve-bot";
+import { getRecentMessages, getRepositoryConfig } from "@/shared/finance/agent";
 
 export const runtime = "nodejs";
 export const maxDuration = 15;
@@ -14,19 +9,6 @@ export const maxDuration = 15;
 type Params = {
   params: Promise<{ botId: string }>;
 };
-
-async function resolveBotForOwner(
-  ownerId: string,
-  botId: string,
-) {
-  const repoConfig = getRepositoryConfig();
-  let bot = await getBot(repoConfig, ownerId, botId);
-  if (!bot && botId === MAIN_BOT_ID) {
-    const bots = await listBots(repoConfig, ownerId, "active");
-    bot = bots.find((b) => b.template === "main") ?? null;
-  }
-  return { repoConfig, bot };
-}
 
 export async function GET(request: Request, { params }: Params) {
   const auth = await requireFinanceSession(request);
@@ -40,7 +22,8 @@ export async function GET(request: Request, { params }: Params) {
     const url = new URL(request.url);
     const limit = Math.min(100, Math.max(1, Number(url.searchParams.get("limit")) || 50));
 
-    const { repoConfig, bot } = await resolveBotForOwner(auth.session.ownerId, botId);
+    const repoConfig = getRepositoryConfig();
+    const bot = await resolveBotForOwner(repoConfig, auth.session.ownerId, botId);
 
     if (!bot) {
       return jsonResponse({ messages: [] });

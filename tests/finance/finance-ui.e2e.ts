@@ -962,6 +962,15 @@ async function testLogin(ctx: TestContext) {
   }
   
   await new Promise((resolve) => setTimeout(resolve, 1500));
+  await ctx.page.waitForFunction(
+    () => document.querySelector('[data-testid="finance-onboarding"]') !== null,
+    { timeout: 15000 },
+  ).catch(() => undefined);
+  await takeScreenshot(ctx, "finance-rsc-onboarding-desktop-1440x900", { width: 1440, height: 900 });
+  await copyFile(
+    path.join(SCREENSHOT_DIR, "finance-rsc-onboarding-desktop-1440x900.png"),
+    path.join(SCREENSHOT_DIR, "finance-rsc-onboarding-desktop.png"),
+  );
   await dismissFinanceOnboarding(ctx);
   await assertSiteNavVisible(ctx, "finance-home-after-login");
   await assertSingleThemeToggle(ctx, "finance-home-after-login");
@@ -1073,6 +1082,10 @@ async function testChatWithSources(ctx: TestContext) {
   assert.ok(hasThesisCard, "Structured thesis card should render");
 
   const { content: chatContent } = await takeScreenshot(ctx, "02-chat-with-sources-desktop-1440x900", { width: 1440, height: 900 });
+  await copyFile(
+    path.join(SCREENSHOT_DIR, "02-chat-with-sources-desktop-1440x900.png"),
+    path.join(SCREENSHOT_DIR, "finance-rsc-chat-existing-desktop.png"),
+  );
   await ctx.page.setViewport({ width: 390, height: 844 });
   await closeMobileFinanceNav(ctx);
   await new Promise((resolve) => setTimeout(resolve, 500));
