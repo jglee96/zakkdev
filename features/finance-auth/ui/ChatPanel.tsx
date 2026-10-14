@@ -11,7 +11,6 @@ import {
   Group,
   Paper,
   ScrollArea,
-  Select,
   Stack,
   Text,
   TextInput,
@@ -21,13 +20,12 @@ import { useMediaQuery } from "@mantine/hooks";
 import { IconRobot, IconSend, IconUser, IconAlertCircle, IconClock, IconCoin } from "@tabler/icons-react";
 import { useFinanceStore, type Message, type ChatResponse } from "../store/finance-store";
 import { ChatMessageContent } from "./chat-message-content";
-import { FinanceSectionTitle } from "./finance-section-title";
+import { FinanceOnboarding } from "./finance-onboarding";
+import { getBotDisplayMeta } from "./bot-template-meta";
+import { MAIN_BOT_ID } from "../constants";
 import classes from "./finance-ui.module.css";
-import { FINANCE_COMBOBOX_PORTAL_PROPS } from "@/shared/site-layout/modal-root";
 
-const MAIN_BOT_ID = "main-bot";
-
-export function ChatPanel() {
+export function ChatPanel({ onOpenCreateBot }: { onOpenCreateBot: () => void }) {
   const [input, setInput] = useState("");
   const viewportRef = useRef<HTMLDivElement>(null);
   const isMobile = useMediaQuery("(max-width: 768px)");
@@ -35,7 +33,6 @@ export function ChatPanel() {
   const {
     bots,
     selectedBotId,
-    setSelectedBotId,
     messages,
     addMessage,
     isSendingMessage,
@@ -48,12 +45,21 @@ export function ChatPanel() {
 
   const activeBotId = selectedBotId || MAIN_BOT_ID;
   const botMessages = messages.filter((m) => m.botId === activeBotId);
+  const activeBot =
+    activeBotId === MAIN_BOT_ID
+      ? { id: MAIN_BOT_ID, name: "메인 봇", template: "main" as const }
+      : bots.find((b) => b.id === activeBotId);
+  const display = activeBot
+    ? getBotDisplayMeta(activeBot)
+    : getBotDisplayMeta({ id: MAIN_BOT_ID, name: "메인 봇", template: "kr-stock" });
+
+  const specialistCount = bots.filter((b) => b.id !== MAIN_BOT_ID && b.template !== "main").length;
 
   useEffect(() => {
     if (viewportRef.current) {
       viewportRef.current.scrollTo({ top: viewportRef.current.scrollHeight, behavior: "smooth" });
     }
-  }, [botMessages]);
+  }, [botMessages, activeBotId]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -112,38 +118,32 @@ export function ChatPanel() {
     }
   }
 
-  const botOptions = [
-    { value: MAIN_BOT_ID, label: "메인 봇 (자동 생성)" },
-    ...bots.filter((b) => b.id !== MAIN_BOT_ID).map((b) => ({ value: b.id, label: b.name })),
-  ];
-
   return (
     <Stack flex={1} mih={0} mah="100%" w="100%" gap="sm" style={{ flex: 1, minHeight: 0 }} data-testid="chat-panel">
       <Group
         justify="space-between"
-        align="center"
+        align="flex-end"
         wrap="wrap"
         gap="sm"
         w="100%"
         data-testid="chat-page-header"
         style={{ flexShrink: 0, minWidth: 0 }}
       >
-        <FinanceSectionTitle data-testid="chat-page-title" style={{ flex: "0 0 auto" }}>
-          채팅
-        </FinanceSectionTitle>
-        <Box style={{ flex: "1 1 160px", minWidth: 140, maxWidth: 320 }}>
-          <Select
-            data-testid="bot-selector"
-            data={botOptions}
-            value={activeBotId}
-            onChange={(v) => setSelectedBotId(v)}
-            placeholder="봇 선택"
-            w="100%"
-            size="sm"
-            comboboxProps={FINANCE_COMBOBOX_PORTAL_PROPS}
-          />
+        <Box style={{ minWidth: 0 }}>
+          <Text size="sm" fw={500} data-testid="chat-page-title" truncate>
+            {display.name}
+          </Text>
+          <Text size="xs" className={classes.muted} data-testid="chat-bot-role-line" truncate>
+            {display.roleLine}
+          </Text>
         </Box>
       </Group>
+
+      <FinanceOnboarding
+        specialistBotCount={specialistCount}
+        onCreateBot={onOpenCreateBot}
+        onStarterPrompt={(text) => setInput(text)}
+      />
 
       <Paper
         withBorder={false}
@@ -158,8 +158,8 @@ export function ChatPanel() {
               <ThemeIcon size={48} radius="xl" variant="light" color="braun-red" mb="md">
                 <IconRobot size={28} />
               </ThemeIcon>
-              <Text c="dimmed">금융 리서치에 대해 질문해 보세요.</Text>
-              <Text size="sm" c="dimmed" mt="xs">
+              <Text className={classes.muted}>{display.name}에게 질문해 보세요.</Text>
+              <Text size="sm" className={classes.muted} mt="xs">
                 예: &quot;삼성전자 최근 공시 분석해줘&quot;
               </Text>
             </Box>
@@ -170,7 +170,7 @@ export function ChatPanel() {
               ))}
               {isSendingMessage && (
                 <Group gap="xs" data-testid="chat-loading">
-                  <ThemeIcon size="sm" radius="xl" variant="light" color="blue">
+                  <ThemeIcon size="sm" radius="xl" variant="light" color="braun-red">
                     <IconRobot size={14} />
                   </ThemeIcon>
                   <Text size="sm" c="dimmed">답변 생성 중...</Text>
@@ -186,7 +186,7 @@ export function ChatPanel() {
           </Alert>
         )}
 
-        {lastChatResponse && (
+        {lastChatResponse && lastChatResponse.botId === activeBotId && (
           <ResponseStats response={lastChatResponse} />
         )}
 
@@ -221,7 +221,7 @@ export function ChatPanel() {
                     className="finance-chat-textarea"
                     placeholder="메시지를 입력하세요..."
                     value={input}
-                    onChange={(e) => setInput(e.currentTarget.value)}
+                    onChange={(e) => setInput(e.target.value)}
                     disabled={isSendingMessage}
                     minRows={1}
                     maxRows={4}

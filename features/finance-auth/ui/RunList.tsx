@@ -52,11 +52,18 @@ const ERROR_CODE_LABELS: Record<string, string> = {
   TIMEOUT: "시간 초과",
 };
 
-export function RunList({ onRefresh }: { onRefresh: () => void }) {
+export function RunList({
+  onRefresh,
+  botIdFilter,
+}: {
+  onRefresh: () => void;
+  botIdFilter?: string;
+}) {
   const { runs, bots, routines, isLoadingRuns, runsError } = useFinanceStore();
   const [selectedRun, setSelectedRun] = useState<AgentRun | null>(null);
 
-  const runningCount = runs.filter((r) => r.status === "running" || r.status === "queued").length;
+  const visibleRuns = botIdFilter ? runs.filter((r) => r.botId === botIdFilter) : runs;
+  const runningCount = visibleRuns.filter((r) => r.status === "running" || r.status === "queued").length;
 
   return (
     <Stack gap="md" w="100%" data-testid="run-list-container">
@@ -78,9 +85,9 @@ export function RunList({ onRefresh }: { onRefresh: () => void }) {
 
       {runsError && <Alert color="red" data-testid="runs-error">{runsError}</Alert>}
 
-      {isLoadingRuns && runs.length === 0 ? (
+      {isLoadingRuns && visibleRuns.length === 0 ? (
         <Box ta="center" py="xl" data-testid="runs-loading"><Loader /></Box>
-      ) : runs.length === 0 ? (
+      ) : visibleRuns.length === 0 ? (
         <Card withBorder={false} p="xl" ta="center" classNames={{ root: classes.surfaceCard }} data-testid="runs-empty">
           <IconActivity size={48} color="gray" style={{ margin: "0 auto", marginBottom: 16 }} />
           <Text c="dimmed">아직 실행 기록이 없습니다.</Text>
@@ -90,7 +97,7 @@ export function RunList({ onRefresh }: { onRefresh: () => void }) {
         </Card>
       ) : (
         <Stack gap="sm" data-testid="runs-list">
-          {runs.map((run) => (
+          {visibleRuns.map((run) => (
             <RunCard
               key={run.id}
               run={run}

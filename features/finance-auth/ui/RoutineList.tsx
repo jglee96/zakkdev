@@ -94,12 +94,20 @@ function formatCronSchedule(cronExpr: string, timezone: string): string {
   return `${schedule} (${tzLabel})`;
 }
 
-export function RoutineList({ onRefresh }: { onRefresh: () => void }) {
+export function RoutineList({
+  onRefresh,
+  botIdFilter,
+}: {
+  onRefresh: () => void;
+  botIdFilter?: string;
+}) {
   const { routines, bots, isLoadingRoutines, routinesError } = useFinanceStore();
   const [createOpened, { open: openCreate, close: closeCreate }] = useDisclosure(false);
   const [selectedRoutine, setSelectedRoutine] = useState<Routine | null>(null);
 
-  const activeRoutines = routines.filter((r) => r.status !== "deleted");
+  const activeRoutines = routines
+    .filter((r) => r.status !== "deleted")
+    .filter((r) => (botIdFilter ? r.botId === botIdFilter : true));
 
   return (
     <Stack gap="md" w="100%" data-testid="routine-list-container">

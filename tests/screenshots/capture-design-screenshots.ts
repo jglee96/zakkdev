@@ -32,9 +32,9 @@ const BLOG_ROUTES = [
 
 const FINANCE_ROUTES = [
   { slug: "finance-login", path: "/finance/login", auth: false },
-  { slug: "finance-chat", path: "/finance", tab: "nav-chat", auth: true },
-  { slug: "finance-bots", path: "/finance", tab: "nav-bots", auth: true },
-  { slug: "finance-runs", path: "/finance", tab: "nav-runs", auth: true },
+  { slug: "finance-chat", path: "/finance", tab: "bot-workspace-tab-chat", auth: true },
+  { slug: "finance-bots", path: "/finance", sidebarBot: "bot-sidebar-item-bot-kr-stock", auth: true },
+  { slug: "finance-runs", path: "/finance", tab: "bot-workspace-tab-runs", auth: true },
 ] as const;
 
 async function waitForTableActive(db: DynamoDBClient, tableName: string) {
@@ -194,14 +194,24 @@ async function main() {
   console.log("\nFinance pages\n");
   for (const route of FINANCE_ROUTES) {
     await page.goto(`${ORIGIN}${route.path}`, { waitUntil: "domcontentloaded" });
-    if (route.auth && route.tab) {
+    if (route.auth) {
       await page.setViewport(DESKTOP);
-      await page.waitForSelector(`[data-testid="${route.tab}"]`, { timeout: 30000 });
-      await page.evaluate((id) => {
-        const el = document.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
-        el?.click();
-      }, route.tab);
-      await new Promise((r) => setTimeout(r, 1000));
+      if ("tab" in route && route.tab) {
+        await page.waitForSelector(`[data-testid="${route.tab}"]`, { timeout: 30000 });
+        await page.evaluate((id) => {
+          const el = document.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+          el?.click();
+        }, route.tab);
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+      if ("sidebarBot" in route && route.sidebarBot) {
+        await page.waitForSelector(`[data-testid="${route.sidebarBot}"]`, { timeout: 30000 });
+        await page.evaluate((id) => {
+          const el = document.querySelector(`[data-testid="${id}"]`) as HTMLElement | null;
+          el?.click();
+        }, route.sidebarBot);
+        await new Promise((r) => setTimeout(r, 1000));
+      }
     }
     await shot(page, `finance-${route.slug}-desktop-1440x900`, DESKTOP);
     await shot(page, `finance-${route.slug}-mobile-390x844`, MOBILE);

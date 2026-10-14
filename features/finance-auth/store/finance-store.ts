@@ -1,11 +1,13 @@
 "use client";
 
 import { create } from "zustand";
+import { MAIN_BOT_ID } from "../constants";
 
 export type BotStatus = "active" | "paused" | "archived";
 export type BotTemplate = "main" | "kr-stock" | "us-stock" | "index-futures";
 export type RunStatus = "queued" | "running" | "completed" | "failed" | "canceled" | "timeout";
 export type RoutineStatus = "pending" | "active" | "paused" | "deleted";
+export type BotWorkspaceTab = "chat" | "runs" | "routines" | "sources";
 
 export type Bot = {
   id: string;
@@ -89,11 +91,9 @@ export type AgentRun = {
   createdAt: number;
 };
 
-type ActiveTab = "chat" | "bots" | "routines" | "runs";
-
 interface FinanceState {
-  activeTab: ActiveTab;
-  selectedBotId: string | null;
+  botWorkspaceTab: BotWorkspaceTab;
+  selectedBotId: string;
   bots: Bot[];
   messages: Message[];
   routines: Routine[];
@@ -108,8 +108,9 @@ interface FinanceState {
   routinesError: string | null;
   runsError: string | null;
   lastChatResponse: ChatResponse | null;
-  
-  setActiveTab: (tab: ActiveTab) => void;
+
+  setBotWorkspaceTab: (tab: BotWorkspaceTab) => void;
+  selectBot: (botId: string) => void;
   setSelectedBotId: (botId: string | null) => void;
   setBots: (bots: Bot[]) => void;
   setMessages: (messages: Message[]) => void;
@@ -132,29 +133,36 @@ interface FinanceState {
 }
 
 const initialState = {
-  activeTab: "chat" as ActiveTab,
-  selectedBotId: null,
-  bots: [],
-  messages: [],
-  routines: [],
-  runs: [],
+  botWorkspaceTab: "chat" as BotWorkspaceTab,
+  selectedBotId: MAIN_BOT_ID,
+  bots: [] as Bot[],
+  messages: [] as Message[],
+  routines: [] as Routine[],
+  runs: [] as AgentRun[],
   isLoadingBots: false,
   isLoadingMessages: false,
   isLoadingRoutines: false,
   isLoadingRuns: false,
   isSendingMessage: false,
-  chatError: null,
-  botsError: null,
-  routinesError: null,
-  runsError: null,
-  lastChatResponse: null,
+  chatError: null as string | null,
+  botsError: null as string | null,
+  routinesError: null as string | null,
+  runsError: null as string | null,
+  lastChatResponse: null as ChatResponse | null,
 };
 
 export const useFinanceStore = create<FinanceState>()((set) => ({
   ...initialState,
-  
-  setActiveTab: (tab) => set({ activeTab: tab }),
-  setSelectedBotId: (botId) => set({ selectedBotId: botId }),
+
+  setBotWorkspaceTab: (tab) => set({ botWorkspaceTab: tab }),
+  selectBot: (botId) =>
+    set({
+      selectedBotId: botId,
+      botWorkspaceTab: "chat",
+      chatError: null,
+      lastChatResponse: null,
+    }),
+  setSelectedBotId: (botId) => set({ selectedBotId: botId ?? MAIN_BOT_ID }),
   setBots: (bots) => set({ bots }),
   setMessages: (messages) => set({ messages }),
   setRoutines: (routines) => set({ routines }),
@@ -170,16 +178,20 @@ export const useFinanceStore = create<FinanceState>()((set) => ({
   setRoutinesError: (error) => set({ routinesError: error }),
   setRunsError: (error) => set({ runsError: error }),
   setLastChatResponse: (response) => set({ lastChatResponse: response }),
-  updateRun: (runId, updates) => set((state) => ({
-    runs: state.runs.map((run) => run.id === runId ? { ...run, ...updates } : run),
-  })),
-  updateRoutine: (routineId, updates) => set((state) => ({
-    routines: state.routines.map((routine) => routine.id === routineId ? { ...routine, ...updates } : routine),
-  })),
+  updateRun: (runId, updates) =>
+    set((state) => ({
+      runs: state.runs.map((run) => (run.id === runId ? { ...run, ...updates } : run)),
+    })),
+  updateRoutine: (routineId, updates) =>
+    set((state) => ({
+      routines: state.routines.map((routine) =>
+        routine.id === routineId ? { ...routine, ...updates } : routine,
+      ),
+    })),
   reset: () => set(initialState),
 }));
 
 if (typeof window !== "undefined") {
-  (window as unknown as { __FINANCE_STORE__: typeof useFinanceStore }).
-    __FINANCE_STORE__ = useFinanceStore;
+  (window as unknown as { __FINANCE_STORE__: typeof useFinanceStore }).__FINANCE_STORE__ =
+    useFinanceStore;
 }

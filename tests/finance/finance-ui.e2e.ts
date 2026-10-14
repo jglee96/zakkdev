@@ -98,24 +98,46 @@ async function assertNoFinanceAppHeader(ctx: TestContext, label: string) {
   assert.ok(!state.legacyTitle, `${label}: '금융 리서치' finance header bar should not be present`);
 }
 
+async function dismissFinanceOnboarding(ctx: TestContext) {
+  await ctx.page.evaluate(() => {
+    try {
+      localStorage.setItem("finance-onboarding-v1-dismissed", "1");
+    } catch {
+      /* ignore */
+    }
+    const dismiss = document.querySelector('[data-testid="finance-onboarding-dismiss"]') as HTMLElement | null;
+    dismiss?.click();
+  });
+  await new Promise((resolve) => setTimeout(resolve, 200));
+}
+
 async function assertChatChromeVisible(ctx: TestContext, label: string) {
   const titleOk = await ctx.page.$eval('[data-testid="chat-page-title"]', (el) => {
     const rect = el.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < window.innerHeight;
   });
   const titleText = await ctx.page.$eval('[data-testid="chat-page-title"]', (el) => el.textContent?.trim() ?? "");
+  const roleLineOk = await ctx.page.$eval('[data-testid="chat-bot-role-line"]', (el) => {
+    const rect = el.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < window.innerHeight;
+  });
+  const roleLineText = await ctx.page.$eval('[data-testid="chat-bot-role-line"]', (el) => el.textContent?.trim() ?? "");
   const headerOk = await ctx.page.$eval('[data-testid="chat-page-header"]', (el) => {
     const rect = el.getBoundingClientRect();
     return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < window.innerHeight;
   });
-  const selectorOk = await ctx.page.$eval('[data-testid="bot-selector"]', (el) => {
-    const rect = el.getBoundingClientRect();
-    return rect.width > 0 && rect.height > 0 && rect.bottom > 0 && rect.top < window.innerHeight;
+  const navChromeOk = await ctx.page.evaluate(() => {
+    if (window.innerWidth >= 768) {
+      return Boolean(document.querySelector('[data-testid="bot-sidebar"]'));
+    }
+    return Boolean(document.querySelector('[data-testid="finance-mobile-nav-bar"]'));
   });
   assert.ok(headerOk, `${label}: chat page header should be visible`);
   assert.ok(titleOk, `${label}: chat title should be visible`);
-  assert.equal(titleText, "채팅", `${label}: chat title text`);
-  assert.ok(selectorOk, `${label}: bot selector should be visible`);
+  assert.ok(titleText.length > 0, `${label}: chat title should show active bot name`);
+  assert.ok(roleLineOk, `${label}: chat role line should be visible`);
+  assert.ok(roleLineText.length > 0, `${label}: chat role line text`);
+  assert.ok(navChromeOk, `${label}: bot nav chrome should be visible`);
 }
 
 async function assertFinanceModalLayout(ctx: TestContext, modalTestId: string, label: string) {
@@ -881,6 +903,7 @@ async function testLogin(ctx: TestContext) {
   }
   
   await new Promise((resolve) => setTimeout(resolve, 1500));
+  await dismissFinanceOnboarding(ctx);
   await assertSiteNavVisible(ctx, "finance-home-after-login");
   await assertSingleThemeToggle(ctx, "finance-home-after-login");
   await assertNoFinanceAppHeader(ctx, "finance-home-after-login");
@@ -982,31 +1005,139 @@ async function testChatWithSources(ctx: TestContext) {
   console.log("  ✓ Chat panel with sources displayed");
 }
 
+const WORKSPACE_TAB_TEST_IDS: Record<string, string> = {
+  "nav-chat": "bot-workspace-tab-chat",
+  "nav-runs": "bot-workspace-tab-runs",
+  "nav-routines": "bot-workspace-tab-routines",
+  "nav-sources": "bot-workspace-tab-sources",
+};
+
 async function clickNavItem(ctx: TestContext, testId: string) {
   await ctx.page.setViewport({ width: 1440, height: 900 });
   await new Promise((resolve) => setTimeout(resolve, 300));
-  
+
+  const resolved = WORKSPACE_TAB_TEST_IDS[testId] ?? testId;
   await ctx.page.evaluate((id) => {
     const el = document.querySelector(`[data-testid="${id}"]`) as HTMLElement;
     if (el) el.click();
-  }, testId);
-  
+  }, resolved);
+
   await new Promise((resolve) => setTimeout(resolve, 1500));
 }
 
-async function testBotList(ctx: TestContext) {
-  console.log("\n📋 Test: Bot list");
-  
-  await clickNavItem(ctx, "nav-bots");
-  
-  const { content: botListContent } = await takeScreenshot(ctx, "03-bot-list-desktop-1440x900", { width: 1440, height: 900 });
-  await takeScreenshot(ctx, "03-bot-list-mobile-390x844", { width: 390, height: 844 });
-  
+async function clickSidebarBot(ctx: TestContext, testId: string) {
+  await ctx.page.evaluate((id) => {
+    const el = document.querySelector(`[data-testid="${id}"]`) as HTMLElement;
+    el?.click();
+  }, testId);
+  await new Promise((resolve) => setTimeout(resolve, 800));
+}
+
+async function testBotSidebar(ctx: TestContext) {
+  console.log("\n📋 Test: Bot sidebar (Main + specialists)");
+
+  const sidebarState = await ctx.page.evaluate(() => ({
+    hasSidebar: Boolean(document.querySelector('[data-testid="bot-sidebar"]')),
+    hasMain: Boolean(document.querySelector('[data-testid="bot-sidebar-item-main-bot"]')),
+    hasKr: Boolean(document.querySelector('[data-testid="bot-sidebar-item-bot-kr-stock"]')),
+    hasCreate: Boolean(document.querySelector('[data-testid="create-bot-btn"]')),
+  }));
+  assert.ok(sidebarState.hasSidebar, "Bot sidebar should be visible");
+  assert.ok(sidebarState.hasMain, "Main bot row should exist");
+  assert.ok(sidebarState.hasKr, "Specialist bot row should exist from mock data");
+  assert.ok(sidebarState.hasCreate, "Create bot button should be in sidebar");
+
+  const { content: botListContent } = await takeScreenshot(ctx, "03-bot-sidebar-desktop-1440x900", { width: 1440, height: 900 });
+  await ctx.page.setViewport({ width: 390, height: 844 });
+  await ctx.page.evaluate(() => {
+    const btn = document.querySelector('[data-testid="finance-nav-burger"]') as HTMLElement;
+    btn?.click();
+  });
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  await takeScreenshot(ctx, "03-bot-sidebar-mobile-drawer-390x844", { width: 390, height: 844 });
+  await assertNoHorizontalOverflow(ctx, "03-bot-sidebar-mobile");
+  await closeMobileFinanceNav(ctx);
+
   assert.ok(
-    botListContent.includes("봇") || botListContent.includes("Bot"),
-    "Bot list should be visible"
+    botListContent.includes("새 Bot") || botListContent.includes("메인") || botListContent.includes("봇"),
+    "Bot sidebar should be visible",
   );
-  console.log("  ✓ Bot list displayed");
+  console.log("  ✓ Bot sidebar displayed");
+}
+
+async function testOnboarding(ctx: TestContext) {
+  console.log("\n📋 Test: Finance onboarding");
+
+  await ctx.page.evaluate(() => {
+    try {
+      localStorage.removeItem("finance-onboarding-v1-dismissed");
+    } catch {
+      /* ignore */
+    }
+  });
+  await ctx.page.reload({ waitUntil: "networkidle2" });
+  await new Promise((resolve) => setTimeout(resolve, 2000));
+
+  const visible = await ctx.page.$('[data-testid="finance-onboarding"]');
+  assert.ok(visible, "Onboarding card should appear when not dismissed");
+
+  await ctx.page.evaluate(() => {
+    const btn = document.querySelector('[data-testid="finance-onboarding-dismiss"]') as HTMLElement;
+    btn?.click();
+  });
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  const hidden = await ctx.page.$('[data-testid="finance-onboarding"]');
+  assert.ok(!hidden, "Onboarding should hide after dismiss");
+  console.log("  ✓ Onboarding dismiss works");
+}
+
+async function testBotSwitching(ctx: TestContext) {
+  console.log("\n📋 Test: Per-bot conversation switching");
+
+  const now = Date.now();
+  await ctx.page.evaluate((timestamp) => {
+    const store = (window as unknown as { __FINANCE_STORE__?: { getState: () => { setMessages: (m: unknown[]) => void } } }).__FINANCE_STORE__;
+    store?.getState().setMessages([
+      {
+        id: "msg-main",
+        botId: "main-bot",
+        role: "user",
+        content: "메인 봇 전용 메시지",
+        createdAt: timestamp,
+      },
+      {
+        id: "msg-kr",
+        botId: "bot-kr-stock",
+        role: "user",
+        content: "한국 주식 봇 전용 메시지",
+        createdAt: timestamp,
+      },
+    ]);
+  }, now);
+  await clickNavItem(ctx, "nav-chat");
+
+  let mainVisible = await ctx.page.evaluate(() =>
+    document.body.innerText.includes("메인 봇 전용 메시지"),
+  );
+  assert.ok(mainVisible, "Main bot messages should show when main bot selected");
+
+  await clickSidebarBot(ctx, "bot-sidebar-item-bot-kr-stock");
+  const krTitle = await ctx.page.$eval('[data-testid="chat-page-title"]', (el) => el.textContent?.trim() ?? "");
+  assert.ok(krTitle.includes("한국"), "Chat header should reflect specialist bot name");
+
+  const krVisible = await ctx.page.evaluate(() =>
+    document.body.innerText.includes("한국 주식 봇 전용 메시지"),
+  );
+  assert.ok(krVisible, "Specialist bot messages should show after switch");
+  assert.ok(
+    !(await ctx.page.evaluate(() => document.body.innerText.includes("메인 봇 전용 메시지"))),
+    "Main bot messages should not show when specialist selected",
+  );
+
+  await clickSidebarBot(ctx, "bot-sidebar-item-main-bot");
+  mainVisible = await ctx.page.evaluate(() => document.body.innerText.includes("메인 봇 전용 메시지"));
+  assert.ok(mainVisible, "Switching back restores main bot thread");
+  console.log("  ✓ Per-bot chat switching preserves threads");
 }
 
 async function testBotCreateModal(ctx: TestContext) {
@@ -1063,6 +1194,11 @@ async function testBotDetail(ctx: TestContext) {
   await ctx.page.setViewport({ width: 1440, height: 900 });
   
   const clicked = await ctx.page.evaluate(() => {
+    const settings = document.querySelector('[data-testid="bot-sidebar-settings-bot-kr-stock"]') as HTMLElement;
+    if (settings) {
+      settings.click();
+      return true;
+    }
     const card = document.querySelector('[data-testid^="bot-card-"]') as HTMLElement;
     if (card) {
       card.click();
@@ -1077,7 +1213,7 @@ async function testBotDetail(ctx: TestContext) {
       const input = el instanceof HTMLInputElement ? el : el.querySelector("input");
       return input instanceof HTMLInputElement ? input.value : "";
     });
-    assert.ok(detailName.includes("한국 주식"), "Bot detail modal should prefill name from selected bot");
+    assert.ok(detailName.includes("한국"), "Bot detail modal should prefill name from selected bot");
     const detailInstr = await ctx.page.$eval('[data-testid="bot-detail-instructions-input"]', (el) => {
       const input = el instanceof HTMLTextAreaElement ? el : el.querySelector("textarea");
       return input instanceof HTMLTextAreaElement ? input.value : "";
@@ -1276,7 +1412,9 @@ async function main() {
     
     await testLogin(ctx);
     await testChatWithSources(ctx);
-    await testBotList(ctx);
+    await testBotSidebar(ctx);
+    await testOnboarding(ctx);
+    await testBotSwitching(ctx);
     await testBotCreateModal(ctx);
     if (COLLECT_MODAL_STACKING_ONLY) {
       console.log("\n✓ Stacking collection only — exiting after bot create modal\n");

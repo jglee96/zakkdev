@@ -5,45 +5,35 @@ import { useRouter } from "next/navigation";
 import {
   Alert,
   AppShell,
-  Badge,
   Box,
-  Burger,
-  Divider,
   Group,
   Loader,
-  NavLink,
   Portal,
-  Stack,
   Text,
+  UnstyledButton,
 } from "@mantine/core";
 import { useDisclosure, useMediaQuery } from "@mantine/hooks";
-import {
-  IconMessage,
-  IconRobot,
-  IconCalendarTime,
-  IconActivity,
-  IconLogout,
-  IconRefresh,
-} from "@tabler/icons-react";
+import { IconChevronDown } from "@tabler/icons-react";
 import { useFinanceStore } from "../store/finance-store";
-import { ChatPanel } from "./ChatPanel";
-import { BotList } from "./BotList";
-import { RoutineList } from "./RoutineList";
-import { RunList } from "./RunList";
+import { BotWorkspace } from "./bot-workspace";
+import { FinanceBotSidebar } from "./finance-bot-sidebar";
+import { CreateBotModal } from "./create-bot-modal";
 import { FINANCE_NAVBAR_TOP_PX, SITE_APP_SHELL_HEADER_HEIGHT_PX } from "@/shared/site-layout/constants";
 import { MODAL_ROOT_SELECTOR } from "@/shared/site-layout/modal-root";
+import { getBotDisplayMeta, MAIN_BOT_ID } from "./bot-template-meta";
 import classes from "./finance-ui.module.css";
 
 export function FinanceHome() {
   const router = useRouter();
-  const [opened, { toggle, close }] = useDisclosure();
+  const [drawerOpen, { toggle, close }] = useDisclosure();
   const [logoutPending, setLogoutPending] = useState(false);
   const [logoutError, setLogoutError] = useState<string | null>(null);
+  const [createBotOpen, setCreateBotOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width: 768px)");
 
   const {
-    activeTab,
-    setActiveTab,
+    botWorkspaceTab,
+    selectedBotId,
     bots,
     setBots,
     setRoutines,
@@ -55,6 +45,15 @@ export function FinanceHome() {
     setRunsError,
     reset,
   } = useFinanceStore();
+
+  const activeBotId = selectedBotId || MAIN_BOT_ID;
+  const activeBot =
+    activeBotId === MAIN_BOT_ID
+      ? { id: MAIN_BOT_ID, name: "메인 봇", template: "main" as const }
+      : bots.find((b) => b.id === activeBotId);
+  const activeDisplay = activeBot
+    ? getBotDisplayMeta(activeBot as { id: string; name: string; template: "main" | import("../store/finance-store").BotTemplate })
+    : getBotDisplayMeta({ id: MAIN_BOT_ID, name: "메인 봇", template: "kr-stock" });
 
   const fetchBots = useCallback(async () => {
     setIsLoadingBots(true);
@@ -102,11 +101,11 @@ export function FinanceHome() {
   }, [fetchBots, fetchRoutines, fetchRuns]);
 
   useEffect(() => {
-    if (activeTab === "runs") {
+    if (botWorkspaceTab === "runs") {
       const interval = setInterval(fetchRuns, 5000);
       return () => clearInterval(interval);
     }
-  }, [activeTab, fetchRuns]);
+  }, [botWorkspaceTab, fetchRuns]);
 
   async function handleLogout() {
     setLogoutPending(true);
@@ -130,66 +129,23 @@ export function FinanceHome() {
     fetchRuns();
   }
 
-  const navItems = [
-    { icon: IconMessage, label: "채팅", tab: "chat" as const, badge: null },
-    { icon: IconRobot, label: "봇", tab: "bots" as const, badge: null },
-    { icon: IconCalendarTime, label: "루틴", tab: "routines" as const, badge: null },
-    { icon: IconActivity, label: "실행", tab: "runs" as const, badge: null },
-  ];
-
-  const activeLabel = navItems.find((item) => item.tab === activeTab)?.label ?? "금융";
   const financeViewportHeight = `calc(100dvh - ${SITE_APP_SHELL_HEADER_HEIGHT_PX}px)`;
+  const sidebarWidth = 280;
 
-  const navPanel = (
-    <Stack gap="xs" h="100%" justify="space-between" p="md">
-      <Stack gap="xs">
-        {navItems.map((item) => (
-          <NavLink
-            key={item.tab}
-            data-testid={`nav-${item.tab}`}
-            label={item.label}
-            leftSection={<item.icon size={18} />}
-            rightSection={item.badge ? <Badge size="xs" variant="light">{item.badge}</Badge> : undefined}
-            active={activeTab === item.tab}
-            color="braun-red"
-            onClick={() => {
-              setActiveTab(item.tab);
-              if (isMobile) close();
-            }}
-            style={{ borderRadius: 8 }}
-          />
-        ))}
-      </Stack>
-      <Stack gap="xs">
-        <Divider />
-        <NavLink
-          data-testid="nav-refresh"
-          label="새로고침"
-          leftSection={<IconRefresh size={18} />}
-          onClick={() => {
-            refreshAll();
-            if (isMobile) close();
-          }}
-        />
-        <NavLink
-          data-testid="nav-logout"
-          label="로그아웃"
-          leftSection={<IconLogout size={18} />}
-          c="red"
-          disabled={logoutPending}
-          onClick={() => {
-            handleLogout();
-            if (isMobile) close();
-          }}
-        />
-      </Stack>
-    </Stack>
+  const sidebar = (
+    <FinanceBotSidebar
+      onRefresh={refreshAll}
+      onLogout={handleLogout}
+      logoutPending={logoutPending}
+      onBotSelected={isMobile ? close : undefined}
+      onCreateBot={() => setCreateBotOpen(true)}
+    />
   );
 
   return (
     <AppShell
       data-testid="finance-app-shell"
-      navbar={{ width: 220, breakpoint: "sm", collapsed: { mobile: true, desktop: false } }}
+      navbar={{ width: sidebarWidth, breakpoint: "sm", collapsed: { mobile: true, desktop: false } }}
       padding={{ base: "xs", sm: "sm" }}
       style={{
         minHeight: financeViewportHeight,
@@ -225,7 +181,7 @@ export function FinanceHome() {
         },
       }}
     >
-      {isMobile && opened && (
+      {isMobile && drawerOpen && (
         <Portal target={MODAL_ROOT_SELECTOR}>
           <Box
             data-testid="finance-mobile-nav-overlay"
@@ -244,7 +200,7 @@ export function FinanceHome() {
               position: "fixed",
               left: 0,
               top: FINANCE_NAVBAR_TOP_PX,
-              width: 220,
+              width: sidebarWidth,
               bottom: 0,
               zIndex: 201,
               backgroundColor: "var(--mantine-color-body)",
@@ -252,13 +208,13 @@ export function FinanceHome() {
               boxSizing: "border-box",
             }}
           >
-            {navPanel}
+            {sidebar}
           </Box>
         </Portal>
       )}
 
       <AppShell.Navbar visibleFrom="sm" p={0} className={classes.navShell} data-testid="finance-navbar">
-        {navPanel}
+        {sidebar}
       </AppShell.Navbar>
 
       <AppShell.Main>
@@ -266,17 +222,23 @@ export function FinanceHome() {
           hiddenFrom="sm"
           data-testid="finance-mobile-nav-bar"
           className={classes.mobileNavBar}
-          py={4}
+          py={6}
           px="xs"
           style={{ flexShrink: 0 }}
         >
-          <Burger
-            opened={opened}
-            onClick={toggle}
-            size="sm"
-            aria-label={`금융 메뉴: ${activeLabel}`}
-            data-testid="finance-nav-burger"
-          />
+          <Group justify="space-between" wrap="nowrap" gap="xs">
+            <UnstyledButton
+              data-testid="finance-nav-burger"
+              onClick={toggle}
+              style={{ flex: 1, minWidth: 0 }}
+            >
+              <Group gap={6} wrap="nowrap">
+                <Text size="sm" fw={500} truncate>{activeDisplay.name}</Text>
+                <Text size="xs" className={classes.muted} truncate>{activeDisplay.roleLine}</Text>
+                <IconChevronDown size={14} />
+              </Group>
+            </UnstyledButton>
+          </Group>
         </Box>
 
         <Box
@@ -295,6 +257,7 @@ export function FinanceHome() {
             minHeight: 0,
             minWidth: 0,
             alignSelf: "stretch",
+            overflow: "hidden",
           }}
         >
           {logoutError && (
@@ -303,21 +266,30 @@ export function FinanceHome() {
             </Alert>
           )}
 
-          {isLoadingBots && activeTab === "chat" ? (
+          {isLoadingBots ? (
             <Box ta="center" py="xl">
               <Loader size="lg" />
               <Text c="dimmed" mt="md">로딩 중...</Text>
             </Box>
           ) : (
-            <Box component="div" style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, width: "100%" }}>
-              {activeTab === "chat" && <ChatPanel />}
-              {activeTab === "bots" && <BotList onRefresh={fetchBots} />}
-              {activeTab === "routines" && <RoutineList onRefresh={fetchRoutines} />}
-              {activeTab === "runs" && <RunList onRefresh={fetchRuns} />}
-            </Box>
+            <BotWorkspace
+              onRefreshBots={fetchBots}
+              onRefreshRoutines={fetchRoutines}
+              onRefreshRuns={fetchRuns}
+              onOpenCreateBot={() => setCreateBotOpen(true)}
+            />
           )}
         </Box>
       </AppShell.Main>
+
+      <CreateBotModal
+        opened={createBotOpen}
+        onClose={() => setCreateBotOpen(false)}
+        onCreated={() => {
+          fetchBots();
+          setCreateBotOpen(false);
+        }}
+      />
     </AppShell>
   );
 }

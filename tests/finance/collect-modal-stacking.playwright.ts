@@ -218,7 +218,6 @@ async function main() {
 
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`${ORIGIN}/finance`, { waitUntil: "networkidle" });
-  await page.locator('[data-testid="nav-bots"]').click();
   await page.waitForSelector('[data-testid="create-bot-btn"]');
   await page.evaluate(() => {
     const btn = document.querySelector('[data-testid="create-bot-btn"]') as HTMLElement | null;

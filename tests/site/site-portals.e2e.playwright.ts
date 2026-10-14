@@ -284,15 +284,17 @@ async function testFinancePortals(page: Page) {
       await page.goto(`${ORIGIN}/finance`, { waitUntil: "networkidle" });
       await setColorScheme(page, scheme);
 
-      await page.locator('[data-testid="bot-selector"]').click();
-      await page.waitForSelector('[role="option"], .mantine-Combobox-option', { timeout: 8000 });
-      const dropdownPortal = await page.evaluate(() => {
-        const option = document.querySelector('[role="option"], .mantine-Combobox-option');
-        const root = document.getElementById("modal-root");
-        return Boolean(option && root && root.contains(option));
-      });
-      assert.ok(dropdownPortal, `${label}: bot selector dropdown should render in #modal-root`);
-      await page.keyboard.press("Escape");
+      const createBtn =
+        viewport.width < 768
+          ? page.locator('[data-testid="finance-mobile-nav-drawer"] [data-testid="create-bot-btn"]')
+          : page.locator('[data-testid="finance-navbar"] [data-testid="create-bot-btn"]');
+
+      if (viewport.width >= 768) {
+        const createInSidebar = await page.evaluate(() =>
+          Boolean(document.querySelector('[data-testid="finance-navbar"] [data-testid="create-bot-btn"]')),
+        );
+        assert.ok(createInSidebar, `${label}: create bot button should live in sidebar on desktop`);
+      }
 
       if (viewport.width < 768) {
         await page.locator('[data-testid="finance-nav-burger"]').click();
@@ -317,12 +319,12 @@ async function testFinancePortals(page: Page) {
           overlayHitsHeader.ok,
           `${label}: mobile AppShell overlay should cover site header (${JSON.stringify(overlayHitsHeader)})`,
         );
-        await page.locator('[data-testid="finance-mobile-nav-drawer"] [data-testid="nav-bots"]').click();
-        await page.waitForSelector('[data-testid="finance-mobile-nav-overlay"]', { state: "hidden", timeout: 5000 });
-      } else {
-        await page.locator('[data-testid="nav-bots"]').click();
+        const createInDrawer = await page.evaluate(() =>
+          Boolean(document.querySelector('[data-testid="finance-mobile-nav-drawer"] [data-testid="create-bot-btn"]')),
+        );
+        assert.ok(createInDrawer, `${label}: create bot button should be in mobile drawer`);
       }
-      await page.locator('[data-testid="create-bot-btn"]').click();
+      await createBtn.click();
       await page.waitForSelector('[role="dialog"]', { timeout: 10000 });
 
       const portalTheme = await page.evaluate(() => {
@@ -353,7 +355,7 @@ async function testFinancePortals(page: Page) {
       assert.equal(modalA11y.ariaModal, "true", `${label}: dialog should be aria-modal`);
       assert.ok(modalA11y.overlayHeight > 0, `${label}: modal overlay should cover viewport`);
 
-      const trigger = page.locator('[data-testid="create-bot-btn"]');
+      const trigger = createBtn;
       await page.keyboard.press("Tab");
       await page.keyboard.press("Tab");
       const focusInDialog = await page.evaluate(() => {
@@ -366,7 +368,11 @@ async function testFinancePortals(page: Page) {
       await page.waitForSelector('[role="dialog"]', { state: "hidden", timeout: 8000 });
       await page.waitForTimeout(300);
       const focusReturned = await page.evaluate(() => {
-        const btn = document.querySelector('[data-testid="create-bot-btn"]');
+        const buttons = Array.from(document.querySelectorAll('[data-testid="create-bot-btn"]'));
+        const btn = buttons.find((el) => {
+          const rect = el.getBoundingClientRect();
+          return rect.width > 0 && rect.height > 0;
+        });
         if (!btn) return false;
         const active = document.activeElement;
         return active === btn || btn.contains(active) || active?.closest('[data-testid="create-bot-btn"]');
@@ -374,8 +380,8 @@ async function testFinancePortals(page: Page) {
       assert.ok(focusReturned, `${label}: focus should return near create button after Esc`);
 
       if (viewport.width >= 768) {
-        await page.waitForSelector('[data-testid="bots-list"]', { timeout: 10000 });
-        await page.locator('[data-testid="refresh-bots"]').hover();
+        await page.waitForSelector('[data-testid="bot-sidebar"]', { timeout: 10000 });
+        await page.locator('[data-testid="nav-refresh"]').hover();
         await page.waitForSelector('[role="tooltip"]', { timeout: 5000 });
         assert.ok(await page.locator('[role="tooltip"]').isVisible(), `${label}: tooltip on refresh button`);
       }
