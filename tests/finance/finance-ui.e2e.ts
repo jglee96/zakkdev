@@ -1134,7 +1134,14 @@ async function testBotSwitching(ctx: TestContext) {
 
   const now = Date.now();
   await ctx.page.evaluate((timestamp) => {
-    const store = (window as unknown as { __FINANCE_STORE__?: { getState: () => { setMessages: (m: unknown[]) => void } } }).__FINANCE_STORE__;
+    const store = (window as unknown as {
+      __FINANCE_STORE__?: {
+        getState: () => {
+          setMessages: (m: unknown[]) => void;
+          markMessagesLoaded: (botId: string) => void;
+        };
+      };
+    }).__FINANCE_STORE__;
     store?.getState().setMessages([
       {
         id: "msg-main",
@@ -1151,6 +1158,8 @@ async function testBotSwitching(ctx: TestContext) {
         createdAt: timestamp,
       },
     ]);
+    store?.getState().markMessagesLoaded("main-bot");
+    store?.getState().markMessagesLoaded("bot-kr-stock");
   }, now);
   await clickNavItem(ctx, "nav-chat");
 

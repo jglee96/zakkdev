@@ -1,6 +1,7 @@
 "use client";
 
 import { create } from "zustand";
+import { mergeBotMessages } from "../lib/merge-bot-messages";
 import { MAIN_BOT_ID } from "../constants";
 
 export type BotStatus = "active" | "paused" | "archived";
@@ -96,6 +97,9 @@ interface FinanceState {
   selectedBotId: string;
   bots: Bot[];
   messages: Message[];
+  messagesLoadedBotIds: Record<string, boolean>;
+  messagesLoadingBotId: string | null;
+  messagesError: string | null;
   routines: Routine[];
   runs: AgentRun[];
   isLoadingBots: boolean;
@@ -114,6 +118,11 @@ interface FinanceState {
   setSelectedBotId: (botId: string | null) => void;
   setBots: (bots: Bot[]) => void;
   setMessages: (messages: Message[]) => void;
+  mergeMessagesForBot: (botId: string, messages: Message[]) => void;
+  markMessagesLoaded: (botId: string) => void;
+  clearMessagesCache: () => void;
+  setMessagesError: (error: string | null) => void;
+  setMessagesLoadingBotId: (botId: string | null) => void;
   setRoutines: (routines: Routine[]) => void;
   setRuns: (runs: AgentRun[]) => void;
   addMessage: (message: Message) => void;
@@ -137,6 +146,9 @@ const initialState = {
   selectedBotId: MAIN_BOT_ID,
   bots: [] as Bot[],
   messages: [] as Message[],
+  messagesLoadedBotIds: {} as Record<string, boolean>,
+  messagesLoadingBotId: null as string | null,
+  messagesError: null as string | null,
   routines: [] as Routine[],
   runs: [] as AgentRun[],
   isLoadingBots: false,
@@ -165,6 +177,18 @@ export const useFinanceStore = create<FinanceState>()((set) => ({
   setSelectedBotId: (botId) => set({ selectedBotId: botId ?? MAIN_BOT_ID }),
   setBots: (bots) => set({ bots }),
   setMessages: (messages) => set({ messages }),
+  mergeMessagesForBot: (botId, incoming) =>
+    set((state) => ({
+      messages: mergeBotMessages(state.messages, botId, incoming),
+    })),
+  markMessagesLoaded: (botId) =>
+    set((state) => ({
+      messagesLoadedBotIds: { ...state.messagesLoadedBotIds, [botId]: true },
+    })),
+  clearMessagesCache: () =>
+    set({ messagesLoadedBotIds: {}, messages: [], messagesError: null }),
+  setMessagesError: (error) => set({ messagesError: error }),
+  setMessagesLoadingBotId: (botId) => set({ messagesLoadingBotId: botId }),
   setRoutines: (routines) => set({ routines }),
   setRuns: (runs) => set({ runs }),
   addMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),

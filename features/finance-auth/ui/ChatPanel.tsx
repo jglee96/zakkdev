@@ -16,6 +16,7 @@ import {
 } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { IconRobot, IconSend, IconAlertCircle, IconClock, IconCoin } from "@tabler/icons-react";
+import { useShallow } from "zustand/react/shallow";
 import { useFinanceStore, type Message, type ChatResponse } from "../store/finance-store";
 import { BotAvatar } from "./bot-avatar";
 import { ChatMessageContent } from "./chat-message-content";
@@ -40,9 +41,30 @@ export function ChatPanel({ onOpenCreateBot }: { onOpenCreateBot: () => void }) 
     setChatError,
     lastChatResponse,
     setLastChatResponse,
-  } = useFinanceStore();
+    messagesError,
+    messagesLoadingBotId,
+    messagesLoadedBotIds,
+  } = useFinanceStore(
+    useShallow((s) => ({
+      bots: s.bots,
+      selectedBotId: s.selectedBotId,
+      messages: s.messages,
+      addMessage: s.addMessage,
+      isSendingMessage: s.isSendingMessage,
+      setIsSendingMessage: s.setIsSendingMessage,
+      chatError: s.chatError,
+      setChatError: s.setChatError,
+      lastChatResponse: s.lastChatResponse,
+      setLastChatResponse: s.setLastChatResponse,
+      messagesError: s.messagesError,
+      messagesLoadingBotId: s.messagesLoadingBotId,
+      messagesLoadedBotIds: s.messagesLoadedBotIds,
+    })),
+  );
 
   const activeBotId = selectedBotId || MAIN_BOT_ID;
+  const messagesLoading =
+    messagesLoadingBotId === activeBotId && !messagesLoadedBotIds[activeBotId];
   const botMessages = messages.filter((m) => m.botId === activeBotId);
   const display = getActiveBotDisplayMeta(bots, selectedBotId);
 
@@ -148,7 +170,11 @@ export function ChatPanel({ onOpenCreateBot }: { onOpenCreateBot: () => void }) 
       <Box style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column", overflow: "hidden" }}>
         <ScrollArea flex={1} mih={0} viewportRef={viewportRef} px="md" py="md" data-testid="chat-messages">
           <Box className={classes.chatThreadColumn}>
-            {botMessages.length === 0 ? (
+            {messagesLoading ? (
+              <Box ta="center" py="xl" data-testid="chat-messages-loading">
+                <Text size="sm" className={classes.muted}>대화 불러오는 중...</Text>
+              </Box>
+            ) : botMessages.length === 0 ? (
               <Box ta="center" py="xl" data-testid="chat-empty">
                 <ThemeIcon size={48} radius="xl" variant="light" color="braun-red" mb="md">
                   <IconRobot size={28} />
@@ -174,10 +200,10 @@ export function ChatPanel({ onOpenCreateBot }: { onOpenCreateBot: () => void }) 
           </Box>
         </ScrollArea>
 
-        {chatError && (
+        {(chatError || messagesError) && (
           <Box px="md" className={classes.chatThreadColumn}>
             <Alert color="red" icon={<IconAlertCircle size={16} />} mb="xs" data-testid="chat-error">
-              {chatError}
+              {chatError || messagesError}
             </Alert>
           </Box>
         )}

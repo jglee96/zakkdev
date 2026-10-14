@@ -1,6 +1,8 @@
 "use client";
 
 import { Tabs } from "@mantine/core";
+import { useShallow } from "zustand/react/shallow";
+import { useBotMessages } from "../hooks/use-bot-messages";
 import { useFinanceStore, type BotWorkspaceTab } from "../store/finance-store";
 import { ChatPanel } from "./ChatPanel";
 import { RoutineList } from "./RoutineList";
@@ -26,8 +28,15 @@ export function BotWorkspace({
   onRefreshRuns: () => void;
   onOpenCreateBot: () => void;
 }) {
-  const { botWorkspaceTab, setBotWorkspaceTab, selectedBotId } = useFinanceStore();
+  const { botWorkspaceTab, setBotWorkspaceTab, selectedBotId } = useFinanceStore(
+    useShallow((s) => ({
+      botWorkspaceTab: s.botWorkspaceTab,
+      setBotWorkspaceTab: s.setBotWorkspaceTab,
+      selectedBotId: s.selectedBotId,
+    })),
+  );
   const botId = selectedBotId || MAIN_BOT_ID;
+  useBotMessages(botId);
 
   return (
     <Tabs
