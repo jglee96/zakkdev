@@ -15,22 +15,88 @@ Code-only reference for deploying finance auth, data, scheduled routines, and th
 - CDK CLI via `pnpm infra:finance-*`.
 - Vercel project with HTTPS origin matching `FINANCE_APP_ORIGIN`.
 
+## 1b. One-time bootstrap (OIDC + CI)
+
+### AWS CDK bootstrap (operator, once per account/region)
+
+```bash
+export AWS_REGION=ap-northeast-2
+pnpm infra:finance-auth bootstrap
+```
+
+### GitHub Actions → AWS (no long-lived keys)
+
+1. Deploy the GitHub OIDC stack **once** with an admin AWS profile (or import an existing provider):
+
+```bash
+pnpm infra:finance-github-oidc deploy -c githubRepository=jglee96/zakkdev
+# If token.actions.githubusercontent.com provider already exists:
+# -c existingGithubOidcProviderArn=arn:aws:iam::ACCOUNT:oidc-provider/token.actions.githubusercontent.com
+```
+
+2. In GitHub **repository variables** (Settings → Secrets and variables → Actions → Variables), set:
+
+| Variable | Example / source |
+|----------|------------------|
+| `AWS_REGION` | `ap-northeast-2` |
+| `FINANCE_GITHUB_DEPLOY_ROLE_ARN` | `FinanceGithubOidc` output `GithubDeployRoleArn` |
+| `FINANCE_GITHUB_DIFF_ROLE_ARN` | output `GithubDiffRoleArn` |
+| `FINANCE_VERCEL_RUNTIME_ROLE_NAME` | `finance-vercel-runtime` (must match CDK) |
+| `FINANCE_VERCEL_TEAM_SLUG` | Vercel team URL slug |
+| `FINANCE_VERCEL_PROJECT_NAME` | Vercel project name (e.g. `zakkdev`) |
+| `FINANCE_BUDGET_TABLE_ARN` | optional, for worker deploy context |
+| `FINANCE_DATA_TABLE_NAME` | optional fixed DynamoDB table name |
+
+3. Enable GitHub **environment** `production` with required reviewers (workflow deploy job uses it).
+
+After the first manual bootstrap, pushes to `main` that touch `infra/**` run `.github/workflows/finance-infra.yml` deploy. PRs run typecheck, tests, `cdk synth`, and optional `cdk diff` (when `FINANCE_GITHUB_DIFF_ROLE_ARN` is set).
+
+### Vercel → AWS (OIDC, recommended)
+
+1. Deploy the Vercel OIDC stack (creates `oidc.vercel.com/<teamSlug>` provider + runtime role):
+
+```bash
+pnpm infra:finance-vercel-oidc deploy \
+  -c vercelTeamSlug=YOUR_TEAM_SLUG \
+  -c vercelProjectName=zakkdev \
+  -c vercelRuntimeRoleName=finance-vercel-runtime
+```
+
+2. In Vercel project env (Production), set:
+
+| Variable | Value |
+|----------|--------|
+| `AWS_ROLE_ARN` | `FinanceVercelOidc` output `VercelRuntimeRoleArn` |
+| `AWS_REGION` | same as stacks |
+
+The app uses `shared/finance/aws/credentials.ts`: on Vercel with `AWS_ROLE_ARN`, it calls `@vercel/functions/oidc` `awsCredentialsProvider`; otherwise it uses the AWS SDK default chain (env keys, instance role, SSO).
+
+**Fallback (static keys):** set `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` (and `AWS_SESSION_TOKEN` if needed) on Vercel instead of `AWS_ROLE_ARN`. No code changes required; rotate keys manually.
+
+**Moving off Vercel:** deploy the Next.js app elsewhere and keep using the default credential chain (keys or instance role). Only change `shared/finance/aws/credentials.ts` if the new host has a different OIDC helper.
+
 ## 2. CDK stacks (order)
 
 ```bash
 export AWS_REGION=ap-northeast-2
 
+# OIDC (once; see §1b)
+pnpm infra:finance-github-oidc deploy -c githubRepository=jglee96/zakkdev
+pnpm infra:finance-vercel-oidc deploy \
+  -c vercelTeamSlug=YOUR_TEAM_SLUG \
+  -c vercelProjectName=zakkdev \
+  -c vercelRuntimeRoleName=finance-vercel-runtime
+
 # Login rate limits
 pnpm infra:finance-auth synth
-pnpm infra:finance-auth bootstrap   # once per account/region
-pnpm infra:finance-auth deploy -c runtimeRoleName=YOUR_VERCEL_RUNTIME_ROLE
+pnpm infra:finance-auth deploy -c runtimeRoleName=finance-vercel-runtime
 
 # Daily LLM budget (optional but recommended)
-pnpm infra:finance-budget deploy -c runtimeRoleName=YOUR_VERCEL_RUNTIME_ROLE
+pnpm infra:finance-budget deploy -c runtimeRoleName=finance-vercel-runtime
 
 # Worker queue, single data table, scheduler roles, bundled worker Lambda
 pnpm infra:finance-worker deploy \
-  -c vercelRuntimeRoleName=YOUR_VERCEL_RUNTIME_ROLE \
+  -c vercelRuntimeRoleName=finance-vercel-runtime \
   -c budgetTableArn=arn:aws:dynamodb:REGION:ACCOUNT:table/FinanceBudget-... \
   -c financeDataTableName=zakkdev-finance-data   # optional fixed name
 ```
@@ -157,6 +223,7 @@ Create secrets **before** or **after** CDK deploy: CDK references secrets by nam
 | `FINANCE_APP_ORIGIN` | Exact site origin (e.g. `https://zakklee.dev`) |
 | `FINANCE_AUTH_TABLE` | `FinanceAuth` stack output `AuthTableName` |
 | `AWS_REGION` | Same as tables |
+| `AWS_ROLE_ARN` | Vercel OIDC runtime role ARN (recommended on Vercel) |
 
 ### Data (required for bots/chat/routines)
 
@@ -211,8 +278,10 @@ pnpm typecheck
 pnpm lint
 pnpm test:finance
 TEST_TYPE=integration pnpm test:finance:integration
+pnpm infra:finance-github-oidc synth -c githubRepository=jglee96/zakkdev
+pnpm infra:finance-vercel-oidc synth -c vercelTeamSlug=ci-team -c vercelProjectName=zakkdev
 pnpm infra:finance-worker synth
-pnpm test:finance   # includes finance-worker-cdk snapshot test
+pnpm test:finance   # includes CDK assertion tests
 ```
 
 ## 7. Post-deploy smoke

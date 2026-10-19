@@ -160,8 +160,20 @@ test("only Vercel's trusted IP header is accepted in production; local spoofed h
   assert.throws(() => getClientIdentity(request, config, { NODE_ENV: "production" }));
   const localConfig = getAuthConfig({ ...env, NODE_ENV: "development", FINANCE_APP_ORIGIN: "http://127.0.0.1:4200" });
   assert.equal(getClientIdentity(request, localConfig, { NODE_ENV: "development" }), "local-development");
-  createRateLimitClient({ NODE_ENV: "production", AWS_REGION: "ap-northeast-2", FINANCE_DYNAMODB_ENDPOINT: "http://127.0.0.1:8000" });
-  assert.throws(() => createRateLimitClient({ NODE_ENV: "development", AWS_REGION: "ap-northeast-2", FINANCE_DYNAMODB_ENDPOINT: "http://remote.example" }));
+  assert.throws(() =>
+    createRateLimitClient({
+      NODE_ENV: "production",
+      AWS_REGION: "ap-northeast-2",
+      FINANCE_DYNAMODB_ENDPOINT: "http://127.0.0.1:8000",
+    }),
+  );
+  assert.throws(() =>
+    createRateLimitClient({
+      NODE_ENV: "development",
+      AWS_REGION: "ap-northeast-2",
+      FINANCE_DYNAMODB_ENDPOINT: "http://remote.example",
+    }),
+  );
 });
 
 test("route guard validates ownership and Origin independently of middleware; logout expires cookie", async () => withEnv(async () => {

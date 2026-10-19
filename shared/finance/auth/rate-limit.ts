@@ -2,6 +2,11 @@ import "server-only";
 import { createHmac, randomUUID } from "node:crypto";
 import { isIP } from "node:net";
 import { DynamoDBClient, TransactionCanceledException } from "@aws-sdk/client-dynamodb";
+import {
+  applyFinanceAwsClientConfig,
+  FinanceAwsConfigError,
+  resolveFinanceLocalDynamoEndpoint,
+} from "../aws/credentials";
 import { DynamoDBDocumentClient, TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
 import { AuthConfigurationError, type AuthConfig } from "./config";
 
@@ -26,23 +31,29 @@ export function createRateLimitClient(env: Partial<NodeJS.ProcessEnv> = process.
   const region = env.AWS_REGION || env.AWS_DEFAULT_REGION;
   if (!region) throw new AuthConfigurationError();
   let endpoint: string | undefined;
-  if (env.FINANCE_DYNAMODB_ENDPOINT) {
-    const url = new URL(env.FINANCE_DYNAMODB_ENDPOINT);
-    const localEndpoint = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
-    if (
-      !localEndpoint ||
-      url.protocol !== "http:" ||
-      url.username ||
-      url.password ||
-      (env.NODE_ENV === "production" && !localEndpoint)
-    ) {
+  try {
+    endpoint = resolveFinanceLocalDynamoEndpoint(env);
+  } catch (error) {
+    if (error instanceof FinanceAwsConfigError) {
       throw new AuthConfigurationError();
     }
-    endpoint = url.origin;
+    throw error;
   }
-  return DynamoDBDocumentClient.from(new DynamoDBClient({ region, endpoint, maxAttempts: 2, ...(endpoint ? { credentials: { accessKeyId: "local", secretAccessKey: "local" } } : {}) }), {
-    marshallOptions: { removeUndefinedValues: true },
-  });
+  return DynamoDBDocumentClient.from(
+    new DynamoDBClient(
+      applyFinanceAwsClientConfig(
+        {
+          region,
+          endpoint,
+          maxAttempts: 2,
+        },
+        env,
+      ),
+    ),
+    {
+      marshallOptions: { removeUndefinedValues: true },
+    },
+  );
 }
 
 export async function consumeLoginAttempt(

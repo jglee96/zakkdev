@@ -22,14 +22,18 @@ import type {
   GetScheduleResult,
   ScheduleInput,
 } from "./types";
+import { applyFinanceAwsClientConfig } from "../aws/credentials";
 
 export type AWSSchedulerConfig = {
   region: string;
   groupName?: string;
+  env?: Partial<NodeJS.ProcessEnv>;
 };
 
 export function createAWSSchedulerClient(config: AWSSchedulerConfig): SchedulerClient {
-  const client = new AWSSchedulerClient({ region: config.region });
+  const client = new AWSSchedulerClient(
+    applyFinanceAwsClientConfig({ region: config.region }, config.env ?? process.env),
+  );
   const groupName = config.groupName || "default";
 
   return {
