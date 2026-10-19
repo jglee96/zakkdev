@@ -104,6 +104,7 @@ test("environment variable names follow isolation pattern", () => {
     "AWS_ACCESS_KEY_ID",
     "AWS_SECRET_ACCESS_KEY",
     "AWS_SESSION_TOKEN",
+    "AWS_ROLE_ARN",
   ];
   const projectRoot = join(__dirname, "../..");
   const sourceFiles = [

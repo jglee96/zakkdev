@@ -2,6 +2,11 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import {
+  applyFinanceAwsClientConfig,
+  FinanceAwsConfigError,
+  resolveFinanceLocalDynamoEndpoint,
+} from "../aws/credentials";
+import {
   DynamoDBDocumentClient,
   GetCommand,
   PutCommand,
@@ -30,23 +35,27 @@ export function createRepositoryClient(env: Partial<NodeJS.ProcessEnv> = process
   if (!region) throw new RepositoryError("AWS_REGION is not configured", "config");
 
   let endpoint: string | undefined;
-  if (env.FINANCE_DYNAMODB_ENDPOINT) {
-    const url = new URL(env.FINANCE_DYNAMODB_ENDPOINT);
-    const isLocal = ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname);
-    if (env.NODE_ENV === "production" || !isLocal || url.protocol !== "http:" || url.username || url.password) {
-      throw new RepositoryError("FINANCE_DYNAMODB_ENDPOINT is not allowed in this environment", "config");
+  try {
+    endpoint = resolveFinanceLocalDynamoEndpoint(env);
+  } catch (error) {
+    if (error instanceof FinanceAwsConfigError) {
+      throw new RepositoryError(error.message, "config");
     }
-    endpoint = url.origin;
+    throw error;
   }
 
   return DynamoDBDocumentClient.from(
-    new DynamoDBClient({
-      region,
-      endpoint,
-      maxAttempts: 3,
-      ...(endpoint ? { credentials: { accessKeyId: "local", secretAccessKey: "local" } } : {}),
-    }),
-    { marshallOptions: { removeUndefinedValues: true } }
+    new DynamoDBClient(
+      applyFinanceAwsClientConfig(
+        {
+          region,
+          endpoint,
+          maxAttempts: 3,
+        },
+        env,
+      ),
+    ),
+    { marshallOptions: { removeUndefinedValues: true } },
   );
 }
 

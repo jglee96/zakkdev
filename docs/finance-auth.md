@@ -40,7 +40,7 @@ pnpm infra:finance-auth deploy -c runtimeRoleName=your-vercel-runtime-role
 
 CDK는 on-demand, TTL, PITR, 삭제 시 보존하는 로그인 카운터 테이블을 만든다. runtimeRoleName을 지정하면 **그 테이블의 `dynamodb:UpdateItem`만** 허용하는 정책을 해당 기존 역할에 붙인다. TransactWriteItems의 각 Update 작업에 필요한 권한이다. 역할을 지정하지 않으면 테이블만 생성한다. 출력 AuthTableName을 FINANCE_AUTH_TABLE에 설정한다. 배포 전에 synth 결과와 AWS 비용을 확인한다. CDK destroy는 데이터 테이블을 보존하므로 최종 제거는 운영자가 별도로 수행한다.
 
-Vercel에서는 표준 AWS credential provider가 읽을 수 있는 서버 전용 최소 권한 자격증명을 제공해야 한다. 이미 구성한 OIDC 기반 역할/임시 자격증명 경로가 있으면 재사용한다. **이 변경은 Vercel OIDC 신뢰 정책이나 credential exchange를 새로 구성하지 않는다.** `AWS_ROLE_ARN`만 설정해도 인증되는 것은 아니다. 별도 연결이 없다면 제한된 IAM 자격증명을 서버 환경변수로 관리·회전한다.
+Vercel에서는 `AWS_ROLE_ARN`(권장)과 `AWS_REGION`을 설정하고, CDK `finance-vercel-oidc` 스택으로 만든 OIDC 신뢰 역할을 사용한다. 앱은 `shared/finance/aws/credentials.ts`에서 Vercel 런타임일 때 `@vercel/functions/oidc`로 임시 자격증명을 받는다. OIDC를 쓰지 않으면 표준 AWS SDK 기본 체인(서버 환경변수 `AWS_ACCESS_KEY_ID` 등)으로 동작한다. 자세한 배포 순서는 `docs/finance-deploy.md` §1b.
 
 IP는 Vercel이 설정한 `x-vercel-forwarded-for`만 읽는다. 임의의 `X-Forwarded-For`로 제한을 우회할 수 없다. Vercel 외 production 배포는 지원하지 않으며 플랫폼/IP 어댑터를 추가하기 전까지 로그인은 닫힌다. localhost 개발은 모든 요청을 하나의 local identity로 제한한다.
 

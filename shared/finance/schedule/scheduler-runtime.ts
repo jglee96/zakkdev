@@ -129,6 +129,7 @@ export function createSchedulerClientFromEnv(
       return createAWSSchedulerClient({
         region: env.AWS_REGION || env.AWS_DEFAULT_REGION || "ap-northeast-2",
         groupName: env.FINANCE_SCHEDULER_GROUP_NAME || "finance-routines",
+        env,
       });
     case "fake":
       return getSharedFakeScheduler();
