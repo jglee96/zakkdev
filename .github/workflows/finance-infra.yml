@@ -1,0 +1,164 @@
+name: Finance infra
+
+on:
+  pull_request:
+    paths:
+      - "infra/**"
+      - "shared/finance/**"
+      - ".github/workflows/finance-infra.yml"
+      - "package.json"
+      - "pnpm-lock.yaml"
+  push:
+    branches:
+      - main
+    paths:
+      - "infra/**"
+      - ".github/workflows/finance-infra.yml"
+
+permissions:
+  contents: read
+  id-token: write
+  pull-requests: write
+
+concurrency:
+  group: finance-infra-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: pnpm/action-setup@v4.1.0
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4.2.0
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Unit tests
+        run: pnpm test:finance
+
+      - name: CDK synth (all finance stacks)
+        run: |
+          pnpm infra:finance-github-oidc synth \
+            -c githubRepository=jglee96/zakkdev
+          pnpm infra:finance-vercel-oidc synth \
+            -c vercelTeamSlug=ci-team \
+            -c vercelProjectName=zakkdev
+          pnpm infra:finance-auth synth \
+            -c runtimeRoleName=finance-vercel-runtime
+          pnpm infra:finance-budget synth \
+            -c runtimeRoleName=finance-vercel-runtime
+          pnpm infra:finance-worker synth \
+            -c vercelRuntimeRoleName=finance-vercel-runtime
+
+      - name: Configure AWS credentials (diff)
+        if: vars.FINANCE_GITHUB_DIFF_ROLE_ARN != ''
+        uses: aws-actions/configure-aws-credentials@v4.1.0
+        with:
+          role-to-assume: ${{ vars.FINANCE_GITHUB_DIFF_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'ap-northeast-2' }}
+
+      - name: CDK diff summary
+        if: vars.FINANCE_GITHUB_DIFF_ROLE_ARN != ''
+        env:
+          RUNTIME_ROLE: ${{ vars.FINANCE_VERCEL_RUNTIME_ROLE_NAME || 'finance-vercel-runtime' }}
+          TEAM_SLUG: ${{ vars.FINANCE_VERCEL_TEAM_SLUG || 'replace-me' }}
+          PROJECT_NAME: ${{ vars.FINANCE_VERCEL_PROJECT_NAME || 'zakkdev' }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/cdk-diff
+          pnpm infra:finance-github-oidc diff -c githubRepository=jglee96/zakkdev 2>&1 | tee /tmp/cdk-diff/github-oidc.txt || true
+          pnpm infra:finance-vercel-oidc diff \
+            -c vercelTeamSlug="$TEAM_SLUG" \
+            -c vercelProjectName="$PROJECT_NAME" \
+            -c vercelRuntimeRoleName="$RUNTIME_ROLE" 2>&1 | tee /tmp/cdk-diff/vercel-oidc.txt || true
+          pnpm infra:finance-auth diff -c runtimeRoleName="$RUNTIME_ROLE" 2>&1 | tee /tmp/cdk-diff/auth.txt || true
+          pnpm infra:finance-budget diff -c runtimeRoleName="$RUNTIME_ROLE" 2>&1 | tee /tmp/cdk-diff/budget.txt || true
+          pnpm infra:finance-worker diff -c vercelRuntimeRoleName="$RUNTIME_ROLE" 2>&1 | tee /tmp/cdk-diff/worker.txt || true
+          {
+            echo "## CDK diff (finance stacks)"
+            for f in /tmp/cdk-diff/*.txt; do
+              echo "### $(basename "$f" .txt)"
+              echo '```'
+              tail -n 80 "$f"
+              echo '```'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4.2.2
+
+      - uses: pnpm/action-setup@v4.1.0
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4.2.0
+        with:
+          node-version: "24"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure AWS credentials (deploy)
+        uses: aws-actions/configure-aws-credentials@v4.1.0
+        with:
+          role-to-assume: ${{ vars.FINANCE_GITHUB_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION || 'ap-northeast-2' }}
+
+      - name: Deploy finance CDK stacks
+        env:
+          RUNTIME_ROLE: ${{ vars.FINANCE_VERCEL_RUNTIME_ROLE_NAME }}
+          TEAM_SLUG: ${{ vars.FINANCE_VERCEL_TEAM_SLUG }}
+          PROJECT_NAME: ${{ vars.FINANCE_VERCEL_PROJECT_NAME }}
+          BUDGET_TABLE_ARN: ${{ vars.FINANCE_BUDGET_TABLE_ARN }}
+          DATA_TABLE_NAME: ${{ vars.FINANCE_DATA_TABLE_NAME }}
+        run: |
+          set -euo pipefail
+          : "${RUNTIME_ROLE:?Set FINANCE_VERCEL_RUNTIME_ROLE_NAME repo variable}"
+          : "${TEAM_SLUG:?Set FINANCE_VERCEL_TEAM_SLUG repo variable}"
+          : "${PROJECT_NAME:?Set FINANCE_VERCEL_PROJECT_NAME repo variable}"
+
+          pnpm infra:finance-github-oidc deploy --require-approval never \
+            -c githubRepository=jglee96/zakkdev
+
+          pnpm infra:finance-vercel-oidc deploy --require-approval never \
+            -c vercelTeamSlug="$TEAM_SLUG" \
+            -c vercelProjectName="$PROJECT_NAME" \
+            -c vercelRuntimeRoleName="$RUNTIME_ROLE"
+
+          pnpm infra:finance-auth deploy --require-approval never \
+            -c runtimeRoleName="$RUNTIME_ROLE"
+
+          pnpm infra:finance-budget deploy --require-approval never \
+            -c runtimeRoleName="$RUNTIME_ROLE"
+
+          WORKER_ARGS=(
+            -c vercelRuntimeRoleName="$RUNTIME_ROLE"
+          )
+          if [ -n "${BUDGET_TABLE_ARN:-}" ]; then
+            WORKER_ARGS+=( -c budgetTableArn="$BUDGET_TABLE_ARN" )
+          fi
+          if [ -n "${DATA_TABLE_NAME:-}" ]; then
+            WORKER_ARGS+=( -c financeDataTableName="$DATA_TABLE_NAME" )
+          fi
+          pnpm infra:finance-worker deploy --require-approval never "${WORKER_ARGS[@]}"
